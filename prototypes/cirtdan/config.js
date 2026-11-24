@@ -78,6 +78,9 @@ window.CONFIG = {
   halva_share: { value: 0.25, min: 0, max: 1, step: 0.05 },  // share of bread lines that are Şəki halvası in Şəki
   halva_worth: { value: 5, min: 1, max: 20, step: 1 },        // bread a piece of Şəki halvası is worth
 
+  nut_share: { value: 0.25, min: 0, max: 1, step: 0.05 },    // share of bread lines that are fındıq (hazelnuts) in Qəbələ
+  nut_worth: { value: 3, min: 1, max: 20, step: 1 },          // bread a handful of fındıq is worth
+
   // --- Score -----------------------------------------------------------------------------
   mult_every: { value: 500, min: 100, max: 2000, step: 50 },  // m per +1 multiplier (stand-in for missions)
   mult_cap: { value: 10, min: 1, max: 30, step: 1 },

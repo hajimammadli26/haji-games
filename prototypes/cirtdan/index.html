@@ -886,15 +886,95 @@ function makeHalva() { // Şəki halvası: a diamond of rice-net pastry, red-ora
 const CITIES = [
   { id: 'baku', name: 'Köhnə Bakı', what: 'İçərişəhər: Qız Qalası, bazar, faytonlar' },
   { id: 'sheki', name: 'Şəki', what: 'Xan sarayı, şəbəkə pəncərələr, Şəki halvası' },
-  { id: 'qebele', name: 'Qəbələ', what: 'meşələr, şəlalələr, dağ cığırları', soon: true },
+  { id: 'qebele', name: 'Qəbələ', what: 'meşə cığırı, şəlalə, kötüklər, qayalar, fındıq' },
   { id: 'naxcivan', name: 'Naxçıvan', what: 'Möminə xatın türbəsi, duz mağaraları', soon: true },
   { id: 'lenkeran', name: 'Lənkəran', what: 'çay plantasiyaları, yağış, sitrus bağları', soon: true },
   { id: 'quba', name: 'Quba', what: 'alma bağları, dağ kəndləri, xalça toxuyanlar', soon: true },
   { id: 'qobustan', name: 'Qobustan', what: 'qayaüstü təsvirlər, palçıq vulkanları', soon: true },
 ];
-const city = () => save.get('city') === 'sheki' ? 'sheki' : 'baku';
+const city = () => ['sheki', 'qebele'].includes(save.get('city')) ? save.get('city') : 'baku';
+// ---- Qəbələ: a forest trail under the mountains, a waterfall, stumps, boulders, low branches ------------
+TEX.trail = canvasTex(256, 256, (g, w, h) => { // packed earth with river stones and fallen leaves
+  g.fillStyle = '#8a6a44'; g.fillRect(0, 0, w, h);
+  let x = 11; const r = () => ((x = (x * 16807) % 2147483647) / 2147483647);
+  for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(${120 + r() * 50 | 0},${100 + r() * 40 | 0},${70 + r() * 30 | 0},0.7)`; g.beginPath(); g.ellipse(r() * w, r() * h, 3 + r() * 10, 2 + r() * 7, r() * 3, 0, Math.PI * 2); g.fill(); }
+  for (let i = 0; i < 40; i++) { g.fillStyle = ['#c8722c', '#d9a23a', '#8a3a1c'][i % 3]; g.beginPath(); g.ellipse(r() * w, r() * h, 4, 2, r() * 3, 0, Math.PI * 2); g.fill(); }
+}, [2, 100]);
+TEX.water = canvasTex(64, 256, (g, w, h) => { // falling water: white streaks on blue
+  g.fillStyle = '#9fd0f0'; g.fillRect(0, 0, w, h);
+  for (let i = 0; i < 40; i++) { g.fillStyle = 'rgba(255,255,255,0.8)'; g.fillRect((i * 37) % w, (i * 53) % h, 3, 30 + (i % 4) * 10); }
+}, [1, 2]);
+function makePine(sc) {
+  const g = new THREE.Group();
+  part(G.cyl, mat('trunk', '#6b4220'), 0.14, 1.2, 0.14, 0, 0.6, 0, g);
+  [[1.3, 1.4, 1.4], [1.0, 1.2, 2.3], [0.7, 1.0, 3.1]].forEach(([r, h, y], i) => part(G.cone, mat('pine' + i, ['#2f6a34', '#3a7a3a', '#47894a'][i], { flatShading: true }), r, h, r, 0, y, 0, g));
+  g.scale.setScalar(sc); return g;
+}
+function makeOak(sc) {
+  const g = new THREE.Group();
+  part(G.cyl, mat('trunk', '#6b4220'), 0.18, 1.8, 0.18, 0, 0.9, 0, g);
+  part(G.sphereLo, mat('leaves', '#3f8a3a', { flatShading: true }), 1.4, 1.2, 1.4, 0, 2.6, 0, g);
+  part(G.sphereLo, mat('leavesAutumn', '#c8722c', { flatShading: true }), 0.9, 0.8, 0.9, 0.7, 3.1, 0.3, g);
+  g.scale.setScalar(sc); return g;
+}
+function makeForest(side, rnd) { // a stretch of forest beside the trail, now and then a wooden hut
+  const g = new THREE.Group(), w = 5 + rnd() * 3;
+  part(G.box, mat('moss', '#4f7a3a'), 6, 0.3, w, side * 3.2, 0.15, 0, g);
+  const n = 3 + (rnd() * 3 | 0);
+  for (let i = 0; i < n; i++) {
+    const t = rnd() < 0.6 ? makePine(0.9 + rnd() * 0.8) : makeOak(0.8 + rnd() * 0.5);
+    t.position.set(side * (1.2 + rnd() * 4.5), 0, -w / 2 + rnd() * w); g.add(t);
+  }
+  if (rnd() < 0.2) { // a log hut
+    const hut = new THREE.Group(); hut.position.set(side * 3.5, 0, 0); g.add(hut);
+    for (let y = 0; y < 6; y++) part(G.cyl, mat('log', '#5b3a22'), 0.18, 3.4, 0.18, 0, 0.2 + y * 0.36, 0, hut).rotation.x = Math.PI / 2;
+    const roof = part(G.cyl, mat('hutRoof', '#7a4a22'), 1, 1, 1, 0, 2.7, 0, hut); roof.geometry = G.prism || (G.prism = new THREE.CylinderGeometry(1, 1, 1, 3)); roof.rotation.x = Math.PI / 2; roof.scale.set(1.8, 3.8, 1.0);
+  }
+  if (rnd() < 0.35) part(G.sphereLo, mat('rockQ', '#8a8478', { flatShading: true }), 0.6, 0.4, 0.5, side * 0.6, 0.2, (rnd() - 0.5) * w, g);
+  return { g, w };
+}
+function makeStump() { // a tree stump with a mushroom: jump it
+  const g = new THREE.Group();
+  part(G.cyl, mat('stump', '#7a4a22'), 0.55, 0.8, 0.55, 0, 0.4, 0, g);
+  part(G.cyl, mat('stumpTop', '#d9a86a'), 0.5, 0.04, 0.5, 0, 0.81, 0, g);
+  part(G.torus, mat('stumpRing', '#a87a44'), 0.3, 0.3, 0.3, 0, 0.83, 0, g).rotation.x = Math.PI / 2;
+  part(G.cyl, mat('mushStem', '#f3ecd8'), 0.05, 0.18, 0.05, 0.4, 0.85, 0.2, g);
+  part(G.sphere, mat('mushCap', '#c8221d'), 0.14, 0.07, 0.14, 0.4, 0.95, 0.2, g);
+  blobShadow(g, 0.7); return g;
+}
+function makeBranch() { // a fallen trunk across the trail on two forked stakes: slide under it
+  const g = new THREE.Group();
+  [-1.05, 1.05].forEach(x => { part(G.cyl, mat('pole', '#6b4220'), 0.08, 1.9, 0.08, x, 0.95, 0, g); part(G.cone, mat('pole', '#6b4220'), 0.06, 0.4, 0.06, x + 0.12, 1.95, 0, g).rotation.z = -0.5; });
+  part(G.cyl, mat('log', '#5b3a22'), 0.28, 2.6, 0.28, 0, 1.6, 0, g).rotation.z = Math.PI / 2;
+  for (let i = 0; i < 4; i++) part(G.sphereLo, mat('leaves', '#3f8a3a', { flatShading: true }), 0.35, 0.25, 0.3, -0.9 + i * 0.6, 1.85, 0.1, g);
+  part(G.cyl, mat('vine', '#2f6a34'), 0.03, 0.4, 0.03, -0.4, 1.3, 0.1, g); part(G.cyl, mat('vine', '#2f6a34'), 0.03, 0.3, 0.03, 0.5, 1.35, 0.1, g);
+  return g;
+}
+function makeBoulder() { // a big mossy boulder: swerve round it
+  const g = new THREE.Group();
+  part(G.dodecahedronGeo || (G.dodecahedronGeo = new THREE.DodecahedronGeometry(1)), mat('rockQ', '#8a8478', { flatShading: true }), 1.0, 1.3, 0.9, 0, 1.2, 0, g);
+  part(G.sphereLo, mat('moss', '#4f7a3a', { flatShading: true }), 0.8, 0.3, 0.7, 0.1, 2.3, 0, g);
+  part(G.dodecahedronGeo, mat('rockQ', '#8a8478', { flatShading: true }), 0.45, 0.4, 0.4, -0.7, 0.35, 0.4, g);
+  blobShadow(g, 1.1); return g;
+}
+function makeFinduq() { // a handful of fındıq: three hazelnuts with their green husks
+  const g = new THREE.Group();
+  [[-0.12, 0], [0.12, 0], [0, 0.17]].forEach(([x, y]) => { part(G.sphere, mat('hazel', '#9a5a26'), 0.12, 0.13, 0.12, x, y, 0, g); part(G.cone, mat('husk', '#7aa83a'), 0.1, 0.12, 0.1, x, y + 0.13, 0, g); });
+  return g;
+}
+function makeQebeleBack() { // mountains, a waterfall, the forest on the horizon
+  const g = new THREE.Group();
+  for (let i = 0; i < 7; i++) part(G.cone, mat('mount' + (i % 2), i % 2 ? '#3e7a3a' : '#2f6a34', { flatShading: true }), 36 + i * 5, 70 + (i % 3) * 20, 36, -120 + i * 40, 34, -40 - (i % 2) * 25, g);
+  part(G.cone, mat('snow', '#ffffff', { flatShading: true }), 14, 18, 14, 0, 82, -55, g);
+  const fall = part(G.plane, new THREE.MeshBasicMaterial({ map: TEX.water }), 8, 46, 1, 6, 30, -10, g);
+  part(G.sphereLo, new THREE.MeshBasicMaterial({ color: '#e8f4ff' }), 9, 3, 4, 6, 6, -8, g); // spray at its foot
+  g.userData.fall = fall;
+  g.traverse(m => { if (m.material) { m.material = m.material.clone(); m.material.fog = false; } }); // the horizon shows through the haze
+  return g;
+}
 function makeHouse(side, rnd) {
   if (city() === 'sheki') return makeHouseSheki(side, rnd);
+  if (city() === 'qebele') return makeForest(side, rnd);
   const g = new THREE.Group(), h = 5 + rnd() * 5, w = 5 + rnd() * 3, d = 5;
   const wallM = texMat('wallM', TEX.wall);
   part(G.box, wallM, d, h, w, side * (d / 2), h / 2, 0, g);
@@ -937,6 +1017,7 @@ const curbs = [-1, 1].map(s => { const c = part(G.box, mat('curb', '#b38a55'), 0
 const groove = [-1, 1].map(s => { const c = part(G.box, mat('groove', '#7d6a4f'), 0.08, 0.02, 400, s * 1.1, 0.012, 0); scene3.add(c); return c; });
 const tower = makeTower(); scene3.add(tower);
 const palace = makePalace(); palace.visible = false; scene3.add(palace);
+const qebeleBack = makeQebeleBack(); qebeleBack.visible = false; scene3.add(qebeleBack);
 let player3 = makeCirtdan(save.get('char')); scene3.add(player3);
 const div3 = makeDiv(); div3.scale.setScalar(0.85); scene3.add(div3);
 const divWinter = new THREE.Group(); div3.userData.head.add(divWinter); divWinter.visible = false;
@@ -1088,7 +1169,10 @@ function themeWorld() { // the street dressed for the festival
   }
   if (snow) snow.visible = ev === 'winter';
   divWinter.visible = ev === 'winter';
-  tower.visible = city() === 'baku'; palace.visible = city() === 'sheki';
+  tower.visible = city() === 'baku'; palace.visible = city() === 'sheki'; qebeleBack.visible = city() === 'qebele';
+  street.material.map = city() === 'qebele' ? TEX.trail : TEX.cobble; street.material.needsUpdate = true;
+  curbs.forEach(c => c.material.color.set(city() === 'qebele' ? '#5f7a44' : '#b38a55'));
+  if (scene3.fog && city() === 'qebele' && ev !== 'winter') scene3.fog.color.set('#cfe2d8');
   if (scene3.fog && city() === 'sheki' && ev !== 'winter') scene3.fog.color.set('#dfe9d6');
 }
 
@@ -1123,9 +1207,11 @@ function speedAt(t) { return Math.min(tune.speed_max, tune.speed_start + tune.sp
 function addObstacle(kind, lane, s0, opts = {}) {
   const k = KIND[kind];
   let mesh;
-  if (kind === 'basket') mesh = makeBaskets();
+  const forest = city() === 'qebele';
+  if (kind === 'basket') mesh = forest ? makeStump() : makeBaskets();
+  else if (kind === 'carpet' && forest) mesh = makeBranch();
   else if (kind === 'carpet') mesh = makeCarpetRope([TEX.carpetRed, TEX.carpetBlue, TEX.carpetGreen][rng() * 3 | 0]);
-  else if (kind === 'stall') mesh = makeStall();
+  else if (kind === 'stall') mesh = forest ? makeBoulder() : makeStall();
   else if (kind === 'phaeton') mesh = makePhaeton();
   else if (kind === 'cart') mesh = makeCart(opts.len || k.len);
   else if (kind === 'ramp') mesh = makeRamp();
@@ -1139,7 +1225,7 @@ function addObstacle(kind, lane, s0, opts = {}) {
   return o;
 }
 function addPickup(kind, lane, s, y) {
-  const mesh = kind === 'halva' ? makeHalva() : kind === 'letter' ? makeLetter(dayWord().word[dayWord().got]) : kind === 'sekerbura' ? makeSekerbura() : kind === 'paxlava' ? makePaxlava() : kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? makePole() : makeTendir();
+  const mesh = kind === 'finduq' ? makeFinduq() : kind === 'halva' ? makeHalva() : kind === 'letter' ? makeLetter(dayWord().word[dayWord().got]) : kind === 'sekerbura' ? makeSekerbura() : kind === 'paxlava' ? makePaxlava() : kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? makePole() : makeTendir();
   const p = { kind, lane, x: laneX(lane), s, y, mesh, taken: false, spin: rng() * 6 };
   mesh.position.set(p.x, y, -s); worldRoot.add(mesh); pickups.push(p);
 }
@@ -1229,6 +1315,7 @@ function genRow() {
     const ev = activeEvent();
     if (rng() < 0.7) {
       if (ev === 'novruz' && rng() < tune.token_lines) for (let i = 0; i < tune.bread_line; i++) addPickup(rng() < 0.5 ? 'sekerbura' : 'paxlava', l, s - 4 + i * 2.2, 0.6);
+      else if (city() === 'qebele' && rng() < tune.nut_share) for (let i = 0; i < tune.bread_line; i++) addPickup('finduq', l, s - 4 + i * 2.2, 0.6);
       else if (city() === 'sheki' && rng() < tune.halva_share) for (let i = 0; i < tune.bread_line; i++) addPickup('halva', l, s - 4 + i * 2.2, 0.6);
       else breadLine(l, s - 4, tune.bread_line, 0);
     }
@@ -1407,6 +1494,7 @@ function updateRun(dt) {
       p.taken = true;
       if (p.kind === 'bread') { st.bread++; sfx.bread(); mission('runBread', st.bread); mission('bread', 1); }
       else if (p.kind === 'letter') takeLetter();
+      else if (p.kind === 'finduq') { st.bread += tune.nut_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.nut_worth); }
       else if (p.kind === 'halva') { st.bread += tune.halva_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.halva_worth); }
       else if (p.kind === 'sekerbura' || p.kind === 'paxlava') { st.tokens = (st.tokens || 0) + 1; save.put('tokens', save.get('tokens') + 1); sfx.bread(); }
       else if (p.kind === 'nar') { st.narGot++; save.set('nar', save.get('nar') + 1); sfx.nar(); banner('Nar!'); }
@@ -1503,10 +1591,10 @@ function drawWorld() {
     }
   }
   // the street, curbs and lane grooves follow the runner; the cobbles scroll
-  street.position.set(0, 0, -s - 150); TEX.cobble.offset.y = (s / 4) % 1;
+  street.position.set(0, 0, -s - 150); street.material.map.offset.y = (s / 4) % 1;
   curbs.forEach(c => (c.position.z = -s - 150)); groove.forEach(c => (c.position.z = -s - 150));
   groove.forEach((c, i) => (c.position.x = (i ? 0.5 : -0.5) * tune.lane_width));
-  tower.position.set(26, 0, -s - 230); palace.position.set(0, 0, -s - 200); // the Maiden Tower always on the horizon, slightly right
+  tower.position.set(26, 0, -s - 230); palace.position.set(0, 0, -s - 200); qebeleBack.position.set(0, 0, -s - 190); TEX.water.offset.y = -animT * 1.5 % 1; // the Maiden Tower always on the horizon, slightly right
   // camera: fixed behind and above
   const shake = st.flash > 0 ? Math.sin(animT * 60) * 0.08 * st.flash : 0;
   const tall = camera.aspect < 1, follow = tall ? 0.85 : 0.55; // a phone held upright: higher, looking down past the Div
@@ -1623,7 +1711,7 @@ function titleCamera(t) { // the title: Cırtdan and Nənə in the street, the M
   r.head.rotation.y = 0; r.torso.rotation.x = 0;
   nene3.position.set(0.9, 0, -state.s - 0.4); nene3.rotation.y = 0.4;
   div3.visible = false; fly3.visible = false;
-  street.position.set(0, 0, -state.s - 150); tower.position.set(14, 0, -state.s - 120); palace.position.set(0, 0, -state.s - 150);
+  street.position.set(0, 0, -state.s - 150); tower.position.set(14, 0, -state.s - 120); palace.position.set(0, 0, -state.s - 150); qebeleBack.position.set(0, 0, -state.s - 150);
   const wide = W >= 900, cx = wide ? 2.2 : 0.2;
   camera.position.set(cx, 1.3, -state.s + (wide ? 4.2 : 5.6)); camera.lookAt(cx, wide ? 1.35 : 0.55, -state.s - 2);
   renderer.render(scene3, camera);
@@ -1634,16 +1722,16 @@ const FIGS = [ // ?scene=figures: every figure side by side, its name under it
   ['Fayton', makePhaeton, 0.55], ['Yük arabası', () => makeCart(4), 0.6], ['Nərdivan', makeRamp, 0.6],
   ['Səbət və küp', makeBaskets, 1.2], ['Xalça ipi', () => makeCarpetRope(TEX.carpetRed), 0.75], ['Bazar çadırı', makeStall, 0.7],
   ['Yağ çörəyi', makeBread, 2.4], ['Nar', makeNar, 2.4], ['Sini', makeSini, 2.2], ['Sehrli çarıq', makeChariq, 2.4],
-  ['Qoşa təndir', makeTendir, 2.4], ['Simurq', makeSimurq, 0.85], ['Lələk', makeFeather, 1.6], ['Çubuq', makePole, 0.9], ['Tonqal', makeBonfire, 1.1], ['Səməni', makeSemeni, 1.6], ['Şəkərbura', makeSekerbura, 2.4], ['Paxlava', makePaxlava, 2.6], ['Hərf', () => makeLetter('N'), 1.6], ['Nar ağacı', makeNarTree, 0.75], ['Şəki halvası', makeHalva, 2.6], ['Şəki evi', () => makeHouseSheki(1, () => 0.5).g, 0.22], ['Uçan xalça', makeFlyCarpet, 1.1], ['Darvaza', makeGate, 0.16], ['Qız Qalası', makeTower, 0.05],
+  ['Qoşa təndir', makeTendir, 2.4], ['Simurq', makeSimurq, 0.85], ['Lələk', makeFeather, 1.6], ['Çubuq', makePole, 0.9], ['Tonqal', makeBonfire, 1.1], ['Səməni', makeSemeni, 1.6], ['Şəkərbura', makeSekerbura, 2.4], ['Paxlava', makePaxlava, 2.6], ['Hərf', () => makeLetter('N'), 1.6], ['Nar ağacı', makeNarTree, 0.75], ['Şəki halvası', makeHalva, 2.6], ['Şəki evi', () => makeHouseSheki(1, () => 0.5).g, 0.22], ['Kötük', makeStump, 1.3], ['Budaq', makeBranch, 0.75], ['Qaya', makeBoulder, 0.8], ['Fındıq', makeFinduq, 2.6], ['Şam ağacı', () => makePine(1), 0.55], ['Uçan xalça', makeFlyCarpet, 1.1], ['Darvaza', makeGate, 0.16], ['Qız Qalası', makeTower, 0.05],
 ];
 let figGroup = null, figLabels = [];
 function buildFigures() {
   figGroup = new THREE.Group(); scene3.add(figGroup); figLabels = [];
-  const cols = 9;
+  const cols = 10;
   FIGS.forEach(([name, make, sc], i) => {
     const m = make(); m.scale.setScalar(sc);
     const col = i % cols, row = i / cols | 0;
-    const x = (col - (cols - 1) / 2) * 2.45, y = 5.6 - row * 3.0;
+    const x = (col - (cols - 1) / 2) * 2.2, y = 5.6 - row * 3.0;
     m.position.set(x, y, 0); m.rotation.y = name === 'Fayton' || name === 'Yük arabası' || name === 'Dəvə karvanı' || name === 'Nərdivan' ? 0.9 : 0.35;
     if (name === 'Cırtdan' || name === 'Div' || name === 'Nənə') m.rotation.y = 0.35;
     if (['Yağ çörəyi', 'Sini'].includes(name)) m.rotation.x = 0.4;
@@ -1767,6 +1855,7 @@ function cityRows() {
 }
 function cityIcon(id, x, y, r) {
   if (id === 'baku') { ctx.fillStyle = '#c9a06a'; ctx.fillRect(x - r * 0.45, y - r, r * 0.9, r * 1.9); ctx.fillRect(x - r * 0.9, y - r * 0.2, r * 0.5, r * 1.1); }
+  else if (id === 'qebele') { ctx.fillStyle = '#2f6a34'; ctx.beginPath(); ctx.moveTo(x - r, y + r); ctx.lineTo(x - r * 0.3, y - r); ctx.lineTo(x + r * 0.4, y + r); ctx.fill(); ctx.fillStyle = '#9fd0f0'; ctx.fillRect(x + r * 0.35, y - r * 0.8, r * 0.3, r * 1.8); }
   else if (id === 'sheki') { ctx.fillStyle = '#2c4f9a'; ctx.fillRect(x - r, y - r * 0.3, r * 2, r * 1.1); ctx.fillStyle = '#9e3d22'; ctx.beginPath(); ctx.moveTo(x - r * 1.1, y - r * 0.3); ctx.lineTo(x, y - r); ctx.lineTo(x + r * 1.1, y - r * 0.3); ctx.fill(); ctx.fillStyle = '#f0c02f'; ctx.fillRect(x - r * 0.6, y, r * 0.4, r * 0.5); ctx.fillStyle = '#d6362f'; ctx.fillRect(x + r * 0.2, y, r * 0.4, r * 0.5); }
   else { ctx.fillStyle = '#7a8a70'; ctx.beginPath(); ctx.moveTo(x - r, y + r * 0.8); ctx.lineTo(x - r * 0.2, y - r * 0.8); ctx.lineTo(x + r * 0.3, y); ctx.lineTo(x + r * 0.6, y - r * 0.4); ctx.lineTo(x + r, y + r * 0.8); ctx.fill(); }
 }
