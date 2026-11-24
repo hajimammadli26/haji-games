@@ -583,6 +583,44 @@ function makeFlyCarpet() { // uçan xalça: a carpet curled at the corners, unde
   part(G.box, mat('fringe', '#f4e2b8'), 1.4, 0.04, 0.08, 0, 0, 0.98, g); part(G.box, mat('fringe', '#f4e2b8'), 1.4, 0.04, 0.08, 0, 0, -0.98, g);
   return g;
 }
+function makeSimurq() { // Simurq: the fairy-tale bird, gold and turquoise, long flowing tail
+  const g = new THREE.Group(), gold = mat('simGold', '#f2b632'), teal = mat('simTeal', '#1f9e9a'), red = mat('simRed', '#c8322c');
+  part(G.sphere, gold, 0.55, 0.45, 0.9, 0, 0, 0, g);
+  part(G.sphere, mat('simBelly', '#ffe3a0'), 0.4, 0.32, 0.6, 0, -0.15, 0.1, g);
+  const neck = part(G.cyl, gold, 0.18, 0.7, 0.18, 0, 0.35, -0.75, g); neck.rotation.x = -0.8;
+  part(G.sphere, gold, 0.3, 0.28, 0.34, 0, 0.6, -1.15, g);
+  part(G.cone, mat('beak', '#e07b22'), 0.09, 0.35, 0.09, 0, 0.55, -1.5, g).rotation.x = -Math.PI / 2;
+  [-0.14, 0.14].forEach(x => { part(G.sphere, mat('eye', '#ffffff'), 0.08, 0.08, 0.06, x, 0.68, -1.38, g); part(G.sphere, mat('pupil', '#2a1a10'), 0.04, 0.04, 0.03, x, 0.68, -1.43, g); });
+  for (let i = 0; i < 5; i++) { const c = part(G.cone, i % 2 ? red : teal, 0.05, 0.4, 0.05, (i - 2) * 0.08, 0.92, -1.05, g); c.rotation.z = (i - 2) * 0.25; } // crest
+  const wings = [];
+  [-1, 1].forEach(sd => {
+    const w = new THREE.Group(); w.position.set(sd * 0.45, 0.15, -0.1); g.add(w); wings.push(w);
+    for (let i = 0; i < 4; i++) part(G.box, [teal, gold, red, teal][i], 1.6 - i * 0.25, 0.06, 0.35, sd * (0.8 - i * 0.12), -i * 0.02, -0.25 + i * 0.25, w);
+  });
+  for (let i = 0; i < 5; i++) { // the long tail, fanned
+    const t = part(G.box, [teal, red, gold, red, teal][i], 0.18, 0.04, 1.9, (i - 2) * 0.2, 0.05, 1.6, g);
+    t.rotation.y = (i - 2) * 0.12; t.rotation.x = 0.15;
+    part(G.sphere, mat('simEye', '#2c4fa0'), 0.11, 0.03, 0.14, (i - 2) * 0.32, 0.12, 2.45, g);
+  }
+  [-0.2, 0.2].forEach(x => part(G.cyl, mat('talon', '#e07b22'), 0.04, 0.5, 0.04, x, -0.6, 0.1, g));
+  g.userData = { wings };
+  return g;
+}
+function makeFeather() { // the pickup that calls the Simurq: one great tail feather
+  const g = new THREE.Group();
+  part(G.cyl, mat('quill', '#f5e6c0'), 0.025, 1.0, 0.025, 0, 0, 0, g);
+  part(G.sphere, mat('simTeal', '#1f9e9a'), 0.2, 0.42, 0.04, 0, 0.18, 0, g);
+  part(G.sphere, mat('simGold', '#f2b632'), 0.13, 0.27, 0.05, 0, 0.26, 0, g);
+  part(G.sphere, mat('simEye', '#2c4fa0'), 0.07, 0.1, 0.06, 0, 0.3, 0, g);
+  return g;
+}
+function makePole() { // kəndirbaz çubuğu: the rope-walker's long balancing pole, weights at both ends
+  const g = new THREE.Group();
+  part(G.cyl, mat('poleWood', '#c48a3e'), 0.035, 2.4, 0.035, 0, 0, 0, g).rotation.z = Math.PI / 2;
+  [-1.2, 1.2].forEach(x => { part(G.sphere, mat('simRed', '#c8322c'), 0.12, 0.12, 0.12, x, 0, 0, g); part(G.cone, mat('tassel', '#f2b632'), 0.08, 0.22, 0.08, x, -0.18, 0, g).rotation.x = Math.PI; });
+  [-0.5, 0.5].forEach(x => part(G.cyl, mat('poleBand', '#1d4f9a'), 0.045, 0.1, 0.045, x, 0, 0, g).rotation.z = Math.PI / 2);
+  return g;
+}
 function makeTower() { // Qız Qalası: the Maiden Tower, with its buttress, on the skyline
   const g = new THREE.Group(), t = texMat('tower', TEX.tower);
   part(new THREE.CylinderGeometry(7, 8, 30, 28), t, 1, 1, 1, 0, 15, 0, g);
@@ -638,6 +676,8 @@ const player3 = makeCirtdan(); scene3.add(player3);
 const div3 = makeDiv(); div3.scale.setScalar(0.85); scene3.add(div3);
 const fly3 = makeFlyCarpet(); fly3.visible = false; player3.add(fly3); fly3.position.y = 0.08;
 const nene3 = makeNene(); nene3.visible = false; scene3.add(nene3);
+const simurq3 = makeSimurq(); simurq3.visible = false; scene3.add(simurq3);
+const pole3 = makePole(); pole3.visible = false; pole3.scale.setScalar(0.7); player3.add(pole3); pole3.position.set(0, 0.95, -0.2);
 
 // The run's state. Distance runs along -z: an object at track position s sits at z = -s.
 const KIND = { // what each obstacle asks for, and what a head-on hit does
@@ -667,7 +707,7 @@ function reset() {
     lane: 1, prevLane: 1, x: 0, prevX: 0, y: 0, prevY: 0, vy: 0, grounded: true, groundY: 0,
     slide: 0, airT: 0, jumpBuf: 0, onRoof: false,
     divT: 0, divGap: tune.div_near_gap, introT: tune.div_intro_time, stumbleT: 0,
-    power: { magnet: 0, shoe: 0, double: 0 }, carpet: 0, carpets: tune.carpets_per_run,
+    power: { magnet: 0, shoe: 0, double: 0, pole: 0, simurq: 0 }, carpet: 0, carpets: tune.carpets_per_run,
     mult: 1, dead: null, deadT: 0, continues: 0, invuln: 0, stepT: 0, flash: 0, best: save.get('best'),
     banner: '', bannerT: 0, newBest: false,
   };
@@ -699,11 +739,18 @@ function addObstacle(kind, lane, s0, opts = {}) {
   return o;
 }
 function addPickup(kind, lane, s, y) {
-  const mesh = kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : makeTendir();
+  const mesh = kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? makePole() : makeTendir();
   const p = { kind, lane, x: laneX(lane), s, y, mesh, taken: false, spin: rng() * 6 };
   mesh.position.set(p.x, y, -s); worldRoot.add(mesh); pickups.push(p);
 }
 function breadLine(lane, s, n, y, gap = 2.2) { for (let i = 0; i < n; i++) addPickup('bread', lane, s + i * gap, y + 0.6); }
+function skyBread() { // a winding line of bread high over the street, for the Simurq's flight
+  const n = Math.floor(tune.simurq_time * state.speed / 3.2);
+  for (let i = 0; i < n; i++) {
+    const lane = Math.round(1 + Math.sin(i * 0.35) * 1.2);
+    addPickup('bread', Math.max(0, Math.min(2, lane)), state.s + 14 + i * 3, tune.simurq_height + 0.6);
+  }
+}
 function breadArc(lane, sMid, n, h) { // an arc over a low obstacle: the jump's path
   for (let i = 0; i < n; i++) { const u = i / (n - 1) * 2 - 1; addPickup('bread', lane, sMid + u * 3.2, 0.6 + h * (1 - u * u)); }
 }
@@ -772,7 +819,7 @@ function genRow() {
     if (rng() < 0.7) breadLine(l, s - 4, tune.bread_line, 0);
     const r = rng();
     if (r < tune.nar_chance) addPickup('nar', l, s + 2, 1.0);
-    else if (r < tune.nar_chance + tune.power_chance && gen.rows > INTRO.length) addPickup(['magnet', 'shoe', 'double'][rng() * 3 | 0], l, s + 2, 1.0);
+    else if (r < tune.nar_chance + tune.power_chance && gen.rows > INTRO.length) addPickup(rng() < tune.simurq_share ? 'simurq' : ['magnet', 'shoe', 'double', 'pole'][rng() * 4 | 0], l, s + 2, 1.0);
   }
   gen.rows++;
   const gap = tune.row_gap_start + (tune.row_gap_end - tune.row_gap_start) * d;
@@ -882,19 +929,29 @@ function updateRun(dt) {
     st.vy = Math.sqrt(2 * tune.gravity * h); st.grounded = false; st.jumpBuf = 0; st.slide = 0; st.airT = 1; sfx.jump();
   }
   st.jumpBuf = Math.max(0, st.jumpBuf - dt);
-  st.vy -= tune.gravity * dt; st.y += st.vy * dt;
+  const flying = st.power.simurq > 0;
+  if (flying) { // the Simurq lifts him high and holds him there; the street passes below
+    st.y += (tune.simurq_height - st.y) * Math.min(1, dt * 2.5); st.vy = 0; st.grounded = false; st.slide = 0;
+    if (st.power.simurq <= dt) { st.invuln = Math.max(st.invuln, 1.6); banner('Simurq səni yerə qoydu'); } // a safe landing
+  } else { st.vy -= tune.gravity * dt; st.y += st.vy * dt; }
   const sup = supportAt(st.x, st.prevY, st.s);
-  if (st.y <= sup.g) {
+  if (flying) { /* in the air with the Simurq */ }
+  else if (st.y <= sup.g) {
     if (!st.grounded && st.vy < -4) sfx.land();
     st.y = sup.g; st.vy = 0; st.grounded = true; st.onRoof = sup.roof;
+    if (st.power.pole > 0 && st.slide <= 0) { st.vy = Math.sqrt(2 * tune.gravity * tune.pole_height); st.grounded = false; sfx.jump(); } // kəndirbaz hops
   } else st.grounded = st.y - sup.g < 0.05 && st.vy <= 0;
   st.slide = Math.max(0, st.slide - dt);
   // collisions
   const h = st.slide > 0 ? PSLIDE : PSTAND;
   for (const o of obstacles) {
+    if (flying) break;
     if (o.hit || o.kind === 'ramp') continue;
     if (o.kind === 'cart' && st.y >= o.top - 0.35) continue; // on its roof
     if (!overlaps(o, st.x, st.y, h, st.s)) continue;
+    if (st.power.pole > 0 && st.prevY >= o.top - 0.15) { // a kəndirbaz lands on it and springs off
+      st.y = o.top; st.vy = Math.sqrt(2 * tune.gravity * tune.pole_height); sfx.jump(); continue;
+    }
     const fromFront = !overlaps({ ...o, s0: o.prevS0, s1: o.prevS0 + o.len }, st.x, st.y, h, st.prevS) && Math.abs(st.prevX - laneX(o.lane)) < KIND[o.kind].half + PHALF;
     if (fromFront) { KIND[o.kind].frontal === 'crash' ? crash(o) : stumble(o); }
     else { // a side bump: back to the lane you came from
@@ -919,7 +976,11 @@ function updateRun(dt) {
       p.taken = true;
       if (p.kind === 'bread') { st.bread++; sfx.bread(); }
       else if (p.kind === 'nar') { st.narGot++; save.set('nar', save.get('nar') + 1); sfx.nar(); banner('Nar!'); }
-      else { st.power[p.kind] = tune.power_time; sfx.power(); banner({ magnet: 'Nənənin sinisi!', shoe: 'Sehrli çarıq!', double: 'Qoşa təndir: x2!' }[p.kind]); }
+      else {
+        st.power[p.kind] = p.kind === 'simurq' ? tune.simurq_time : tune.power_time; sfx.power();
+        banner({ magnet: 'Nənənin sinisi!', shoe: 'Sehrli çarıq!', double: 'Qoşa təndir: x2!', pole: 'Kəndirbaz çubuğu!', simurq: 'Simurq quşu!' }[p.kind]);
+        if (p.kind === 'simurq') skyBread();
+      }
     }
   }
   // the Div
@@ -974,6 +1035,12 @@ function drawWorld() {
   player3.visible = true;
   poseRunner(player3, a, animT);
   fly3.visible = st.carpet > 0;
+  pole3.visible = st.power.pole > 0; if (pole3.visible) pole3.rotation.z = Math.sin(animT * 4) * 0.2;
+  simurq3.visible = st.power.simurq > 0 && !st.dead;
+  if (simurq3.visible) { // Cırtdan hangs from its talons
+    simurq3.position.set(x, y + 1.9, -s); const fl = Math.sin(animT * 9) * 0.5;
+    simurq3.userData.wings.forEach((w, i) => (w.rotation.z = i ? -fl : fl));
+  }
   if (st.carpet > 0) fly3.rotation.z = Math.sin(animT * 6) * 0.05;
   if (st.invuln > 0) player3.visible = Math.floor(animT * 12) % 2 === 0;
   if (st.dead) { player3.rotation.x = st.dead === 'crash' ? Math.min(1.4, st.deadT * 4) : 0; }
@@ -1033,6 +1100,15 @@ function hudIconCarpet(x, y, r) {
 function hudIconPower(kind, x, y, r) {
   if (kind === 'magnet') { ctx.fillStyle = '#cf7a38'; ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.55, 0, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = '#ffd08a'; ctx.lineWidth = 3; ctx.stroke(); hudIconBread(x - r * 0.35, y - r * 0.1, r * 0.3); hudIconBread(x + r * 0.35, y - r * 0.1, r * 0.3); }
   else if (kind === 'shoe') { ctx.fillStyle = '#8a4a1c'; ctx.beginPath(); ctx.moveTo(x - r, y + r * 0.4); ctx.quadraticCurveTo(x - r, y - r * 0.4, x - r * 0.2, y - r * 0.3); ctx.quadraticCurveTo(x + r * 0.6, y - r * 0.2, x + r, y - r * 0.8); ctx.quadraticCurveTo(x + r * 1.1, y + r * 0.4, x + r * 0.4, y + r * 0.4); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#f2d16b'; ctx.fillRect(x - r * 0.6, y - r * 0.1, r * 0.9, r * 0.12); }
+  else if (kind === 'simurq') { // a feather
+    ctx.strokeStyle = '#f5e6c0'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(x - r * 0.7, y + r * 0.8); ctx.lineTo(x + r * 0.6, y - r * 0.7); ctx.stroke();
+    ctx.fillStyle = '#1f9e9a'; ctx.beginPath(); ctx.ellipse(x + r * 0.15, y - r * 0.15, r * 0.35, r * 0.85, 0.75, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f2b632'; ctx.beginPath(); ctx.ellipse(x + r * 0.25, y - r * 0.25, r * 0.2, r * 0.5, 0.75, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#2c4fa0'; ctx.beginPath(); ctx.arc(x + r * 0.32, y - r * 0.32, r * 0.14, 0, Math.PI * 2); ctx.fill();
+  } else if (kind === 'pole') { // the balancing pole
+    ctx.strokeStyle = '#c48a3e'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - r, y + r * 0.3); ctx.lineTo(x + r, y - r * 0.3); ctx.stroke();
+    ctx.fillStyle = '#c8322c'; [[-1, 0.3], [1, -0.3]].forEach(([a, b]) => { ctx.beginPath(); ctx.arc(x + a * r, y + b * r, r * 0.25, 0, Math.PI * 2); ctx.fill(); });
+  }
   else { [-0.45, 0.45].forEach(o => { ctx.fillStyle = '#b8743e'; ctx.beginPath(); ctx.ellipse(x + o * r, y, r * 0.42, r * 0.6, 0, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#ff8a1a'; ctx.beginPath(); ctx.ellipse(x + o * r, y + r * 0.1, r * 0.16, r * 0.12, 0, 0, Math.PI * 2); ctx.fill(); }); }
 }
 function hudButton(x, y, w, h, kind) {
@@ -1064,7 +1140,7 @@ function drawHud() {
   hudIconNar(W - 170, 148, 15); outlined(String(save.get('nar')), W - 24, 148, 30, '#ffb3bd', 'right');
   // active power-ups with their time left, top left under the buttons
   let py = W < 700 ? 168 : 112;
-  const bars = Object.entries(st.power).filter(([, v]) => v > 0).map(([k, v]) => [k, v / tune.power_time]);
+  const bars = Object.entries(st.power).filter(([, v]) => v > 0).map(([k, v]) => [k, v / (k === 'simurq' ? tune.simurq_time : tune.power_time)]);
   if (st.carpet > 0) bars.push(['carpet', st.carpet / tune.carpet_time]);
   for (const [k, f] of bars) {
     ctx.fillStyle = 'rgba(70,25,15,0.55)'; rrect(16, py - 24, 200, 48, 12); ctx.fill();
@@ -1105,21 +1181,23 @@ const FIGS = [ // ?scene=figures: every figure side by side, its name under it
   ['Cırtdan', makeCirtdan, 1.6], ['Div', makeDiv, 0.75], ['Nənə', makeNene, 1.4], ['Dəvə karvanı', makeCamel, 0.8],
   ['Fayton', makePhaeton, 0.55], ['Yük arabası', () => makeCart(4), 0.6], ['Nərdivan', makeRamp, 0.6],
   ['Səbət və küp', makeBaskets, 1.2], ['Xalça ipi', () => makeCarpetRope(TEX.carpetRed), 0.75], ['Bazar çadırı', makeStall, 0.7],
-  ['Yağ çörəyi', makeBread, 2.4], ['Nar', makeNar, 2.4], ['Nənənin sinisi', makeSini, 2.2], ['Sehrli çarıq', makeChariq, 2.4],
-  ['Qoşa təndir', makeTendir, 2.4], ['Uçan xalça', makeFlyCarpet, 1.1], ['Qala darvazası', makeGate, 0.16], ['Qız Qalası', makeTower, 0.05],
+  ['Yağ çörəyi', makeBread, 2.4], ['Nar', makeNar, 2.4], ['Sini', makeSini, 2.2], ['Sehrli çarıq', makeChariq, 2.4],
+  ['Qoşa təndir', makeTendir, 2.4], ['Simurq', makeSimurq, 0.85], ['Lələk', makeFeather, 1.6], ['Çubuq', makePole, 0.9], ['Uçan xalça', makeFlyCarpet, 1.1], ['Darvaza', makeGate, 0.16], ['Qız Qalası', makeTower, 0.05],
 ];
 let figGroup = null, figLabels = [];
 function buildFigures() {
   figGroup = new THREE.Group(); scene3.add(figGroup); figLabels = [];
-  const cols = 6;
+  const cols = 7;
   FIGS.forEach(([name, make, sc], i) => {
     const m = make(); m.scale.setScalar(sc);
     const col = i % cols, row = i / cols | 0;
-    const x = (col - (cols - 1) / 2) * 3.3, y = 6 - row * 3.3;
+    const x = (col - (cols - 1) / 2) * 2.9, y = 5.6 - row * 3.1;
     m.position.set(x, y, 0); m.rotation.y = name === 'Fayton' || name === 'Yük arabası' || name === 'Dəvə karvanı' || name === 'Nərdivan' ? 0.9 : 0.35;
     if (name === 'Cırtdan' || name === 'Div' || name === 'Nənə') m.rotation.y = 0.35;
-    if (['Yağ çörəyi', 'Nənənin sinisi'].includes(name)) m.rotation.x = 0.4;
-    m.position.y += name === 'Yağ çörəyi' || name === 'Nar' || name === 'Sehrli çarıq' || name === 'Qoşa təndir' || name === 'Nənənin sinisi' ? 0.9 : 0;
+    if (['Yağ çörəyi', 'Sini'].includes(name)) m.rotation.x = 0.4;
+    if (name === 'Cırtdan') m.rotation.y = Math.PI - 0.35; // his face is on -z
+    if (name === 'Simurq') { m.rotation.y = 1.1; m.rotation.x = 0.3; }
+    m.position.y += name === 'Yağ çörəyi' || name === 'Nar' || name === 'Sehrli çarıq' || name === 'Qoşa təndir' || name === 'Sini' ? 0.9 : 0;
     figGroup.add(m); figLabels.push([name, new THREE.Vector3(x, y - 0.35, 0)]);
   });
 }
@@ -1140,7 +1218,7 @@ const scenes = {
       for (const [name, p] of figLabels) {
         const v = p.clone().project(camera);
         const x = (v.x + 1) / 2 * W, y = (1 - v.y) / 2 * H;
-        outlined(name, x, y + 14, 20, '#fff4dc');
+        outlined(name, x, y + 14, 18, '#fff4dc');
       }
     },
   },

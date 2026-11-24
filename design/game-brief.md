@@ -7,6 +7,8 @@ The full design is the person's GDD, `design/source/Cirtdan_Oyun_Senedi.pdf` (v1
 
 From the GDD, word for word where it names the look: "Mobil endless runner oyunu", "3 zolaqlı", "Barmaqla sürüşdürmə (swipe): sola, sağa, yuxarı, aşağı", "Parlaq rəngli, cizgi filmi üslubunda 3D qrafika", "Milli naxışlar: buta, xalça ornamentləri, şəbəkə pəncərələr", "Div qorxulu yox, gülməli görünməlidir", "qızılı daş divarlar, mavi Xəzər, qırmızı-göy xalçalar", "Qız Qalası: uzaqda, səmada görünən əsas simvol".
 
+After play: "davam et" (no play notes yet; the build went on to Build order step 2)
+
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
 **Genre:** endless runner, 3 lanes, seen from behind
@@ -45,7 +47,7 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] Jump and slide, with obstacles that each ask for one move: baskets and jugs (jump), carpet on ropes (slide), bazaar stalls (lane change), parked phaetons (lane change), hay carts (lane change or plank ramp onto the roof), oncoming camel caravan, city-gate tunnel
 - [x] The Div chasing behind: a side bump brings him close, a second one catches you
 - [x] Yağ çörəyi in lines and arcs; rare nar
-- [x] Power-ups: grandma's tray (magnet), magic çarıq (super jump), flying carpet (one-hit shield, double tap) (thin stand-in)
+- [x] Power-ups: grandma's tray (magnet), magic çarıq (super jump), qoşa təndir (x2), Simurq (flies high over the street for 8 s, bread in the sky), kəndirbaz çubuğu (big hops, bounces off obstacle tops), flying carpet (one-hit shield, double tap) (thin stand-in: upgrades later)
 - [x] Score = distance × multiplier; best score kept between visits
 - [x] Old-Baku scenery: sandstone houses, balconies, carpets, Qız Qalası on the skyline
 - [x] Title, pause, mute, game over with continue-with-nar and restart

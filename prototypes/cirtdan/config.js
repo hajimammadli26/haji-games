@@ -44,6 +44,10 @@ window.CONFIG = {
   nar_chance: { value: 0.04, min: 0, max: 0.3, step: 0.01 },  // chance per row of a nar
   power_chance: { value: 0.08, min: 0, max: 0.4, step: 0.01 },// chance per row of a power-up
   power_time: { value: 10, min: 3, max: 30, step: 1 },        // s a power-up lasts (level 1 of 5 in Nənənin dükanı, later)
+  simurq_time: { value: 8, min: 3, max: 20, step: 0.5 },     // s the Simurq carries Cırtdan over the street
+  simurq_height: { value: 7, min: 4, max: 12, step: 0.5 },    // m he flies at, above every obstacle
+  simurq_share: { value: 0.12, min: 0, max: 1, step: 0.01 },  // share of power-ups that are a Simurq (rarer)
+  pole_height: { value: 4.2, min: 2, max: 8, step: 0.1 },     // m apex of each kəndirbaz hop
   magnet_radius: { value: 6, min: 2, max: 15, step: 0.5 },    // m grandma's tray pulls bread from
   carpet_time: { value: 30, min: 5, max: 60, step: 1 },       // s the flying carpet shields one hit
   carpets_per_run: { value: 1, min: 0, max: 5, step: 1 },     // flying carpets at the start of each run (shop later)
