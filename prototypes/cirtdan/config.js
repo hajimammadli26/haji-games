@@ -66,6 +66,13 @@ window.CONFIG = {
   kecel_sets: { value: 3, min: 1, max: 20, step: 1 },         // mission sets finished to unlock Keçəl
   mission_scale: { value: 0.5, min: 0, max: 2, step: 0.1 },   // how much harder each new set of missions gets
 
+  // --- Daily word and festivals -----------------------------------------------------------
+  letter_chance: { value: 0.16, min: 0, max: 1, step: 0.01 }, // chance per row of the next letter of the day's word
+  kosa_tokens: { value: 60, min: 1, max: 500, step: 1 },      // şəkərbura and paxlava collected in Novruz to unlock Kosa
+  token_lines: { value: 0.3, min: 0, max: 1, step: 0.05 },    // share of bread lines that are Novruz sweets instead
+  bonfire_share: { value: 0.5, min: 0, max: 1, step: 0.05 },  // share of jump obstacles that are bonfires in Novruz
+  snow_count: { value: 600, min: 0, max: 3000, step: 50 },    // snowflakes around the camera in winter
+
   // --- Score -----------------------------------------------------------------------------
   mult_every: { value: 500, min: 100, max: 2000, step: 50 },  // m per +1 multiplier (stand-in for missions)
   mult_cap: { value: 10, min: 1, max: 30, step: 1 },

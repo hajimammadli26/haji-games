@@ -10,6 +10,7 @@ From the GDD, word for word where it names the look: "Mobil endless runner oyunu
 After play: "davam et" (no play notes yet; the build went on to Build order step 2)
 After play: "davam" (no play notes yet; the build went on to Build order step 3)
 After play: "davam et" (no play notes yet; the build went on to the GDD's step 4: music, voices, the opening story)
+After play: "Davam" (no play notes yet; the build went on to the daily word hunt and the festivals)
 
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
@@ -59,6 +60,8 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] Music: a 6/8 dance in the Şur mode, synthesised tar, balaban and nağara over a modern kick; calm in the menu, faster with speed, epic with the Simurq
 - [x] Voices: the Div's "Ay Cırtdaaan!" and "Hamm!", "Yenə sənsən?!", Cırtdan's giggle, sung by a small formant synth
 - [x] The opening story in five staged pictures, from the GDD's intro (first Oyna, and Nağıl in the menu)
+- [x] Daily word hunt: the day's word (NOVRUZ, XALÇA, TƏNDİR...) lies in the street letter by letter, in order; spelling it gives Nənənin bağlaması, more on a streak of days
+- [x] Festivals by the calendar or chosen in Tədbirlər: Novruz (bonfires to jump, səməni, şəkərbura and paxlava that unlock Kosa), Qış (snow, the Div in a scarf and hat), Nar bayramı (pomegranate trees, twice the nar); Xəzər yayı shown as coming
 - [x] Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good
 
 ## Your systems
@@ -68,11 +71,14 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Score multiplier from missions · in the slice
 - Nənənin dükanı (shop and upgrades) · in the slice
 - Unlockable characters · in the slice
-- Costumes, and characters that need events or magic stones · later
+- Costumes, and characters that need events or magic stones (Məlikməmməd, Pəri qız) · later
+- Kosa, unlocked with Novruz sweets · in the slice
 - Missions · in the slice
-- Daily word hunt, weekly hunt, daily gifts · later
+- Daily word hunt · in the slice
+- Weekly hunt, daily gifts · later
 - Leaderboards and leagues · later
-- Festival events (Novruz, winter, nar bayramı, Xəzər yayı) · later
+- Festival events (Novruz, winter, nar bayramı) · in the slice
+- Xəzər yayı (needs a seaside level) · later
 - Azerbaijan tour cities (Şəki, Qəbələ, ...) · later
 - Intro story · in the slice
 - Comic scenes at milestones · later
@@ -87,7 +93,8 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Ads and purchases in this build *(from the GDD's child-audience note)*
 
 ## Out of scope
-- Costumes; daily word hunt, weekly hunt and daily gifts: add it as a feature
+- Costumes; weekly hunt and daily gifts: add it as a feature
+- Xəzər yayı seaside level: change it after play
 - Scenery that changes the further you run, other cities: change it after play
 - Online leaderboards and leagues: needs a server: not built yet
 - A level mode with an end: grow it
