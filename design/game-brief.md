@@ -11,6 +11,7 @@ After play: "davam et" (no play notes yet; the build went on to Build order step
 After play: "davam" (no play notes yet; the build went on to Build order step 3)
 After play: "davam et" (no play notes yet; the build went on to the GDD's step 4: music, voices, the opening story)
 After play: "Davam" (no play notes yet; the build went on to the daily word hunt and the festivals)
+After play: "Sürüt yerinde simurt tapa bilçirem oyunda gelmirem rastima . Develerin ustundede gezmek olsun qabaqdan deyebənde ölsün.   Bunnari duzelt ve davam et bir başa"
 
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
@@ -62,6 +63,9 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] The opening story in five staged pictures, from the GDD's intro (first Oyna, and Nağıl in the menu)
 - [x] Daily word hunt: the day's word (NOVRUZ, XALÇA, TƏNDİR...) lies in the street letter by letter, in order; spelling it gives Nənənin bağlaması, more on a streak of days
 - [x] Festivals by the calendar or chosen in Tədbirlər: Novruz (bonfires to jump, səməni, şəkərbura and paxlava that unlock Kosa), Qış (snow, the Div in a scarf and hat), Nar bayramı (pomegranate trees, twice the nar); Xəzər yayı shown as coming
+- [x] The Simurq feather in every run by about the 14th row, and power-ups more often (the Simurq was too rare to meet)
+- [x] Run along the camels' backs; a hay cart with a ramp often waits in the next lane to jump across from; a head-on hit with the caravan still ends the run
+- [x] Şəki, the first city of the Azerbaijan tour: whitewashed stone houses with red tiled roofs and deep wooden eyvans, the Xan sarayı and green mountains on the horizon, Şəki halvası worth 5 bread; chosen in Şəhərlər
 - [x] Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good
 
 ## Your systems
@@ -79,13 +83,14 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Leaderboards and leagues · later
 - Festival events (Novruz, winter, nar bayramı) · in the slice
 - Xəzər yayı (needs a seaside level) · later
-- Azerbaijan tour cities (Şəki, Qəbələ, ...) · later
+- Azerbaijan tour: Şəki · in the slice
+- Azerbaijan tour: Qəbələ, Naxçıvan, Lənkəran, Quba, Qobustan · later
 - Intro story · in the slice
 - Comic scenes at milestones · later
 - Music and voice lines · in the slice
 
 ## Keep
--
+- Sürət yerində (the speed is right) *(you said)* · pins: speed_start 10, speed_max 22, speed_ramp 0.08
 
 ## Avoid
 - Subway Surfers' name, art, characters and UI (it is a genre reference in the GDD, never copied)

@@ -39,17 +39,19 @@ window.CONFIG = {
   ramp_time: { value: 150, min: 30, max: 400, step: 10 },     // s from easy to full difficulty
   double_block_after: { value: 45, min: 0, max: 200, step: 5 },// s before two lanes are blocked at once
   caravan_after: { value: 38, min: 0, max: 200, step: 2 },    // s before the first camel caravan
+  caravan_ramp_chance: { value: 0.7, min: 0, max: 1, step: 0.05 }, // a hay cart beside a caravan, to jump across onto the camels
   caravan_speed: { value: 6, min: 0, max: 15, step: 0.5 },    // m/s a caravan walks toward you
   view_ahead: { value: 150, min: 60, max: 300, step: 10 },    // m of street built ahead
 
   // --- Pickups and power-ups -------------------------------------------------------------
   bread_line: { value: 6, min: 2, max: 12, step: 1 },         // yağ çörəyi in a line
   nar_chance: { value: 0.04, min: 0, max: 0.3, step: 0.01 },  // chance per row of a nar
-  power_chance: { value: 0.08, min: 0, max: 0.4, step: 0.01 },// chance per row of a power-up
+  power_chance: { value: 0.1, min: 0, max: 0.4, step: 0.01 },// chance per row of a power-up
   power_time: { value: 10, min: 3, max: 30, step: 1 },        // s a power-up lasts (level 1 of 5 in Nənənin dükanı, later)
   simurq_time: { value: 8, min: 3, max: 20, step: 0.5 },     // s the Simurq carries Cırtdan over the street
   simurq_height: { value: 7, min: 4, max: 12, step: 0.5 },    // m he flies at, above every obstacle
-  simurq_share: { value: 0.12, min: 0, max: 1, step: 0.01 },  // share of power-ups that are a Simurq (rarer)
+  simurq_share: { value: 0.3, min: 0, max: 1, step: 0.01 },   // share of power-ups that are a Simurq
+  simurq_first_row: { value: 14, min: 6, max: 60, step: 1 }, // the row by which every run has met one Simurq feather
   pole_height: { value: 4.2, min: 2, max: 8, step: 0.1 },     // m apex of each kəndirbaz hop
   magnet_radius: { value: 6, min: 2, max: 15, step: 0.5 },    // m grandma's tray pulls bread from
   carpet_time: { value: 30, min: 5, max: 60, step: 1 },       // s the flying carpet shields one hit
@@ -72,6 +74,9 @@ window.CONFIG = {
   token_lines: { value: 0.3, min: 0, max: 1, step: 0.05 },    // share of bread lines that are Novruz sweets instead
   bonfire_share: { value: 0.5, min: 0, max: 1, step: 0.05 },  // share of jump obstacles that are bonfires in Novruz
   snow_count: { value: 600, min: 0, max: 3000, step: 50 },    // snowflakes around the camera in winter
+
+  halva_share: { value: 0.25, min: 0, max: 1, step: 0.05 },  // share of bread lines that are Şəki halvası in Şəki
+  halva_worth: { value: 5, min: 1, max: 20, step: 1 },        // bread a piece of Şəki halvası is worth
 
   // --- Score -----------------------------------------------------------------------------
   mult_every: { value: 500, min: 100, max: 2000, step: 50 },  // m per +1 multiplier (stand-in for missions)

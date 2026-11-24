@@ -59,7 +59,7 @@ const events = []; // window.game.events: anything the game wants a run to see
 // ---- Saved between visits (wrapped: storage may be blocked) -------------------------------
 const save = (() => {
   let d = { best: 0, nar: null, bread: 0, carpets: 0, levels: {}, chars: ['cirtdan'], char: 'cirtdan',
-    mset: 0, mprog: [0, 0, 0], mmult: 1, sets: 0, wordDay: -1, wordGot: 0, wordStreak: 0, wordDone: -1, event: 'auto', tokens: 0 };
+    mset: 0, mprog: [0, 0, 0], mmult: 1, sets: 0, city: 'baku', wordDay: -1, wordGot: 0, wordStreak: 0, wordDone: -1, event: 'auto', tokens: 0 };
   try { Object.assign(d, JSON.parse(localStorage.getItem('cirtdan-save') || '{}')); } catch (e) {}
   if (d.nar === null) d.nar = tune.start_nar;
   return {
@@ -825,7 +825,76 @@ function makeTower() { // Qız Qalası: the Maiden Tower, with its buttress, on 
 }
 
 // -- Buildings: sandstone houses with balconies, şəbəkə windows and hanging carpets --------------
+const SHEKI_TEX = {};
+function shekiTex(name) {
+  if (SHEKI_TEX[name]) return SHEKI_TEX[name];
+  if (name === 'wall') SHEKI_TEX.wall = canvasTex(256, 256, (g, w, h) => { // whitewash over river stones and brick bands
+    g.fillStyle = '#efe6d2'; g.fillRect(0, 0, w, h);
+    let x = 5; const r = () => ((x = (x * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 70; i++) { g.fillStyle = `rgba(${150 + r() * 40 | 0},${140 + r() * 30 | 0},${120 + r() * 30 | 0},0.55)`; g.beginPath(); g.ellipse(r() * w, r() * h, 6 + r() * 8, 4 + r() * 5, r() * 3, 0, Math.PI * 2); g.fill(); }
+    g.fillStyle = '#b8643a'; for (let y = 0; y < h; y += 64) g.fillRect(0, y, w, 8);
+  }, [1, 1]);
+  if (name === 'roof') SHEKI_TEX.roof = canvasTex(128, 128, (g, w, h) => { // red clay tiles
+    g.fillStyle = '#9e3d22'; g.fillRect(0, 0, w, h);
+    for (let y = 0; y < h; y += 16) for (let x = (y / 16) % 2 * 8; x < w; x += 16) { g.fillStyle = '#c0562f'; g.beginPath(); g.arc(x + 8, y + 12, 7, Math.PI, 0); g.fill(); }
+  }, [3, 2]);
+  if (name === 'palace') SHEKI_TEX.palace = canvasTex(256, 128, (g, w, h) => { // the Xan sarayı facade: blue and gold painting round great şəbəkə windows
+    g.fillStyle = '#2c4f9a'; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#f2d16b'; g.fillRect(0, 0, w, 10); g.fillRect(0, h / 2 - 4, w, 8); g.fillRect(0, h - 10, w, 10);
+    const cols = ['#d6362f', '#2c6fd1', '#f0c02f', '#3ea35a'];
+    for (let k = 0; k < 4; k++) for (let row = 0; row < 2; row++) {
+      const x0 = 14 + k * 60, y0 = 16 + row * 56, ww = 44, hh = 42;
+      for (let y = 0; y < hh; y += 8) for (let x = 0; x < ww; x += 8) { g.fillStyle = cols[((x + y) / 8 + k) % 4]; g.fillRect(x0 + x, y0 + y, 7, 7); }
+      g.strokeStyle = '#5a3216'; g.lineWidth = 3; g.strokeRect(x0, y0, ww, hh);
+    }
+  });
+  return SHEKI_TEX[name];
+}
+function makeHouseSheki(side, rnd) { // Şəki: whitewashed stone, a red tiled roof, a deep wooden eyvan, big şəbəkə windows
+  const g = new THREE.Group(), h = 4.5 + rnd() * 2.5, w = 5 + rnd() * 3, d = 5;
+  part(G.box, texMat('shekiWall', shekiTex('wall')), d, h, w, side * (d / 2), h / 2, 0, g);
+  const roof = part(G.cyl, texMat('shekiRoof', shekiTex('roof')), 3.2, w + 0.8, 3.2, side * (d / 2), h + 1.0, 0, g); // a pitched roof: a 3-sided prism
+  roof.geometry = G.prism || (G.prism = new THREE.CylinderGeometry(1, 1, 1, 3)); roof.rotation.x = Math.PI / 2; roof.rotation.y = Math.PI; roof.scale.set(3.2, w + 0.8, 1.6);
+  const face = -side * 0.02;
+  const n = Math.max(1, Math.floor(w / 2.6));
+  for (let i = 0; i < n; i++) {
+    const z = -w / 2 + (i + 0.5) * (w / n);
+    const win = part(G.plane, texMat('shebeke', TEX.shebeke), 1.6, 2.4, 1, face, h - 2.0, z, g); win.rotation.y = side > 0 ? -Math.PI / 2 : Math.PI / 2;
+    const low = part(G.plane, mat('door', '#4a2a14'), 1.1, 1.9, 1, face, 1.0, z, g); low.rotation.y = win.rotation.y;
+  }
+  const bx = -side * 0.8; // the deep wooden eyvan along the upper floor
+  part(G.box, mat('balcony', '#7a4a22'), 1.6, 0.15, w * 0.9, bx, h - 3.3, 0, g);
+  for (let z = -w * 0.42; z <= w * 0.42; z += 1.1) part(G.cyl, mat('balconyRail', '#5e3618'), 0.06, 2.6, 0.06, bx * 2, h - 2.0, z, g);
+  return { g, w };
+}
+function makePalace() { // Şəki Xan sarayı on the horizon, with the green mountains behind
+  const g = new THREE.Group();
+  part(G.box, texMat('palace', shekiTex('palace')), 40, 16, 10, 0, 8, 0, g);
+  const roof = part(G.cyl, texMat('shekiRoof', shekiTex('roof')), 1, 1, 1, 0, 19, 0, g);
+  roof.geometry = G.prism || (G.prism = new THREE.CylinderGeometry(1, 1, 1, 3)); roof.rotation.z = Math.PI / 2; roof.rotation.x = Math.PI / 2; roof.scale.set(7, 44, 8);
+  for (let i = 0; i < 6; i++) { const m = part(G.cone, mat('mount' + (i % 2), i % 2 ? '#3e7a3a' : '#2f6a34', { flatShading: true }), 40 + i * 6, 60 + (i % 3) * 15, 40, -110 + i * 44, 28, -60 - (i % 2) * 20, g); }
+  return g;
+}
+function makeHalva() { // Şəki halvası: a diamond of rice-net pastry, red-orange layers, nuts on top
+  const g = new THREE.Group();
+  const d = part(G.box, mat('halva', '#c8522a'), 0.36, 0.14, 0.36, 0, 0, 0, g); d.rotation.y = Math.PI / 4;
+  const t = part(G.box, mat('halvaTop', '#e07b3a'), 0.34, 0.04, 0.34, 0, 0.09, 0, g); t.rotation.y = Math.PI / 4;
+  for (let i = -1; i <= 1; i++) part(G.box, mat('halvaNet', '#f2b07a'), 0.42, 0.02, 0.02, 0, 0.115, i * 0.08, g).rotation.y = Math.PI / 4;
+  part(G.sphere, mat('nut', '#7a4a22'), 0.05, 0.035, 0.05, 0, 0.13, 0, g);
+  return g;
+}
+const CITIES = [
+  { id: 'baku', name: 'Köhnə Bakı', what: 'İçərişəhər: Qız Qalası, bazar, faytonlar' },
+  { id: 'sheki', name: 'Şəki', what: 'Xan sarayı, şəbəkə pəncərələr, Şəki halvası' },
+  { id: 'qebele', name: 'Qəbələ', what: 'meşələr, şəlalələr, dağ cığırları', soon: true },
+  { id: 'naxcivan', name: 'Naxçıvan', what: 'Möminə xatın türbəsi, duz mağaraları', soon: true },
+  { id: 'lenkeran', name: 'Lənkəran', what: 'çay plantasiyaları, yağış, sitrus bağları', soon: true },
+  { id: 'quba', name: 'Quba', what: 'alma bağları, dağ kəndləri, xalça toxuyanlar', soon: true },
+  { id: 'qobustan', name: 'Qobustan', what: 'qayaüstü təsvirlər, palçıq vulkanları', soon: true },
+];
+const city = () => save.get('city') === 'sheki' ? 'sheki' : 'baku';
 function makeHouse(side, rnd) {
+  if (city() === 'sheki') return makeHouseSheki(side, rnd);
   const g = new THREE.Group(), h = 5 + rnd() * 5, w = 5 + rnd() * 3, d = 5;
   const wallM = texMat('wallM', TEX.wall);
   part(G.box, wallM, d, h, w, side * (d / 2), h / 2, 0, g);
@@ -867,6 +936,7 @@ TEX.cobble.repeat.set(2, 100);
 const curbs = [-1, 1].map(s => { const c = part(G.box, mat('curb', '#b38a55'), 0.4, 0.2, 400, s * 4.1, 0.1, 0); scene3.add(c); return c; });
 const groove = [-1, 1].map(s => { const c = part(G.box, mat('groove', '#7d6a4f'), 0.08, 0.02, 400, s * 1.1, 0.012, 0); scene3.add(c); return c; });
 const tower = makeTower(); scene3.add(tower);
+const palace = makePalace(); palace.visible = false; scene3.add(palace);
 let player3 = makeCirtdan(save.get('char')); scene3.add(player3);
 const div3 = makeDiv(); div3.scale.setScalar(0.85); scene3.add(div3);
 const divWinter = new THREE.Group(); div3.userData.head.add(divWinter); divWinter.visible = false;
@@ -891,7 +961,7 @@ const KIND = { // what each obstacle asks for, and what a head-on hit does
   stall: { len: 1.5, top: 3.0, bottom: 0, frontal: 'crash', half: 0.95 },      // swerve round it
   phaeton: { len: 5.6, top: 2.4, bottom: 0, frontal: 'crash', half: 0.85 },     // swerve round it
   cart: { len: 6, top: 1.6, bottom: 0, frontal: 'crash', half: 0.9, roof: true }, // ramp up and run along the roof
-  caravan: { len: 7.2, top: 2.3, bottom: 0, frontal: 'crash', half: 0.8, moves: true }, // oncoming: swerve
+  caravan: { len: 7.2, top: 2.2, bottom: 0, frontal: 'crash', half: 0.8, moves: true, roof: true }, // oncoming: swerve, or run along the camels' backs
   ramp: { len: 4, top: 1.6, bottom: 0, frontal: null, half: 0.8, ramp: true },
 };
 let obstacles = [], pickups = [], scenery = [], gates = [];
@@ -1018,6 +1088,8 @@ function themeWorld() { // the street dressed for the festival
   }
   if (snow) snow.visible = ev === 'winter';
   divWinter.visible = ev === 'winter';
+  tower.visible = city() === 'baku'; palace.visible = city() === 'sheki';
+  if (scene3.fog && city() === 'sheki' && ev !== 'winter') scene3.fog.color.set('#dfe9d6');
 }
 
 function reset() {
@@ -1067,7 +1139,7 @@ function addObstacle(kind, lane, s0, opts = {}) {
   return o;
 }
 function addPickup(kind, lane, s, y) {
-  const mesh = kind === 'letter' ? makeLetter(dayWord().word[dayWord().got]) : kind === 'sekerbura' ? makeSekerbura() : kind === 'paxlava' ? makePaxlava() : kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? makePole() : makeTendir();
+  const mesh = kind === 'halva' ? makeHalva() : kind === 'letter' ? makeLetter(dayWord().word[dayWord().got]) : kind === 'sekerbura' ? makeSekerbura() : kind === 'paxlava' ? makePaxlava() : kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? makePole() : makeTendir();
   const p = { kind, lane, x: laneX(lane), s, y, mesh, taken: false, spin: rng() * 6 };
   mesh.position.set(p.x, y, -s); worldRoot.add(mesh); pickups.push(p);
 }
@@ -1126,6 +1198,15 @@ function genRow() {
       const o = addObstacle('caravan', lane, at); o.moving = true; gen.caravans = (gen.caravans || 0) + 1;
       gen.reserved[lane] = at + o.len + 4; // nothing else in its lane on the stretch it walks
       end = Math.max(end, s + 3);
+      // a hay cart in the next lane, ending just before the meeting point: jump across onto the camels' backs
+      const side = [lane - 1, lane + 1].filter(l => l >= 0 && l <= 2 && !row.some(e => e[1] === l) && gen.reserved[l] <= s);
+      if (side.length && rng() < tune.caravan_ramp_chance) {
+        const l2 = side[rng() * side.length | 0], c0 = s - 10;
+        if (!obstacles.some(q => q.lane === l2 && q.s1 > c0 - KIND.ramp.len - 2 && q.s0 < s)) {
+          addObstacle('ramp', l2, c0 - KIND.ramp.len); addObstacle('cart', l2, c0, { len: 6 });
+          breadLine(l2, c0 + 0.8, 3, KIND.cart.top); used.add(l2);
+        }
+      }
       continue;
     }
     if (kind === 'cart') {
@@ -1148,13 +1229,15 @@ function genRow() {
     const ev = activeEvent();
     if (rng() < 0.7) {
       if (ev === 'novruz' && rng() < tune.token_lines) for (let i = 0; i < tune.bread_line; i++) addPickup(rng() < 0.5 ? 'sekerbura' : 'paxlava', l, s - 4 + i * 2.2, 0.6);
+      else if (city() === 'sheki' && rng() < tune.halva_share) for (let i = 0; i < tune.bread_line; i++) addPickup('halva', l, s - 4 + i * 2.2, 0.6);
       else breadLine(l, s - 4, tune.bread_line, 0);
     }
     const dw = dayWord();
     if (!dw.done && gen.rows > 3 && rng() < tune.letter_chance && !pickups.some(p => p.kind === 'letter' && !p.taken)) { const p = addPickup('letter', l, s + 6, 1.1); }
     const r = rng();
     if (r < tune.nar_chance * (ev === 'nar' ? 2 : 1)) addPickup('nar', l, s + 2, 1.0);
-    else if (r < tune.nar_chance + tune.power_chance && gen.rows > INTRO.length) addPickup(rng() < tune.simurq_share ? 'simurq' : ['magnet', 'shoe', 'double', 'pole'][rng() * 4 | 0], l, s + 2, 1.0);
+    else if (!gen.simurqs && gen.rows >= tune.simurq_first_row) { addPickup('simurq', l, s + 2, 1.0); gen.simurqs = 1; } // every run meets the Simurq early
+    else if (r < tune.nar_chance + tune.power_chance && gen.rows > INTRO.length) { const k = rng() < tune.simurq_share ? 'simurq' : ['magnet', 'shoe', 'double', 'pole'][rng() * 4 | 0]; addPickup(k, l, s + 2, 1.0); if (k === 'simurq') gen.simurqs = (gen.simurqs || 0) + 1; }
   }
   gen.rows++;
   const gap = tune.row_gap_start + (tune.row_gap_end - tune.row_gap_start) * d;
@@ -1229,12 +1312,12 @@ function continueRun() { // spend nar: the Div backs off, the street ahead is cl
 function supportAt(x, y, s) { // the ground under Cırtdan: the street, a ramp or a cart roof
   let g = 0, roof = false;
   for (const o of obstacles) {
-    if (!(o.kind === 'ramp' || o.kind === 'cart') || o.hit && !o.mesh.visible) continue;
+    if (!(o.kind === 'ramp' || KIND[o.kind].roof) || o.hit && !o.mesh.visible) continue;
     if (Math.abs(x - laneX(o.lane)) > KIND[o.kind].half + PHALF * 0.5) continue;
     if (s + PDEPTH < o.s0 || s - PDEPTH > o.s1) continue;
     let h = o.top;
     if (o.kind === 'ramp') h = Math.max(0, Math.min(1, (s - o.s0) / o.len)) * o.top;
-    if (y >= h - (o.kind === 'ramp' ? 0.6 : 0.35)) { if (h > g) { g = h; roof = o.kind === 'cart'; } }
+    if (y >= h - (o.kind === 'ramp' ? 0.6 : 0.35)) { if (h > g) { g = h; roof = o.kind; } }
   }
   return { g, roof };
 }
@@ -1282,7 +1365,7 @@ function updateRun(dt) {
     if (st.power.pole > 0 && st.slide <= 0) { st.vy = Math.sqrt(2 * tune.gravity * tune.pole_height); st.grounded = false; sfx.jump(); } // kəndirbaz hops
   } else st.grounded = st.y - sup.g < 0.05 && st.vy <= 0;
   st.slide = Math.max(0, st.slide - dt);
-  if (st.onRoof && st.grounded) mission('roof', dt);
+  if (st.onRoof === 'cart' && st.grounded) mission('roof', dt);
   for (const o of obstacles) { // what he got past: a basket jumped, a carpet slid under
     if (o.passed || o.s1 >= st.s - PDEPTH) continue;
     o.passed = true;
@@ -1295,7 +1378,7 @@ function updateRun(dt) {
   for (const o of obstacles) {
     if (flying) break;
     if (o.hit || o.kind === 'ramp') continue;
-    if (o.kind === 'cart' && st.y >= o.top - 0.35) continue; // on its roof
+    if (KIND[o.kind].roof && st.y >= o.top - 0.35) continue; // on its roof: a cart, or the camels' backs
     if (!overlaps(o, st.x, st.y, h, st.s)) continue;
     if (st.power.pole > 0 && st.prevY >= o.top - 0.15) { // a kəndirbaz lands on it and springs off
       st.y = o.top; st.vy = Math.sqrt(2 * tune.gravity * tune.pole_height); sfx.jump(); continue;
@@ -1324,6 +1407,7 @@ function updateRun(dt) {
       p.taken = true;
       if (p.kind === 'bread') { st.bread++; sfx.bread(); mission('runBread', st.bread); mission('bread', 1); }
       else if (p.kind === 'letter') takeLetter();
+      else if (p.kind === 'halva') { st.bread += tune.halva_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.halva_worth); }
       else if (p.kind === 'sekerbura' || p.kind === 'paxlava') { st.tokens = (st.tokens || 0) + 1; save.put('tokens', save.get('tokens') + 1); sfx.bread(); }
       else if (p.kind === 'nar') { st.narGot++; save.set('nar', save.get('nar') + 1); sfx.nar(); banner('Nar!'); }
       else {
@@ -1422,7 +1506,7 @@ function drawWorld() {
   street.position.set(0, 0, -s - 150); TEX.cobble.offset.y = (s / 4) % 1;
   curbs.forEach(c => (c.position.z = -s - 150)); groove.forEach(c => (c.position.z = -s - 150));
   groove.forEach((c, i) => (c.position.x = (i ? 0.5 : -0.5) * tune.lane_width));
-  tower.position.set(26, 0, -s - 230); // the Maiden Tower always on the horizon, slightly right
+  tower.position.set(26, 0, -s - 230); palace.position.set(0, 0, -s - 200); // the Maiden Tower always on the horizon, slightly right
   // camera: fixed behind and above
   const shake = st.flash > 0 ? Math.sin(animT * 60) * 0.08 * st.flash : 0;
   const tall = camera.aspect < 1, follow = tall ? 0.85 : 0.55; // a phone held upright: higher, looking down past the Div
@@ -1539,7 +1623,7 @@ function titleCamera(t) { // the title: Cırtdan and Nənə in the street, the M
   r.head.rotation.y = 0; r.torso.rotation.x = 0;
   nene3.position.set(0.9, 0, -state.s - 0.4); nene3.rotation.y = 0.4;
   div3.visible = false; fly3.visible = false;
-  street.position.set(0, 0, -state.s - 150); tower.position.set(14, 0, -state.s - 120);
+  street.position.set(0, 0, -state.s - 150); tower.position.set(14, 0, -state.s - 120); palace.position.set(0, 0, -state.s - 150);
   const wide = W >= 900, cx = wide ? 2.2 : 0.2;
   camera.position.set(cx, 1.3, -state.s + (wide ? 4.2 : 5.6)); camera.lookAt(cx, wide ? 1.35 : 0.55, -state.s - 2);
   renderer.render(scene3, camera);
@@ -1550,7 +1634,7 @@ const FIGS = [ // ?scene=figures: every figure side by side, its name under it
   ['Fayton', makePhaeton, 0.55], ['Yük arabası', () => makeCart(4), 0.6], ['Nərdivan', makeRamp, 0.6],
   ['Səbət və küp', makeBaskets, 1.2], ['Xalça ipi', () => makeCarpetRope(TEX.carpetRed), 0.75], ['Bazar çadırı', makeStall, 0.7],
   ['Yağ çörəyi', makeBread, 2.4], ['Nar', makeNar, 2.4], ['Sini', makeSini, 2.2], ['Sehrli çarıq', makeChariq, 2.4],
-  ['Qoşa təndir', makeTendir, 2.4], ['Simurq', makeSimurq, 0.85], ['Lələk', makeFeather, 1.6], ['Çubuq', makePole, 0.9], ['Tonqal', makeBonfire, 1.1], ['Səməni', makeSemeni, 1.6], ['Şəkərbura', makeSekerbura, 2.4], ['Paxlava', makePaxlava, 2.6], ['Hərf', () => makeLetter('N'), 1.6], ['Nar ağacı', makeNarTree, 0.75], ['Uçan xalça', makeFlyCarpet, 1.1], ['Darvaza', makeGate, 0.16], ['Qız Qalası', makeTower, 0.05],
+  ['Qoşa təndir', makeTendir, 2.4], ['Simurq', makeSimurq, 0.85], ['Lələk', makeFeather, 1.6], ['Çubuq', makePole, 0.9], ['Tonqal', makeBonfire, 1.1], ['Səməni', makeSemeni, 1.6], ['Şəkərbura', makeSekerbura, 2.4], ['Paxlava', makePaxlava, 2.6], ['Hərf', () => makeLetter('N'), 1.6], ['Nar ağacı', makeNarTree, 0.75], ['Şəki halvası', makeHalva, 2.6], ['Şəki evi', () => makeHouseSheki(1, () => 0.5).g, 0.22], ['Uçan xalça', makeFlyCarpet, 1.1], ['Darvaza', makeGate, 0.16], ['Qız Qalası', makeTower, 0.05],
 ];
 let figGroup = null, figLabels = [];
 function buildFigures() {
@@ -1631,13 +1715,13 @@ function endStory() { save.set('story', true); const f = storyThen; storyThen = 
 // ---- Menus: the title's buttons and the list screens (shop, characters, missions) ----------------------
 const play = () => { reset(); scene = 'play'; sfx.div(); };
 const MENU = [['Oyna', 'Enter', () => (save.get('story') ? play() : startStory(play))], ['Nənənin dükanı', '1', () => openList('shop')],
-  ['Personajlar', '2', () => openList('chars')], ['Tapşırıqlar', '3', () => openList('missions')], ['Tədbirlər', '4', () => openList('events')], ['Nağıl', '5', () => startStory(null)]];
+  ['Personajlar', '2', () => openList('chars')], ['Tapşırıqlar', '3', () => openList('missions')], ['Şəhərlər', '4', () => openList('cities')], ['Tədbirlər', '5', () => openList('events')], ['Nağıl', '6', () => startStory(null)]];
 let menuSel = 0, listSel = 0;
 function openList(name) { listSel = 0; scene = name; }
 function menuRects() {
   const wide = W >= 900, bw = wide ? Math.min(460, W * 0.38) : Math.min(W - 40, 420), bx = wide ? W - bw - 50 : (W - bw) / 2;
-  const by = wide ? 228 : H - 400, step = wide ? 66 : 58;
-  return MENU.map((_, i) => [bx, by + i * step, bw, wide ? 56 : 48]);
+  const by = wide ? 226 : H - 412, step = wide ? 62 : 54;
+  return MENU.map((_, i) => [bx, by + i * step, bw, wide ? 52 : 46]);
 }
 function panelBtn(r, label, hot, color, hint) {
   ctx.fillStyle = color; rrect(...r, 16); ctx.fill();
@@ -1675,6 +1759,16 @@ function charRows() {
       if (have >= need) { btn = 'Aç'; can = true; act = () => { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); }; } else btn = 'Kilidli'; }
     return { icon: (x, y) => hudIconHead(c, x, y, 20), label: c.name, sub, btn, bread, can, act, dim: !!c.soon };
   });
+}
+function cityRows() {
+  return CITIES.map(c => ({ icon: (x, y) => cityIcon(c.id, x, y, 18), label: c.name, sub: c.soon ? `${c.what} · tezliklə` : c.what, dim: !!c.soon,
+    btn: c.soon ? 'Tezliklə' : city() === c.id ? 'Seçilib' : 'Seç', can: !c.soon && city() !== c.id,
+    act: () => { save.set('city', c.id); reset(); toast(`${c.name}! Div səni orada da tapacaq`); } }));
+}
+function cityIcon(id, x, y, r) {
+  if (id === 'baku') { ctx.fillStyle = '#c9a06a'; ctx.fillRect(x - r * 0.45, y - r, r * 0.9, r * 1.9); ctx.fillRect(x - r * 0.9, y - r * 0.2, r * 0.5, r * 1.1); }
+  else if (id === 'sheki') { ctx.fillStyle = '#2c4f9a'; ctx.fillRect(x - r, y - r * 0.3, r * 2, r * 1.1); ctx.fillStyle = '#9e3d22'; ctx.beginPath(); ctx.moveTo(x - r * 1.1, y - r * 0.3); ctx.lineTo(x, y - r); ctx.lineTo(x + r * 1.1, y - r * 0.3); ctx.fill(); ctx.fillStyle = '#f0c02f'; ctx.fillRect(x - r * 0.6, y, r * 0.4, r * 0.5); ctx.fillStyle = '#d6362f'; ctx.fillRect(x + r * 0.2, y, r * 0.4, r * 0.5); }
+  else { ctx.fillStyle = '#7a8a70'; ctx.beginPath(); ctx.moveTo(x - r, y + r * 0.8); ctx.lineTo(x - r * 0.2, y - r * 0.8); ctx.lineTo(x + r * 0.3, y); ctx.lineTo(x + r * 0.6, y - r * 0.4); ctx.lineTo(x + r, y + r * 0.8); ctx.fill(); }
 }
 function eventRows() {
   const cal = calendarEvent(), cur = save.get('event');
@@ -1796,6 +1890,7 @@ const scenes = {
   },
   shop: listScene('shop', 'Nənənin dükanı', shopRows, () => 'Güclənmələr hər səviyyədə daha uzun çəkir'),
   chars: listScene('chars', 'Personajlar', charRows, () => `İndi qaçan: ${charDef(save.get('char')).name}`),
+  cities: listScene('cities', 'Şəhərlər', cityRows, () => 'Azərbaycan turu: Div səni hər şəhərdə qovur'),
   events: listScene('events', 'Tədbirlər', eventRows, () => 'Bayram küçələri bəzəyir; təqvimə görə özü açılır'),
   missions: listScene('missions', 'Tapşırıqlar', missionRows, () => `Xal vurğusu x${save.get('mmult')}: üç tapşırığı bitir, +1 qazan`),
   figures: {
@@ -1826,7 +1921,7 @@ const scenes = {
       if (anyPressed('ArrowUp', 'KeyW')) menuSel = (menuSel + MENU.length - 1) % MENU.length;
       if (pressed('Space')) { MENU[0][2](); return; }
       if (pressed('Enter')) { MENU[menuSel][2](); return; }
-      for (const [code, i] of [['Digit1', 1], ['Digit2', 2], ['Digit3', 3], ['Digit4', 4], ['Digit5', 5]]) if (pressed(code)) { MENU[i][2](); return; }
+      for (const [code, i] of [['Digit1', 1], ['Digit2', 2], ['Digit3', 3], ['Digit4', 4], ['Digit5', 5], ['Digit6', 6]]) if (pressed(code)) { MENU[i][2](); return; }
       for (let i = 0; i < MENU.length; i++) if (tapIn(...rects[i])) { MENU[i][2](); return; }
     },
     draw() {
@@ -1836,7 +1931,7 @@ const scenes = {
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H * 0.5);
       outlined(TITLE, W / 2, 86, 96, '#ffd77a');
       outlined(SUBTITLE, W / 2, 156, 38, '#fff4dc');
-      outlined('«Mən balacayam, amma ağlım böyükdür!»', W / 2, 206, 24, '#ffe6b0');
+      if (W >= 700) outlined('«Mən balacayam, amma ağlım böyükdür!»', W / 2, 206, 24, '#ffe6b0');
       const rects = menuRects(), pulse = 0.85 + 0.15 * Math.sin(state.t * 4);
       MENU.forEach(([label, key], i) => {
         ctx.globalAlpha = i === 0 ? pulse : 1;
@@ -1844,11 +1939,11 @@ const scenes = {
         ctx.globalAlpha = 1;
       });
 
-      { const wide = W >= 900, y = wide ? 290 : H - 444; // the day's word and the festival, under the title (beside the menu when wide)
+      { const wide = W >= 900, y = wide ? 290 : H - 466; // the day's word and the festival, under the title (beside the menu when wide)
         const cx = wide ? W * 0.24 : W / 2;
         outlined(dayWord().done ? 'Günün sözü tapıldı!' : 'Günün sözü: hərfləri yolda yığ', cx, y - 34, 20, '#ffe6b0');
         drawWord(cx, y, 28);
-        const ev = EVENTS.find(e => e.id === activeEvent()); if (ev) outlined(`Tədbir: ${ev.name}`, cx, y + 38, 22, '#ffcf4a'); }
+        const ev = EVENTS.find(e => e.id === activeEvent()); outlined(`${CITIES.find(c => c.id === city()).name}${ev ? ' · ' + ev.name : ''}`, cx, y + 38, 22, '#ffcf4a'); }
       text(`Rekord: ${save.get('best')}`, 24, H - 24, 22, '#fff4dc', 'left');
       hudIconBread(W - 200, H - 26, 12); text(String(save.get('bread')), W - 182, H - 24, 22, '#ffd77a', 'left');
       hudIconNar(W - 80, H - 28, 12); text(String(save.get('nar')), W - 62, H - 26, 22, '#fff4dc', 'left');
