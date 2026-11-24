@@ -164,7 +164,7 @@ function startAudio() {
   }
   if (audio.ac.state === 'suspended') audio.ac.resume();
 }
-function setMuted(m) { muted = m; if (audio) audio.out.gain.value = m ? 0 : tune.volume; }
+function setMuted(m) { muted = m; if (audio) audio.out.gain.value = m ? 0 : tune.volume; if (music.gain) music.gain.gain.value = tune.music_volume; }
 addEventListener('tune', () => setMuted(muted)); // the tweak panel (an add-on), when added, moved a value: the volume follows
 function tone(freq, dur, type = 'square', vol = 0.3, slideTo = 0, delay = 0) {
   if (!audio || muted) return;
@@ -192,10 +192,113 @@ const sfx = {
   lane() { noise(0.07, 0.12, 2400); },
   stumble() { tone(140, 0.25, 'square', 0.25, 70); noise(0.15, 0.3, 300); },
   crash() { noise(0.5, 0.5, 180); tone(110, 0.5, 'sawtooth', 0.3, 40); },
-  div() { tone(90, 0.45, 'sawtooth', 0.32, 60); tone(70, 0.5, 'square', 0.12, 50, 0.05); }, // "Ay Cırtdaaan!" growl
-  hamm() { tone(160, 0.12, 'sawtooth', 0.35, 90); tone(120, 0.3, 'sawtooth', 0.35, 60, 0.13); },
+  div() { tone(90, 0.3, 'sawtooth', 0.22, 60); say.ayCirtdan(); }, // "Ay Cırtdaaan!"
+  hamm() { tone(160, 0.12, 'sawtooth', 0.2, 90); say.hamm(); },
   power() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.12, 'triangle', 0.2, 0, i * 0.06)); },
   shieldPop() { tone(800, 0.3, 'sine', 0.3, 200); noise(0.2, 0.2, 1200); },
+};
+
+// ---- Music: a 6/8 dance in the Şur mode, tar and balaban over nağara and a modern kick ------------------
+// Everything is synthesised here: no recordings. 'menu' is calm, 'run' follows the speed, 'fly' is epic.
+const SHUR = [0, 1, 3, 5, 7, 8, 10, 12, 13, 15]; // semitones above D: D Eb F G A Bb C D Eb F
+const TUNE = [ // scale degrees, one per eighth note, 6 a bar; -1 rests
+  [4, 3, 4, 5, 4, 3], [2, 1, 2, 3, 2, -1], [4, 5, 7, 5, 4, 3], [2, 3, 1, 0, 0, -1],
+  [7, 6, 7, 5, 6, 4], [5, 4, 3, 4, 2, -1], [3, 4, 5, 4, 3, 1], [2, 1, 0, -1, 0, -1],
+];
+const music = { mode: null, gain: null, next: 0, step: 0 };
+const noteHz = (deg, oct = 0) => 293.66 * Math.pow(2, (SHUR[deg] + oct * 12) / 12);
+function setMusic(mode) { if (music.mode !== mode) { music.mode = mode; music.step = 0; if (audio) music.next = audio.ac.currentTime + 0.05; } }
+function musicNode() {
+  if (!music.gain) { music.gain = audio.ac.createGain(); music.gain.connect(audio.out); }
+  music.gain.gain.value = tune.music_volume; return music.gain;
+}
+function tar(t, hz, dur, vol) { // plucked, bright, quick decay, a little tremolo on long notes
+  const ac = audio.ac, o = ac.createOscillator(), o2 = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+  o.type = 'sawtooth'; o2.type = 'square'; o.frequency.value = hz; o2.frequency.value = hz * 2.005;
+  f.type = 'lowpass'; f.frequency.setValueAtTime(hz * 8, t); f.frequency.exponentialRampToValueAtTime(hz * 1.5, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.006); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  const g2 = ac.createGain(); g2.gain.value = 0.25;
+  o.connect(f); o2.connect(g2).connect(f); f.connect(g).connect(musicNode());
+  o.start(t); o2.start(t); o.stop(t + dur + 0.02); o2.stop(t + dur + 0.02);
+}
+function balaban(t, hz, dur, vol) { // a soft reed: slow attack, vibrato
+  const ac = audio.ac, o = ac.createOscillator(), lfo = ac.createOscillator(), lg = ac.createGain(), f = ac.createBiquadFilter(), g = ac.createGain();
+  o.type = 'triangle'; o.frequency.value = hz; lfo.frequency.value = 5.5; lg.gain.value = hz * 0.012;
+  lfo.connect(lg).connect(o.frequency);
+  f.type = 'bandpass'; f.frequency.value = hz * 2; f.Q.value = 0.7;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + Math.min(0.08, dur * 0.3)); g.gain.setValueAtTime(vol, t + dur * 0.75); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+  o.connect(f).connect(g).connect(musicNode()); o.connect(g);
+  o.start(t); lfo.start(t); o.stop(t + dur + 0.02); lfo.stop(t + dur + 0.02);
+}
+function drum(t, kind, vol) { // nağara: dum (low, centre) and tek (high, rim); kick: the modern beat
+  const ac = audio.ac, g = ac.createGain();
+  if (kind === 'kick' || kind === 'dum') {
+    const o = ac.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(kind === 'kick' ? 120 : 160, t); o.frequency.exponentialRampToValueAtTime(kind === 'kick' ? 42 : 70, t + 0.18);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+    o.connect(g).connect(musicNode()); o.start(t); o.stop(t + 0.3);
+  } else {
+    const n = Math.floor(ac.sampleRate * 0.06), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+    let x = 777; for (let i = 0; i < n; i++) { x = (x * 1103515245 + 12345) & 0x7fffffff; d[i] = (x / 0x7fffffff * 2 - 1) * (1 - i / n); }
+    const src = ac.createBufferSource(), f = ac.createBiquadFilter(); src.buffer = b; f.type = 'bandpass'; f.frequency.value = 2400; f.Q.value = 1.2;
+    g.gain.value = vol; src.connect(f).connect(g).connect(musicNode()); src.start(t);
+  }
+}
+function scheduleMusic() {
+  if (!audio || muted || !music.mode || tune.music_volume <= 0) { if (audio) music.next = audio.ac.currentTime + 0.05; return; }
+  const ac = audio.ac;
+  if (music.next < ac.currentTime) music.next = ac.currentTime + 0.05;
+  const speed = state && scene === 'play' ? state.speed : tune.speed_start;
+  const bpm = music.mode === 'menu' ? 96 : tune.music_bpm + (speed - tune.speed_start) * tune.music_bpm_gain;
+  const dt = 60 / bpm;
+  while (music.next < ac.currentTime + 0.2) {
+    const t = music.next, i = music.step, bar = Math.floor(i / 6) % TUNE.length, beat = i % 6, deg = TUNE[bar][beat];
+    if (music.mode === 'menu') {
+      if (deg >= 0 && beat % 2 === 0) balaban(t, noteHz(deg), dt * 1.9, 0.16);
+      if (beat === 0) tar(t, noteHz(0, -2), dt * 3, 0.12);
+      if (beat === 0 || beat === 3) drum(t, 'dum', 0.18); else if (beat === 5) drum(t, 'tek', 0.05);
+    } else {
+      const fly = music.mode === 'fly';
+      if (deg >= 0) tar(t, noteHz(deg, fly ? 1 : 0), dt * 0.95, 0.13);
+      if (fly && deg >= 0 && beat % 3 === 0) balaban(t, noteHz(deg), dt * 2.8, 0.14);
+      if (beat === 0) tar(t, noteHz(0, -2), dt * 2.5, 0.12); if (beat === 3) tar(t, noteHz(4, -2), dt * 2.5, 0.1);
+      if (beat === 0 || beat === 3) { drum(t, 'kick', 0.35); drum(t, 'dum', 0.14); }
+      else drum(t, 'tek', beat === 5 ? 0.1 : 0.06);
+      if (fly && beat === 4) drum(t, 'dum', 0.12);
+    }
+    music.next += dt; music.step++;
+  }
+}
+// ---- Voices: short Azerbaijani words, sung by a little formant synth (no recordings) ------------------
+const VOWEL = { a: [800, 1250], ı: [380, 1400], i: [300, 2300], ə: [650, 1750], e: [480, 1900], o: [480, 850], m: [250, 0], n: [280, 0] };
+function voice(parts, base, vol = 0.4) { // parts: [sound, seconds, pitch start, pitch end]; a sound in VOWEL or a consonant noise
+  if (!audio || muted) return;
+  const ac = audio.ac; let t = ac.currentTime + 0.02;
+  for (const [snd, dur, p0 = 1, p1 = p0] of parts) {
+    if (VOWEL[snd]) {
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(base * p0, t); o.frequency.linearRampToValueAtTime(base * p1, t + dur);
+      g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.02); g.gain.setValueAtTime(vol, t + dur - 0.03); g.gain.linearRampToValueAtTime(0.0001, t + dur);
+      const [f1, f2] = VOWEL[snd];
+      const b1 = ac.createBiquadFilter(); b1.type = f2 ? 'bandpass' : 'lowpass'; b1.frequency.value = f1; b1.Q.value = f2 ? 6 : 1;
+      o.connect(b1).connect(g);
+      if (f2) { const b2 = ac.createBiquadFilter(); b2.type = 'bandpass'; b2.frequency.value = f2; b2.Q.value = 8; const g2 = ac.createGain(); g2.gain.value = 0.6; o.connect(b2).connect(g2).connect(g); }
+      g.connect(audio.out); o.start(t); o.stop(t + dur + 0.02);
+    } else { // consonants: c (dʒ), t, d, h, r
+      const n = Math.floor(ac.sampleRate * dur), b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+      let x = 99; for (let k = 0; k < n; k++) { x = (x * 1103515245 + 12345) & 0x7fffffff; d[k] = (x / 0x7fffffff * 2 - 1) * (snd === 'r' ? (Math.sin(k / ac.sampleRate * 2 * Math.PI * 28) > 0 ? 1 : 0.2) : 1); }
+      const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); src.buffer = b;
+      f.type = snd === 'h' ? 'highpass' : 'bandpass'; f.frequency.value = { c: 3000, t: 4500, d: 900, h: 1500, r: 1200 }[snd] || 2000;
+      g.gain.value = vol * (snd === 'h' ? 0.5 : 0.8); src.connect(f).connect(g).connect(audio.out); src.start(t);
+    }
+    t += dur;
+  }
+}
+const say = {
+  ayCirtdan() { voice([['a', 0.16, 1.2, 1.3], ['i', 0.08, 1.3], ['c', 0.05], ['ı', 0.1, 1.25], ['r', 0.05], ['t', 0.03], ['d', 0.03], ['a', 0.5, 1.35, 0.9], ['n', 0.14, 0.9, 0.85]], 105, 0.45); },
+  hamm() { voice([['h', 0.07], ['a', 0.18, 1.1, 1.0], ['m', 0.32, 1.0, 0.8]], 95, 0.5); },
+  yeneSensen() { voice([['e', 0.1, 1.1], ['n', 0.05], ['ə', 0.12, 1.2], ['h', 0.05], ['ə', 0.1, 1.3], ['n', 0.06], ['h', 0.05], ['ə', 0.24, 1.4, 1.1], ['n', 0.12]], 100, 0.45); },
+  hiHi() { voice([['h', 0.04], ['i', 0.09, 1.3, 1.5], ['h', 0.04], ['i', 0.12, 1.4, 1.7]], 320, 0.25); }, // Cırtdan giggles
 };
 
 // ===================================================================================================
@@ -1316,15 +1419,75 @@ function buildFigures() {
     figGroup.add(m); figLabels.push([name, new THREE.Vector3(x, y - 0.35, 0)]);
   });
 }
+// ---- The story: the GDD's opening, in five staged pictures ---------------------------------------------
+const STORY = [
+  { cap: 'Çox-çox qədimlərdə, Xəzərin sahilində, qala divarları ilə əhatə olunmuş köhnə Bakıda Cırtdan adlı balaca bir oğlan yaşayırdı. O, boyca balaca idi, amma ağılda hamıdan böyük idi.', night: false, stage: 'home' },
+  { cap: 'Nənəsi hər səhər təndirdə isti, ətirli yağ çörəkləri bişirir, Cırtdan da onları məhəllənin uşaqlarına paylayırdı.', night: false, stage: 'bake' },
+  { cap: 'Bir gecə dağlarda yaşayan nəhəng və acgöz Div çörəklərin ətrini hiss etdi. Gizlicə şəhərə enib bütün çörəkləri oğurladı, üstəlik nənənin sehrli təndirini də apardı!', night: true, stage: 'steal' },
+  { cap: 'Cırtdan qorxmadı. Gecə yarısı Divin mağarasına girdi və Div xoruldayıb yatanda çörəklərlə dolu torbanı götürdü... Amma ayağı Divin nəhəng çarığına ilişdi!', night: true, stage: 'cave', voice: 'hiHi' },
+  { cap: '— Ay Cırtdan! Yenə sənsən?! Dayan, səni tutub yeyəcəm! Qaç, Cırtdan! Torba yırtıldı, çörəklər Bakının küçələrinə səpələndi. Divdən qaç və nənənin çörəklərini yığ!', night: true, stage: 'chase', voice: 'yeneSensen' },
+];
+let storyI = 0, storyStage = null, storyBuilt = -1, storyThen = null;
+const storyScene = new THREE.Scene();
+const storyHemi = new THREE.HemisphereLight('#bfe3ff', '#c98a4a', 1.5); storyScene.add(storyHemi);
+const storySun = new THREE.DirectionalLight('#fff1d6', 2.2); storySun.position.set(-4, 10, 6); storyScene.add(storySun);
+const storyCam = new THREE.PerspectiveCamera(45, 16 / 9, 0.1, 200);
+function startStory(then) { storyI = 0; storyBuilt = -1; storyThen = then; scene = 'story'; }
+function buildStory(i) {
+  if (storyStage) storyScene.remove(storyStage);
+  const g = storyStage = new THREE.Group(); storyScene.add(g);
+  const p = STORY[i];
+  storyScene.background = p.night ? new THREE.Color('#1d2550') : TEX.sky;
+  storyHemi.intensity = p.night ? 0.55 : 1.5; storySun.intensity = p.night ? 0.6 : 2.2; storySun.color.set(p.night ? '#9fb4ff' : '#fff1d6');
+  const ground = part(G.plane, texMat('cobble', TEX.cobble), 30, 30, 1, 0, 0, 0, g); ground.rotation.x = -Math.PI / 2;
+  const back = makeHouse(1, () => 0.5).g; back.rotation.y = Math.PI / 2; back.position.set(-4, 0, -6.5); g.add(back);
+  const back2 = makeHouse(1, () => 0.3).g; back2.rotation.y = Math.PI / 2; back2.position.set(3.8, 0, -7); g.add(back2);
+  if (p.night) { part(G.sphere, mat('moon', '#fff6d8', { emissive: '#fff0c0' }), 1.2, 1.2, 1.2, 6, 9, -20, g); }
+  const at = (m, x, z, ry = 0, sc = 1) => { m.position.set(x, 0, z); m.rotation.y = ry; m.scale.setScalar(sc); g.add(m); return m; };
+  const tendir = () => { const t = makeTendir(); t.scale.setScalar(2.4); return t; };
+  if (p.stage === 'home') {
+    const tw = makeTower(); tw.scale.setScalar(0.12); tw.position.set(2.6, 0, -3.5); g.add(tw);
+    at(makeCirtdan(save.get('char')), -0.4, 0, Math.PI - 0.3, 1.3); at(makeNene(), 1.1, -0.3, -0.3, 1.1);
+  } else if (p.stage === 'bake') {
+    at(makeNene(), -0.9, -0.2, 0.4, 1.1); const t = tendir(); t.position.set(0.5, 0.75, -0.6); g.add(t);
+    for (let k = 0; k < 5; k++) { const b = makeBread(); b.position.set(1.4 + (k % 3) * 0.35, 0.3 + (k / 3 | 0) * 0.2, 0.2); b.rotation.x = -1.2; g.add(b); }
+    at(makeCirtdan(save.get('char')), 2.4, 0.4, Math.PI - 0.6, 1.3);
+  } else if (p.stage === 'steal') {
+    const d = at(makeDiv(), 0, -0.5, 0.5, 1.0); d.userData.armL.rotation.x = -2.2; d.userData.armR.rotation.x = -2.2;
+    const t = tendir(); t.position.set(1.5, 1.7, 0.5); t.scale.setScalar(2); g.add(t); // the oven under one arm
+    for (let k = 0; k < 4; k++) { const b = makeBread(); b.position.set(-1.6 + (k % 2) * 0.4, 1.4 + k * 0.25, 0.7); g.add(b); } // bread in the other
+  } else if (p.stage === 'cave') {
+    for (let k = 0; k < 9; k++) { const r = part(new THREE.DodecahedronGeometry(1), mat('rock', '#4a4552', { flatShading: true }), 2.2, 2.6, 2, -6 + k * 1.6, 1.2, -3 - (k % 2), g); r.rotation.y = k; }
+    const d = at(makeDiv(), -0.6, -0.8, 0.3, 1.0); d.rotation.z = Math.PI / 2 - 0.15; d.position.y = 0.9; // asleep on his side
+    const c = at(makeCirtdan(save.get('char')), 1.8, 0.6, Math.PI + 0.9, 1.3); c.userData.legL.rotation.x = 0.7; c.userData.legR.rotation.x = -0.5;
+    const sack = part(G.sphere, mat('sack', '#c9a46a'), 0.5, 0.45, 0.4, 2.7, 0.45, 0.5, g);
+  } else {
+    const d = at(makeDiv(), -1.8, -1.0, 0.7, 1.0); d.userData.armL.rotation.x = -2.4; d.userData.armR.rotation.x = -1.6; d.userData.mouth.scale.y = 0.3;
+    const c = at(makeCirtdan(save.get('char')), 1.6, 0.6, Math.PI / 2 + 0.2, 1.3); c.userData.legL.rotation.x = 0.9; c.userData.legR.rotation.x = -0.9; c.userData.armL.rotation.x = -0.9; c.userData.armR.rotation.x = 0.9;
+    for (let k = 0; k < 8; k++) { const b = makeBread(); b.position.set(0.6 + k * 0.45, 0.25 + Math.abs(Math.sin(k)) * 0.8, 0.3 + (k % 3) * 0.4); b.rotation.set(k, k * 2, 0); g.add(b); }
+  }
+  const far = p.stage === 'steal' || p.stage === 'chase';
+  storyCam.position.set(0.4, far ? 2.9 : 2.2, far ? 9.5 : 7.2); storyCam.lookAt(0.4, far ? 1.7 : 1.4, 0);
+  if (STORY[i].voice) say[STORY[i].voice]();
+}
+function wrapText(str, maxW, size, weight = 'normal') {
+  ctx.font = `${weight} ${size}px ${FONT}`;
+  const words = str.split(' '), lines = []; let line = '';
+  for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
+  if (line) lines.push(line); return lines;
+}
+function endStory() { save.set('story', true); const f = storyThen; storyThen = null; if (f) f(); else scene = 'title'; }
+
 // ---- Menus: the title's buttons and the list screens (shop, characters, missions) ----------------------
-const MENU = [['Oyna', 'Enter', () => { reset(); scene = 'play'; sfx.div(); }], ['Nənənin dükanı', '1', () => openList('shop')],
-  ['Personajlar', '2', () => openList('chars')], ['Tapşırıqlar', '3', () => openList('missions')]];
+const play = () => { reset(); scene = 'play'; sfx.div(); };
+const MENU = [['Oyna', 'Enter', () => (save.get('story') ? play() : startStory(play))], ['Nənənin dükanı', '1', () => openList('shop')],
+  ['Personajlar', '2', () => openList('chars')], ['Tapşırıqlar', '3', () => openList('missions')], ['Nağıl', '4', () => startStory(null)]];
 let menuSel = 0, listSel = 0;
 function openList(name) { listSel = 0; scene = name; }
 function menuRects() {
   const wide = W >= 900, bw = wide ? Math.min(460, W * 0.38) : Math.min(W - 40, 420), bx = wide ? W - bw - 50 : (W - bw) / 2;
-  const by = wide ? 250 : H - 300, step = wide ? 80 : 64;
-  return MENU.map((_, i) => [bx, by + i * step, bw, wide ? 66 : 54]);
+  const by = wide ? 232 : H - 360, step = wide ? 70 : 64;
+  return MENU.map((_, i) => [bx, by + i * step, bw, wide ? 58 : 54]);
 }
 function panelBtn(r, label, hot, color, hint) {
   ctx.fillStyle = color; rrect(...r, 16); ctx.fill();
@@ -1437,6 +1600,32 @@ function fitLeft(s, x, y, size, c, room, weight = 'bold') {
   text(s, x, y, size, c, 'left', weight);
 }
 const scenes = {
+  story: {
+    update(dt) {
+      state.t += dt;
+      if (storyBuilt !== storyI) { buildStory(storyI); storyBuilt = storyI; }
+      if (anyPressed('Escape') || tapIn(W - 150, 16, 134, 56)) { endStory(); return; }
+      if (anyPressed('Enter', 'Space', 'ArrowRight', 'SwipeLeft') || (taps.length && !tapIn(W - 150, 16, 134, 56))) {
+        if (++storyI >= STORY.length) endStory();
+      }
+    },
+    draw() {
+      if (storyBuilt !== storyI && storyI < STORY.length) { buildStory(storyI); storyBuilt = storyI; }
+      if (renderer) {
+        storyCam.aspect = innerWidth / innerHeight; storyCam.fov = storyCam.aspect < 1 ? 75 : 45; storyCam.updateProjectionMatrix();
+        if (storyStage) storyStage.rotation.y = Math.sin(state.t * 0.3) * 0.06; // a slow drift, like a page breathing
+        renderer.render(storyScene, storyCam);
+      }
+      clear();
+      const p = STORY[Math.min(storyI, STORY.length - 1)], bw = Math.min(W - 32, 900), size = W < 700 ? 20 : 24;
+      const lines = wrapText(p.cap, bw - 48, size), bh = lines.length * (size + 10) + 70, bx = (W - bw) / 2, by = H - bh - 20;
+      ctx.fillStyle = 'rgba(60,20,12,0.82)'; rrect(bx, by, bw, bh, 18); ctx.fill();
+      ctx.strokeStyle = '#d8a53a'; ctx.lineWidth = 3; rrect(bx + 6, by + 6, bw - 12, bh - 12, 14); ctx.stroke();
+      lines.forEach((l, i) => text(l, bx + 24, by + 30 + i * (size + 10), size, '#fff4dc', 'left', 'normal'));
+      text(`${storyI + 1} / ${STORY.length}   Toxun və ya Enter: davam`, bx + bw - 24, by + bh - 24, 17, '#ffd77a', 'right', 'normal');
+      ctx.fillStyle = 'rgba(70,25,15,0.8)'; rrect(W - 150, 16, 134, 56, 14); ctx.fill(); text('Keç  Esc', W - 83, 44, 22, '#fff4dc');
+    },
+  },
   shop: listScene('shop', 'Nənənin dükanı', shopRows, () => 'Güclənmələr hər səviyyədə daha uzun çəkir'),
   chars: listScene('chars', 'Personajlar', charRows, () => `İndi qaçan: ${charDef(save.get('char')).name}`),
   missions: listScene('missions', 'Tapşırıqlar', missionRows, () => `Xal vurğusu x${save.get('mmult')}: üç tapşırığı bitir, +1 qazan`),
@@ -1468,7 +1657,7 @@ const scenes = {
       if (anyPressed('ArrowUp', 'KeyW')) menuSel = (menuSel + MENU.length - 1) % MENU.length;
       if (pressed('Space')) { MENU[0][2](); return; }
       if (pressed('Enter')) { MENU[menuSel][2](); return; }
-      for (const [code, i] of [['Digit1', 1], ['Digit2', 2], ['Digit3', 3]]) if (pressed(code)) { MENU[i][2](); return; }
+      for (const [code, i] of [['Digit1', 1], ['Digit2', 2], ['Digit3', 3], ['Digit4', 4]]) if (pressed(code)) { MENU[i][2](); return; }
       for (let i = 0; i < MENU.length; i++) if (tapIn(...rects[i])) { MENU[i][2](); return; }
     },
     draw() {
@@ -1562,6 +1751,7 @@ function overButtons() {
 // ---- Loop: fixed step, frame time clamped ---------------------------------------------
 function step() {
   if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
+  setMusic(scene === 'play' ? (state.dead ? null : state.power.simurq > 0 ? 'fly' : 'run') : scene === 'figures' || scene === 'over' ? null : 'menu');
   scenes[scene].update(STEP); hit.clear(); taps = [];
 }
 let last, acc = 0, ALPHA = 1; // ALPHA: how far the frame is between the last two steps
@@ -1572,7 +1762,7 @@ function tick() {
   ALPHA = acc / STEP; // draw between steps, so the view never judders
   drawFrame();
 }
-function drawFrame() { scenes[scene].draw(); }
+function drawFrame() { scenes[scene].draw(); try { scheduleMusic(); } catch (e) {} }
 function frame() { tick(); requestAnimationFrame(frame); }
 // A headless browser on a time budget runs timers but almost no animation frames: a timer
 // ticks when no frame has come for 100 ms on a visible page; a hidden tab stays paused.

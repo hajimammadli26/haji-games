@@ -9,6 +9,7 @@ From the GDD, word for word where it names the look: "Mobil endless runner oyunu
 
 After play: "davam et" (no play notes yet; the build went on to Build order step 2)
 After play: "davam" (no play notes yet; the build went on to Build order step 3)
+After play: "davam et" (no play notes yet; the build went on to the GDD's step 4: music, voices, the opening story)
 
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
@@ -55,6 +56,9 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] A menu on the title: Oyna, Nənənin dükanı, Personajlar, Tapşırıqlar
 - [x] Nənənin dükanı: 5 levels per power-up (longer each level), flying carpets to keep, Nənənin bağlaması (a random gift)
 - [x] Characters: Cırtdan, Tıq-Tıq xanım (5 000 bread), Keçəl (3 mission sets), Kəndirbaz (10 000 bread); Məlikməmməd, Pəri qız, Kosa shown locked until their events
+- [x] Music: a 6/8 dance in the Şur mode, synthesised tar, balaban and nağara over a modern kick; calm in the menu, faster with speed, epic with the Simurq
+- [x] Voices: the Div's "Ay Cırtdaaan!" and "Hamm!", "Yenə sənsən?!", Cırtdan's giggle, sung by a small formant synth
+- [x] The opening story in five staged pictures, from the GDD's intro (first Oyna, and Nağıl in the menu)
 - [x] Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good
 
 ## Your systems
@@ -70,8 +74,9 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Leaderboards and leagues · later
 - Festival events (Novruz, winter, nar bayramı, Xəzər yayı) · later
 - Azerbaijan tour cities (Şəki, Qəbələ, ...) · later
-- Intro cutscene and story scenes · later
-- Music and voice lines · later
+- Intro story · in the slice
+- Comic scenes at milestones · later
+- Music and voice lines · in the slice
 
 ## Keep
 -

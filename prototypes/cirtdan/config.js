@@ -6,6 +6,9 @@
 window.CONFIG = {
   seed: 1, // every gameplay random call reads rng(), seeded from this (or ?seed= in the address)
   volume: { value: 0.5, min: 0, max: 1, step: 0.05 },
+  music_volume: { value: 0.35, min: 0, max: 1, step: 0.05 },  // the music under the sound effects
+  music_bpm: { value: 132, min: 80, max: 200, step: 2 },      // eighth-note pulse of the 6/8 run music at the start
+  music_bpm_gain: { value: 2.5, min: 0, max: 6, step: 0.5 },  // bpm added per m/s of extra speed
 
   // --- Running ---------------------------------------------------------------------------
   speed_start: { value: 10, min: 5, max: 20, step: 0.5 },     // m/s at the start of a run
