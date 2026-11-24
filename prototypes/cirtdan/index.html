@@ -58,12 +58,15 @@ const events = []; // window.game.events: anything the game wants a run to see
 
 // ---- Saved between visits (wrapped: storage may be blocked) -------------------------------
 const save = (() => {
-  let d = { best: 0, nar: null, bread: 0 };
+  let d = { best: 0, nar: null, bread: 0, carpets: 0, levels: {}, chars: ['cirtdan'], char: 'cirtdan',
+    mset: 0, mprog: [0, 0, 0], mmult: 1, sets: 0 };
   try { Object.assign(d, JSON.parse(localStorage.getItem('cirtdan-save') || '{}')); } catch (e) {}
   if (d.nar === null) d.nar = tune.start_nar;
   return {
     get: k => d[k],
-    set(k, v) { d[k] = v; try { localStorage.setItem('cirtdan-save', JSON.stringify(d)); } catch (e) {} },
+    set(k, v) { d[k] = v; this.flush(); },
+    put(k, v) { d[k] = v; }, // kept in memory until the next flush (missions tick every step)
+    flush() { try { localStorage.setItem('cirtdan-save', JSON.stringify(d)); } catch (e) {} },
   };
 })();
 
@@ -343,15 +346,33 @@ const shadowMat = new THREE.MeshBasicMaterial({ color: '#3a2410', transparent: t
 function blobShadow(parent, r) { const s = part(G.shadow, shadowMat, r, r, 1, 0, 0.02, 0, parent); s.rotation.x = -Math.PI / 2; return s; }
 
 // -- Figures: every one drawn from parts, each with its own outline ------------------------------
-function makeCirtdan() { // tiny, big eyes, red papaq, patterned vest, patched bread sack
+const CHARS = [ // the GDD's roster; locked ones need events the game does not have yet
+  { id: 'cirtdan', name: 'Cırtdan', desc: 'Əsas qəhrəman', hat: 'papaq', hatColor: '#c8221d', vest: '#1f4f8f', trim: '#f1c34a', pants: '#4b3221', shirt: '#f3ecd8' },
+  { id: 'tiqtiq', name: 'Tıq-Tıq xanım', desc: 'Cəld və şən qız', cost: 'tiqtiq_cost', hat: 'scarf', hatColor: '#d6362f', vest: '#2b7a48', trim: '#f2d16b', pants: '#7a2c3e', shirt: '#fbe7c6', braids: true },
+  { id: 'kecel', name: 'Keçəl', desc: 'Zarafatcıl və bic oğlan', sets: 'kecel_sets', hat: 'bald', vest: '#7a2c3e', trim: '#f1c34a', pants: '#2a2a3a', shirt: '#e9e2cf' },
+  { id: 'kendirbaz', name: 'Kəndirbaz', desc: 'İp üstündə oynayan cəld oğlan', cost: 'kendirbaz_cost', hat: 'tall', hatColor: '#f3ecd8', vest: '#c8322c', trim: '#1f9e9a', pants: '#1d4f9a', shirt: '#f2b632' },
+  { id: 'melik', name: 'Məlikməmməd', desc: 'Cəsur şahzadə, qılınclı', soon: 'Xüsusi tədbirdə açılacaq' },
+  { id: 'peri', name: 'Pəri qız', desc: 'Sehrli qanadlı qız', soon: 'Sehrli daşlarla açılacaq' },
+  { id: 'kosa', name: 'Kosa', desc: 'Novruz bayramının obrazı', soon: 'Novruz tədbirində açılacaq' },
+];
+const charDef = id => CHARS.find(c => c.id === id) || CHARS[0];
+function vestTex(base, trim) {
+  return canvasTex(128, 128, (g, w, h) => {
+    g.fillStyle = base; g.fillRect(0, 0, w, h);
+    g.strokeStyle = trim; g.lineWidth = 6; g.strokeRect(6, 6, w - 12, h - 12);
+    buta(g, 40, 64, 2.2, 0.5, trim, '#b52b28'); buta(g, 90, 64, 2.2, -0.5, trim, '#b52b28');
+  });
+}
+function makeCirtdan(id = 'cirtdan') { // tiny, big eyes, a hat of his own, patterned vest, patched bread sack
+  const c = charDef(id);
   const g = new THREE.Group(), rig = new THREE.Group(); g.add(rig);
-  const skin = mat('skin', '#f2c08f'), shirt = mat('shirt', '#f3ecd8'), pants = mat('pants', '#4b3221');
+  const skin = mat('skin', '#f2c08f'), shirt = mat('shirt' + c.shirt, c.shirt), pants = mat('pants' + c.pants, c.pants);
   const hip = new THREE.Group(); hip.position.y = 0.52; rig.add(hip);
   const legL = new THREE.Group(), legR = new THREE.Group(); legL.position.set(-0.12, 0, 0); legR.position.set(0.12, 0, 0); hip.add(legL, legR);
   [legL, legR].forEach(l => { part(G.cyl, pants, 0.085, 0.38, 0.085, 0, -0.19, 0, l); part(G.sphere, mat('chariq', '#7a3b16'), 0.1, 0.07, 0.16, 0, -0.42, 0.04, l); });
   const torso = new THREE.Group(); torso.position.y = 0.52; rig.add(torso);
   part(G.cyl, shirt, 0.2, 0.42, 0.16, 0, 0.21, 0, torso);
-  part(G.box, texMat('vest', TEX.vest), 0.42, 0.36, 0.34, 0, 0.24, 0, torso);
+  part(G.box, M['vest' + c.id] || (M['vest' + c.id] = new THREE.MeshLambertMaterial({ map: c.id === 'cirtdan' ? TEX.vest : vestTex(c.vest, c.trim) })), 0.42, 0.36, 0.34, 0, 0.24, 0, torso);
   part(G.cyl, mat('belt', '#c0302a'), 0.215, 0.07, 0.175, 0, 0.04, 0, torso);
   const sack = part(G.sphere, mat('sack', '#c9a46a'), 0.24, 0.27, 0.16, 0, 0.26, 0.22, torso); // on his back (+z faces the camera)
   part(G.box, mat('patch', '#7d5a9b'), 0.5, 0.45, 0.1, 0.25, 0.2, 0.95, sack);
@@ -366,10 +387,25 @@ function makeCirtdan() { // tiny, big eyes, red papaq, patterned vest, patched b
   });
   part(G.sphere, mat('nose', '#e9a776'), 0.05, 0.04, 0.04, 0, 0.12, -0.28, head);
   part(G.box, mat('smile', '#8a2a1c'), 0.12, 0.025, 0.02, 0, 0.04, -0.27, head);
-  part(G.sphere, mat('hair', '#3b2414'), 0.27, 0.16, 0.2, 0, 0.3, 0.1, head); // the back of his head, under the papaq
-  part(G.cyl, mat('papaq', '#c8221d'), 0.26, 0.22, 0.26, 0, 0.42, 0, head); // red araxçın / papaq
-  part(G.torus, mat('papaqfur', '#7a1512'), 0.25, 0.25, 0.4, 0, 0.32, 0, head).rotation.x = Math.PI / 2;
-  part(G.sphere, mat('papaq', '#c8221d'), 0.26, 0.08, 0.26, 0, 0.53, 0, head);
+  if (c.hat === 'papaq') { // red araxçın / papaq
+    part(G.sphere, mat('hair', '#3b2414'), 0.27, 0.16, 0.2, 0, 0.3, 0.1, head);
+    part(G.cyl, mat('papaq', c.hatColor), 0.26, 0.22, 0.26, 0, 0.42, 0, head);
+    part(G.torus, mat('papaqfur', '#7a1512'), 0.25, 0.25, 0.4, 0, 0.32, 0, head).rotation.x = Math.PI / 2;
+    part(G.sphere, mat('papaq', c.hatColor), 0.26, 0.08, 0.26, 0, 0.53, 0, head);
+  } else if (c.hat === 'scarf') { // a red kəlağayı tied at the back, two long braids
+    part(G.sphere, mat('hairDark', '#2a160c'), 0.31, 0.25, 0.29, 0, 0.27, 0.03, head);
+    part(G.sphere, mat('scarf' + c.hatColor, c.hatColor), 0.32, 0.17, 0.3, 0, 0.37, 0.02, head);
+    part(G.cone, mat('scarf' + c.hatColor, c.hatColor), 0.08, 0.2, 0.05, 0, 0.32, 0.32, head).rotation.x = 1.9;
+    [-0.17, 0.17].forEach(x => { part(G.cyl, mat('hairDark', '#2a160c'), 0.05, 0.42, 0.05, x, -0.05, 0.16, head); part(G.sphere, mat('scarf' + c.hatColor, c.hatColor), 0.06, 0.05, 0.06, x, -0.27, 0.16, head); });
+  } else if (c.hat === 'bald') { // Keçəl: a shiny bald head and a cheeky grin
+    part(G.sphere, mat('baldShine', '#ffe7c4'), 0.1, 0.06, 0.08, -0.08, 0.44, -0.12, head);
+    part(G.box, mat('smile', '#8a2a1c'), 0.18, 0.04, 0.02, 0, 0.05, -0.275, head);
+  } else { // Kəndirbaz: a tall white felt hat with a tassel
+    part(G.cyl, mat('hat' + c.hatColor, c.hatColor), 0.2, 0.42, 0.2, 0, 0.5, 0, head);
+    part(G.cyl, mat('hat' + c.hatColor, c.hatColor), 0.3, 0.04, 0.3, 0, 0.32, 0, head);
+    part(G.sphere, mat('simRed', '#c8322c'), 0.07, 0.07, 0.07, 0, 0.75, 0, head);
+    part(G.box, mat('hatBand', '#1f9e9a'), 0.41, 0.05, 0.41, 0, 0.38, 0, head);
+  }
   blobShadow(g, 0.32);
   g.userData = { rig, hip, torso, legL, legR, armL, armR, head };
   return g;
@@ -672,12 +708,16 @@ TEX.cobble.repeat.set(2, 100);
 const curbs = [-1, 1].map(s => { const c = part(G.box, mat('curb', '#b38a55'), 0.4, 0.2, 400, s * 4.1, 0.1, 0); scene3.add(c); return c; });
 const groove = [-1, 1].map(s => { const c = part(G.box, mat('groove', '#7d6a4f'), 0.08, 0.02, 400, s * 1.1, 0.012, 0); scene3.add(c); return c; });
 const tower = makeTower(); scene3.add(tower);
-const player3 = makeCirtdan(); scene3.add(player3);
+let player3 = makeCirtdan(save.get('char')); scene3.add(player3);
 const div3 = makeDiv(); div3.scale.setScalar(0.85); scene3.add(div3);
 const fly3 = makeFlyCarpet(); fly3.visible = false; player3.add(fly3); fly3.position.y = 0.08;
 const nene3 = makeNene(); nene3.visible = false; scene3.add(nene3);
 const simurq3 = makeSimurq(); simurq3.visible = false; scene3.add(simurq3);
 const pole3 = makePole(); pole3.visible = false; pole3.scale.setScalar(0.7); player3.add(pole3); pole3.position.set(0, 0.95, -0.2);
+function setRunner(id) { // the chosen character runs from now on
+  save.set('char', id);
+  scene3.remove(player3); player3 = makeCirtdan(id); player3.add(fly3, pole3); scene3.add(player3);
+}
 
 // The run's state. Distance runs along -z: an object at track position s sits at z = -s.
 const KIND = { // what each obstacle asks for, and what a head-on hit does
@@ -694,6 +734,70 @@ let gen; // the street generator's state
 const PSTAND = 1.15, PSLIDE = 0.5, PHALF = 0.3, PDEPTH = 0.3;
 const laneX = lane => (lane - 1) * tune.lane_width;
 
+// ---- Missions: three at a time; finish all three and the base multiplier goes up by one ----------
+const MISSIONS = [
+  { k: 'runBread', t: 120, run: true, txt: n => `Bir qaçışda ${n} yağ çörəyi topla` },
+  { k: 'simurq', t: 1, txt: n => `Simurq quşundan ${n} dəfə istifadə et` },
+  { k: 'roof', t: 8, txt: n => `Yük arabalarının damında ${n} saniyə qaç` },
+  { k: 'carpet', t: 8, txt: n => `Xalça ipinin altından ${n} dəfə sürüş` },
+  { k: 'escape', t: 2, txt: n => `Divi ${n} dəfə yaxınlaşdırıb yenə qaç` },
+  { k: 'runDist', t: 800, run: true, txt: n => `Bir qaçışda ${n} m qaç` },
+  { k: 'basket', t: 12, txt: n => `Səbətlərin üstündən ${n} dəfə tullan` },
+  { k: 'powers', t: 3, txt: n => `${n} güclənmə topla` },
+  { k: 'bread', t: 400, txt: n => `Cəmi ${n} yağ çörəyi topla` },
+];
+function currentMissions() {
+  const set = save.get('mset'), prog = save.get('mprog');
+  return [0, 1, 2].map(i => {
+    const m = MISSIONS[(set * 3 + i) % MISSIONS.length];
+    const target = Math.round(m.t * (1 + set * tune.mission_scale));
+    return { ...m, target, prog: Math.min(target, prog[i] || 0) };
+  });
+}
+function mission(kind, v) {
+  const ms = currentMissions(), prog = save.get('mprog').slice();
+  let changed = false, done = false;
+  ms.forEach((m, i) => {
+    if (m.k !== kind || prog[i] >= m.target) return;
+    const nv = Math.min(m.target, m.run ? Math.max(prog[i], v) : prog[i] + v);
+    if (nv === prog[i]) return;
+    prog[i] = nv; changed = true;
+    if (nv >= m.target) { done = true; banner('Tapşırıq bitdi!'); sfx.nar(); events.push({ type: 'mission', what: m.k }); }
+  });
+  if (!changed) return;
+  save.put('mprog', prog);
+  if (done) {
+    if (ms.every((m, i) => prog[i] >= m.target)) { // the set is done: +1 multiplier for good
+      save.put('mmult', save.get('mmult') + 1); save.put('mset', save.get('mset') + 1); save.put('sets', save.get('sets') + 1);
+      save.put('mprog', [0, 0, 0]); banner(`Üç tapşırıq bitdi! Vurğu x${save.get('mmult')}`); sfx.power();
+    }
+    save.flush();
+  }
+}
+// ---- Nənənin dükanı: power-up levels, carpets to keep, a gift bundle -----------------------------
+const MAX_LEVEL = 5;
+function powerTime(k) { return (k === 'simurq' ? tune.simurq_time : tune.power_time) + (save.get('levels')[k] || 0) * tune.upgrade_step; }
+function levelCost(k) { return tune.upgrade_cost * (1 << (save.get('levels')[k] || 0)); }
+function spend(n) { if (save.get('bread') < n) { sfx.stumble(); return false; } save.set('bread', save.get('bread') - n); sfx.bread(); return true; }
+function buyLevel(k) {
+  const lv = save.get('levels')[k] || 0;
+  if (lv >= MAX_LEVEL || !spend(levelCost(k))) return;
+  save.set('levels', { ...save.get('levels'), [k]: lv + 1 }); sfx.power(); toast(`${SHOP_NAMES[k]}: ${lv + 1}-ci səviyyə`);
+}
+function openBox() { // Nənənin bağlaması: a random gift
+  if (!spend(tune.box_cost)) return;
+  const r = rng();
+  if (r < 0.4) { const n = 300 + Math.floor(rng() * 13) * 100; save.set('bread', save.get('bread') + n); toast(`Bağlamadan ${n} yağ çörəyi çıxdı!`); }
+  else if (r < 0.7) { save.set('nar', save.get('nar') + 1); toast('Bağlamadan nar çıxdı!'); }
+  else if (r < 0.9) { save.set('carpets', save.get('carpets') + 1); toast('Bağlamadan uçan xalça çıxdı!'); }
+  else { save.set('nar', save.get('nar') + 2); toast('Bağlamadan iki nar çıxdı!'); }
+  sfx.nar();
+}
+const SHOP_NAMES = { magnet: 'Nənənin sinisi', shoe: 'Sehrli çarıq', double: 'Qoşa təndir', pole: 'Kəndirbaz çubuğu', simurq: 'Simurq quşu' };
+const SHOP_WHAT = { magnet: 'çörəkləri özünə çəkir', shoe: 'çox hündür tullanır', double: 'xalı ikiqat edir', pole: 'böyük sıçrayışlar', simurq: 'göydə uçur' };
+let toastMsg = '', toastT = 0;
+function toast(m) { toastMsg = m; toastT = 2.2; }
+
 function reset() {
   seed = Number(params.get('seed')) || CONFIG.seed;
   for (const o of obstacles) worldRoot.remove(o.mesh);
@@ -707,7 +811,7 @@ function reset() {
     lane: 1, prevLane: 1, x: 0, prevX: 0, y: 0, prevY: 0, vy: 0, grounded: true, groundY: 0,
     slide: 0, airT: 0, jumpBuf: 0, onRoof: false,
     divT: 0, divGap: tune.div_near_gap, introT: tune.div_intro_time, stumbleT: 0,
-    power: { magnet: 0, shoe: 0, double: 0, pole: 0, simurq: 0 }, carpet: 0, carpets: tune.carpets_per_run,
+    power: { magnet: 0, shoe: 0, double: 0, pole: 0, simurq: 0 }, carpet: 0, carpets: tune.carpets_per_run + save.get('carpets'), freeCarpets: tune.carpets_per_run,
     mult: 1, dead: null, deadT: 0, continues: 0, invuln: 0, stepT: 0, flash: 0, best: save.get('best'),
     banner: '', bannerT: 0, newBest: false,
   };
@@ -745,7 +849,7 @@ function addPickup(kind, lane, s, y) {
 }
 function breadLine(lane, s, n, y, gap = 2.2) { for (let i = 0; i < n; i++) addPickup('bread', lane, s + i * gap, y + 0.6); }
 function skyBread() { // a winding line of bread high over the street, for the Simurq's flight
-  const n = Math.floor(tune.simurq_time * state.speed / 3.2);
+  const n = Math.floor(powerTime('simurq') * state.speed / 3.2);
   for (let i = 0; i < n; i++) {
     const lane = Math.round(1 + Math.sin(i * 0.35) * 1.2);
     addPickup('bread', Math.max(0, Math.min(2, lane)), state.s + 14 + i * 3, tune.simurq_height + 0.6);
@@ -874,6 +978,7 @@ function caught() {
   endRun();
 }
 function endRun() {
+  save.flush();
   save.set('bread', save.get('bread') + state.bread);
   if (state.score > save.get('best')) { save.set('best', Math.floor(state.score)); state.newBest = true; }
   state.gained = state.dead === 'caught' ? 'Div səni tutdu!' : 'Bam! Div səni tutdu!';
@@ -916,7 +1021,7 @@ function updateRun(dt) {
     if (!st.grounded) st.vy = -tune.fast_fall_speed;
     st.slide = tune.slide_time; st.jumpBuf = 0; sfx.slide();
   }
-  if (anyPressed(...CARPET) && st.carpets > 0 && st.carpet <= 0) { st.carpets--; st.carpet = tune.carpet_time; sfx.power(); banner('Uçan xalça!'); }
+  if (anyPressed(...CARPET) && st.carpets > 0 && st.carpet <= 0) { st.carpets--; if (st.freeCarpets > 0) st.freeCarpets--; else save.set('carpets', save.get('carpets') - 1); st.carpet = tune.carpet_time; sfx.power(); banner('Uçan xalça!'); }
   // forward
   st.s += st.speed * dt;
   // sideways toward the lane
@@ -942,6 +1047,14 @@ function updateRun(dt) {
     if (st.power.pole > 0 && st.slide <= 0) { st.vy = Math.sqrt(2 * tune.gravity * tune.pole_height); st.grounded = false; sfx.jump(); } // kəndirbaz hops
   } else st.grounded = st.y - sup.g < 0.05 && st.vy <= 0;
   st.slide = Math.max(0, st.slide - dt);
+  if (st.onRoof && st.grounded) mission('roof', dt);
+  for (const o of obstacles) { // what he got past: a basket jumped, a carpet slid under
+    if (o.passed || o.s1 >= st.s - PDEPTH) continue;
+    o.passed = true;
+    if (o.hit || Math.abs(st.x - laneX(o.lane)) > KIND[o.kind].half) continue;
+    if (o.kind === 'basket') mission('basket', 1);
+    if (o.kind === 'carpet') mission('carpet', 1);
+  }
   // collisions
   const h = st.slide > 0 ? PSLIDE : PSTAND;
   for (const o of obstacles) {
@@ -974,23 +1087,25 @@ function updateRun(dt) {
     }
     if (Math.abs(p.s - st.s) < 0.8 && Math.abs(p.x - st.x) < 0.8 && Math.abs(p.y - (st.y + h / 2)) < 1.0) {
       p.taken = true;
-      if (p.kind === 'bread') { st.bread++; sfx.bread(); }
+      if (p.kind === 'bread') { st.bread++; sfx.bread(); mission('runBread', st.bread); mission('bread', 1); }
       else if (p.kind === 'nar') { st.narGot++; save.set('nar', save.get('nar') + 1); sfx.nar(); banner('Nar!'); }
       else {
-        st.power[p.kind] = p.kind === 'simurq' ? tune.simurq_time : tune.power_time; sfx.power();
+        st.power[p.kind] = powerTime(p.kind); sfx.power(); mission('powers', 1); if (p.kind === 'simurq') mission('simurq', 1);
         banner({ magnet: 'Nənənin sinisi!', shoe: 'Sehrli çarıq!', double: 'Qoşa təndir: x2!', pole: 'Kəndirbaz çubuğu!', simurq: 'Simurq quşu!' }[p.kind]);
         if (p.kind === 'simurq') skyBread();
       }
     }
   }
   // the Div
+  if (st.divT > 0 && st.divT <= dt) mission('escape', 1); // the Div came close and you got away
   st.divT = Math.max(0, st.divT - dt); st.stumbleT = Math.max(0, st.stumbleT - dt); st.introT = Math.max(0, st.introT - dt);
   const wantGap = st.divT > 0 || st.introT > 0 ? tune.div_near_gap : tune.div_far_gap;
   st.divGap += (wantGap - st.divGap) * Math.min(1, dt * (wantGap < st.divGap ? 3 : 0.8));
   // power-ups and score
   for (const k in st.power) st.power[k] = Math.max(0, st.power[k] - dt);
   st.carpet = Math.max(0, st.carpet - dt); st.invuln = Math.max(0, st.invuln - dt);
-  st.mult = Math.min(tune.mult_cap, 1 + Math.floor(st.s / tune.mult_every));
+  st.mult = Math.min(tune.mult_cap, save.get('mmult') + Math.floor(st.s / tune.mult_every));
+  mission('runDist', st.s);
   st.score += st.speed * dt * st.mult * (st.power.double > 0 ? 2 : 1);
   st.bannerT = Math.max(0, st.bannerT - dt); st.flash = Math.max(0, st.flash - dt * 2);
   st.stepT += dt * st.speed / 3.2;
@@ -1140,7 +1255,7 @@ function drawHud() {
   hudIconNar(W - 170, 148, 15); outlined(String(save.get('nar')), W - 24, 148, 30, '#ffb3bd', 'right');
   // active power-ups with their time left, top left under the buttons
   let py = W < 700 ? 168 : 112;
-  const bars = Object.entries(st.power).filter(([, v]) => v > 0).map(([k, v]) => [k, v / (k === 'simurq' ? tune.simurq_time : tune.power_time)]);
+  const bars = Object.entries(st.power).filter(([, v]) => v > 0).map(([k, v]) => [k, v / powerTime(k)]);
   if (st.carpet > 0) bars.push(['carpet', st.carpet / tune.carpet_time]);
   for (const [k, f] of bars) {
     ctx.fillStyle = 'rgba(70,25,15,0.55)'; rrect(16, py - 24, 200, 48, 12); ctx.fill();
@@ -1178,7 +1293,7 @@ function titleCamera(t) { // the title: Cırtdan and Nənə in the street, the M
   player3.rotation.set(0, 0, 0); nene3.visible = false;
 }
 const FIGS = [ // ?scene=figures: every figure side by side, its name under it
-  ['Cırtdan', makeCirtdan, 1.6], ['Div', makeDiv, 0.75], ['Nənə', makeNene, 1.4], ['Dəvə karvanı', makeCamel, 0.8],
+  ['Cırtdan', makeCirtdan, 1.6], ['Tıq-Tıq xanım', () => makeCirtdan('tiqtiq'), 1.6], ['Keçəl', () => makeCirtdan('kecel'), 1.6], ['Kəndirbaz', () => makeCirtdan('kendirbaz'), 1.6], ['Div', makeDiv, 0.75], ['Nənə', makeNene, 1.4], ['Dəvə karvanı', makeCamel, 0.8],
   ['Fayton', makePhaeton, 0.55], ['Yük arabası', () => makeCart(4), 0.6], ['Nərdivan', makeRamp, 0.6],
   ['Səbət və küp', makeBaskets, 1.2], ['Xalça ipi', () => makeCarpetRope(TEX.carpetRed), 0.75], ['Bazar çadırı', makeStall, 0.7],
   ['Yağ çörəyi', makeBread, 2.4], ['Nar', makeNar, 2.4], ['Sini', makeSini, 2.2], ['Sehrli çarıq', makeChariq, 2.4],
@@ -1187,21 +1302,144 @@ const FIGS = [ // ?scene=figures: every figure side by side, its name under it
 let figGroup = null, figLabels = [];
 function buildFigures() {
   figGroup = new THREE.Group(); scene3.add(figGroup); figLabels = [];
-  const cols = 7;
+  const cols = 8;
   FIGS.forEach(([name, make, sc], i) => {
     const m = make(); m.scale.setScalar(sc);
     const col = i % cols, row = i / cols | 0;
-    const x = (col - (cols - 1) / 2) * 2.9, y = 5.6 - row * 3.1;
+    const x = (col - (cols - 1) / 2) * 2.75, y = 5.6 - row * 3.1;
     m.position.set(x, y, 0); m.rotation.y = name === 'Fayton' || name === 'Yük arabası' || name === 'Dəvə karvanı' || name === 'Nərdivan' ? 0.9 : 0.35;
     if (name === 'Cırtdan' || name === 'Div' || name === 'Nənə') m.rotation.y = 0.35;
     if (['Yağ çörəyi', 'Sini'].includes(name)) m.rotation.x = 0.4;
-    if (name === 'Cırtdan') m.rotation.y = Math.PI - 0.35; // his face is on -z
+    if (['Cırtdan', 'Tıq-Tıq xanım', 'Keçəl', 'Kəndirbaz'].includes(name)) m.rotation.y = Math.PI - 0.35; // faces are on -z
     if (name === 'Simurq') { m.rotation.y = 1.1; m.rotation.x = 0.3; }
     m.position.y += name === 'Yağ çörəyi' || name === 'Nar' || name === 'Sehrli çarıq' || name === 'Qoşa təndir' || name === 'Sini' ? 0.9 : 0;
     figGroup.add(m); figLabels.push([name, new THREE.Vector3(x, y - 0.35, 0)]);
   });
 }
+// ---- Menus: the title's buttons and the list screens (shop, characters, missions) ----------------------
+const MENU = [['Oyna', 'Enter', () => { reset(); scene = 'play'; sfx.div(); }], ['Nənənin dükanı', '1', () => openList('shop')],
+  ['Personajlar', '2', () => openList('chars')], ['Tapşırıqlar', '3', () => openList('missions')]];
+let menuSel = 0, listSel = 0;
+function openList(name) { listSel = 0; scene = name; }
+function menuRects() {
+  const wide = W >= 900, bw = wide ? Math.min(460, W * 0.38) : Math.min(W - 40, 420), bx = wide ? W - bw - 50 : (W - bw) / 2;
+  const by = wide ? 250 : H - 300, step = wide ? 80 : 64;
+  return MENU.map((_, i) => [bx, by + i * step, bw, wide ? 66 : 54]);
+}
+function panelBtn(r, label, hot, color, hint) {
+  ctx.fillStyle = color; rrect(...r, 16); ctx.fill();
+  if (hot) { ctx.strokeStyle = '#ffd77a'; ctx.lineWidth = 4; rrect(...r, 16); ctx.stroke(); }
+  text(label, r[0] + r[2] / 2, r[1] + r[3] / 2, Math.min(30, r[3] * 0.45), '#fff4dc');
+  if (hint && W >= 700) text(hint, r[0] + r[2] - 24, r[1] + r[3] / 2, 18, 'rgba(255,244,220,0.65)', 'right', 'normal');
+}
+function rowRects(n) {
+  const top = 128, h = Math.min(76, (H - top - 20) / n - 8), w = Math.min(W - 32, 860), x = (W - w) / 2;
+  return Array.from({ length: n }, (_, i) => { const y = top + i * (h + 8); return { row: [x, y, w, h], btn: [x + w - 170, y + 10, 158, h - 20] }; });
+}
+function shopRows() {
+  const rows = Object.keys(SHOP_NAMES).map(k => {
+    const lv = save.get('levels')[k] || 0, max = lv >= MAX_LEVEL;
+    return { icon: (x, y) => hudIconPower(k, x, y, 20), label: SHOP_NAMES[k], sub: `${SHOP_WHAT[k]} · ${powerTime(k).toFixed(1)} s`,
+      pips: lv, btn: max ? 'MAKS' : `${levelCost(k)}`, bread: !max, can: !max && save.get('bread') >= levelCost(k), act: () => buyLevel(k) };
+  });
+  rows.push({ icon: (x, y) => hudIconCarpet(x, y, 20), label: 'Uçan xalça', sub: `bir toqquşmadan qoruyur · səndə: ${save.get('carpets')}`,
+    btn: `${tune.carpet_cost}`, bread: true, can: save.get('bread') >= tune.carpet_cost, act: () => { if (spend(tune.carpet_cost)) { save.set('carpets', save.get('carpets') + 1); toast('Uçan xalça alındı!'); } } });
+  rows.push({ icon: (x, y) => hudIconBox(x, y, 20), label: 'Nənənin bağlaması', sub: 'içində təsadüfi hədiyyə: çörək, nar, xalça',
+    btn: `${tune.box_cost}`, bread: true, can: save.get('bread') >= tune.box_cost, act: openBox });
+  return rows;
+}
+function charRows() {
+  return CHARS.map(c => {
+    const owned = save.get('chars').includes(c.id), sel = save.get('char') === c.id;
+    let btn, can = false, act = () => {}, sub = c.desc, bread = false;
+    if (c.soon) { btn = 'Kilidli'; sub = `${c.desc} · ${c.soon}`; }
+    else if (sel) btn = 'Seçilib';
+    else if (owned) { btn = 'Seç'; can = true; act = () => { setRunner(c.id); toast(`${c.name} qaçır!`); }; }
+    else if (c.cost) { btn = `${tune[c.cost]}`; bread = true; can = save.get('bread') >= tune[c.cost]; act = () => { if (spend(tune[c.cost])) { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); } }; }
+    else { const need = tune[c.sets], have = save.get('sets'); sub = `${c.desc} · ${have}/${need} tapşırıq dəsti`;
+      if (have >= need) { btn = 'Aç'; can = true; act = () => { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); }; } else btn = 'Kilidli'; }
+    return { icon: (x, y) => hudIconHead(c, x, y, 20), label: c.name, sub, btn, bread, can, act, dim: !!c.soon };
+  });
+}
+function missionRows() {
+  return currentMissions().map(m => ({ icon: (x, y) => hudIconCheck(x, y, 18, m.prog >= m.target), label: m.txt(m.target),
+    sub: m.prog >= m.target ? 'Bitdi!' : `${Math.floor(m.prog)} / ${m.target}${m.run ? ' (bir qaçışda)' : ''}`, prog: m.prog / m.target, btn: null }));
+}
+function hudIconBox(x, y, r) { // a cloth bundle tied at the top
+  ctx.fillStyle = '#b3262a'; ctx.beginPath(); ctx.ellipse(x, y + r * 0.2, r, r * 0.75, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#f2d16b'; ctx.beginPath(); ctx.moveTo(x - r * 0.5, y - r * 0.9); ctx.lineTo(x, y - r * 0.35); ctx.lineTo(x + r * 0.5, y - r * 0.9); ctx.lineTo(x + r * 0.15, y - r * 0.4); ctx.lineTo(x - r * 0.15, y - r * 0.4); ctx.fill();
+  buta(ctx, x, y + r * 0.25, r / 22, 0.4, '#f2d16b', '#1d3f8a');
+}
+function hudIconHead(c, x, y, r) { // a little portrait of each character
+  ctx.fillStyle = c.soon ? '#9a8a78' : '#f2c08f'; ctx.beginPath(); ctx.arc(x, y + r * 0.15, r * 0.8, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#2a1a10'; [-0.3, 0.3].forEach(o => { ctx.beginPath(); ctx.arc(x + o * r, y + r * 0.1, r * 0.12, 0, Math.PI * 2); ctx.fill(); });
+  const hc = c.hatColor || '#7a2c3e';
+  if (c.hat === 'papaq') { ctx.fillStyle = hc; ctx.fillRect(x - r * 0.75, y - r * 0.95, r * 1.5, r * 0.55); }
+  else if (c.hat === 'scarf') { ctx.fillStyle = hc; ctx.beginPath(); ctx.arc(x, y, r * 0.9, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#2a160c'; ctx.fillRect(x - r * 0.95, y, r * 0.2, r * 0.8); ctx.fillRect(x + r * 0.75, y, r * 0.2, r * 0.8); }
+  else if (c.hat === 'tall') { ctx.fillStyle = hc; ctx.fillRect(x - r * 0.5, y - r * 1.3, r, r * 0.8); ctx.fillStyle = '#c8322c'; ctx.beginPath(); ctx.arc(x, y - r * 1.35, r * 0.15, 0, Math.PI * 2); ctx.fill(); }
+  else if (c.hat === 'bald') { ctx.fillStyle = '#ffe7c4'; ctx.beginPath(); ctx.ellipse(x - r * 0.25, y - r * 0.4, r * 0.2, r * 0.1, -0.4, 0, Math.PI * 2); ctx.fill(); }
+  else { ctx.fillStyle = '#5a4a3a'; ctx.font = `bold ${r}px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('?', x, y - r * 0.9); }
+}
+function hudIconCheck(x, y, r, done) {
+  ctx.fillStyle = done ? '#2b7a48' : 'rgba(255,244,220,0.25)'; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  if (done) { ctx.strokeStyle = '#fff4dc'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - r * 0.45, y); ctx.lineTo(x - r * 0.1, y + r * 0.4); ctx.lineTo(x + r * 0.5, y - r * 0.4); ctx.stroke(); }
+}
+function topBank() { // bread and nar in the bank, top right of the list screens
+  hudIconBread(W - 190, 44, 16); text(String(save.get('bread')), W - 165, 46, 26, '#ffd77a', 'left');
+  hudIconNar(W - 72, 44, 13); text(String(save.get('nar')), W - 52, 46, 26, '#ffb3bd', 'left');
+}
+function listScene(name, title, getRows, note) {
+  return {
+    update(dt) {
+      state.t += dt;
+      const rows = getRows(), rects = rowRects(rows.length);
+      if (anyPressed('Escape', 'Backspace') || tapIn(16, 16, 120, 60)) { scene = 'title'; return; }
+      if (anyPressed('ArrowDown', 'KeyS', 'SwipeUp')) listSel = (listSel + 1) % rows.length;
+      if (anyPressed('ArrowUp', 'KeyW', 'SwipeDown')) listSel = (listSel + rows.length - 1) % rows.length;
+      if (anyPressed('Enter', 'Space') && rows[listSel].can) rows[listSel].act();
+      rows.forEach((r, i) => { if (r.btn && tapIn(...rects[i].btn)) { listSel = i; if (r.can) r.act(); } });
+      toastT = Math.max(0, toastT - dt);
+    },
+    draw() {
+      titleCamera(state.t); clear();
+      ctx.fillStyle = 'rgba(40,12,8,0.72)'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(70,25,15,0.8)'; rrect(16, 16, 120, 60, 14); ctx.fill(); text('← Geri', 76, 46, 24, '#fff4dc');
+      outlined(title, W / 2, 52, W < 700 ? 30 : 42, '#ffd77a');
+      if (W >= 700) topBank(); else { hudIconBread(30, 100, 12); text(`${save.get('bread')}`, 48, 101, 20, '#ffd77a', 'left'); hudIconNar(W - 70, 100, 10); text(`${save.get('nar')}`, W - 54, 101, 20, '#ffb3bd', 'left'); }
+      if (note) text(note(), W / 2, 104, W < 700 ? 17 : 21, '#ffe6b0', 'center', 'normal');
+      const rows = getRows(), rects = rowRects(rows.length), narrow = rects[0].row[2] < 600;
+      rows.forEach((r, i) => {
+        const [x, y, w, h] = rects[i].row;
+        ctx.fillStyle = i === listSel ? 'rgba(120,45,25,0.92)' : 'rgba(80,30,18,0.85)'; rrect(x, y, w, h, 14); ctx.fill();
+        if (i === listSel) { ctx.strokeStyle = '#ffd77a'; ctx.lineWidth = 3; rrect(x, y, w, h, 14); ctx.stroke(); }
+        ctx.globalAlpha = r.dim ? 0.55 : 1;
+        r.icon(x + 34, y + h / 2);
+        const tx = x + 64, room = (r.btn ? w - 170 : w) - 74;
+        fitLeft(r.label, tx, y + h * 0.34, narrow ? 19 : 24, '#fff4dc', room);
+        fitLeft(r.sub, tx, y + h * 0.72, narrow ? 14 : 17, '#ffe6b0', room, 'normal');
+        if (r.pips !== undefined) for (let k = 0; k < MAX_LEVEL; k++) { ctx.fillStyle = k < r.pips ? '#ffcf4a' : 'rgba(255,244,220,0.25)'; rrect(x + w - 290 + k * 22, y + h / 2 - 7, 16, 14, 4); if (!narrow) ctx.fill(); }
+        if (r.prog !== undefined) { ctx.fillStyle = '#5a2a1a'; rrect(x + w - 230, y + h / 2 - 9, 200, 18, 9); ctx.fill(); ctx.fillStyle = '#ffcf4a'; rrect(x + w - 230, y + h / 2 - 9, Math.max(14, 200 * r.prog), 18, 9); ctx.fill(); }
+        if (r.btn) {
+          const b = rects[i].btn;
+          ctx.fillStyle = r.can ? '#2b7a48' : 'rgba(255,244,220,0.18)'; rrect(...b, 12); ctx.fill();
+          if (r.bread) { hudIconBread(b[0] + 26, b[1] + b[3] / 2, 12); text(r.btn, b[0] + b[2] / 2 + 14, b[1] + b[3] / 2, 22, '#fff4dc'); }
+          else text(r.btn, b[0] + b[2] / 2, b[1] + b[3] / 2, 22, '#fff4dc');
+        }
+        ctx.globalAlpha = 1;
+      });
+      if (toastT > 0) outlined(toastMsg, W / 2, H - 34, 28, '#ffd77a');
+    },
+  };
+}
+function fitLeft(s, x, y, size, c, room, weight = 'bold') {
+  ctx.font = `${weight} ${size}px ${FONT}`; const w = ctx.measureText(s).width;
+  if (w > room) size = Math.max(11, Math.floor(size * room / w));
+  text(s, x, y, size, c, 'left', weight);
+}
 const scenes = {
+  shop: listScene('shop', 'Nənənin dükanı', shopRows, () => 'Güclənmələr hər səviyyədə daha uzun çəkir'),
+  chars: listScene('chars', 'Personajlar', charRows, () => `İndi qaçan: ${charDef(save.get('char')).name}`),
+  missions: listScene('missions', 'Tapşırıqlar', missionRows, () => `Xal vurğusu x${save.get('mmult')}: üç tapşırığı bitir, +1 qazan`),
   figures: {
     update(dt) { state.t += dt; },
     draw() {
@@ -1225,7 +1463,13 @@ const scenes = {
   title: {
     update(dt) {
       state.t += dt;
-      if (anyPressed('Enter', 'Space') || taps.length) { reset(); scene = 'play'; sfx.div(); }
+      const rects = menuRects();
+      if (anyPressed('ArrowDown', 'KeyS')) menuSel = (menuSel + 1) % MENU.length;
+      if (anyPressed('ArrowUp', 'KeyW')) menuSel = (menuSel + MENU.length - 1) % MENU.length;
+      if (pressed('Space')) { MENU[0][2](); return; }
+      if (pressed('Enter')) { MENU[menuSel][2](); return; }
+      for (const [code, i] of [['Digit1', 1], ['Digit2', 2], ['Digit3', 3]]) if (pressed(code)) { MENU[i][2](); return; }
+      for (let i = 0; i < MENU.length; i++) if (tapIn(...rects[i])) { MENU[i][2](); return; }
     },
     draw() {
       titleCamera(state.t);
@@ -1235,14 +1479,20 @@ const scenes = {
       outlined(TITLE, W / 2, 86, 96, '#ffd77a');
       outlined(SUBTITLE, W / 2, 156, 38, '#fff4dc');
       outlined('«Mən balacayam, amma ağlım böyükdür!»', W / 2, 206, 24, '#ffe6b0');
-      const wide = W >= 900, bw = wide ? Math.min(560, W * 0.46) : Math.min(W - 30, 560);
-      const bx = wide ? W - bw - 40 : (W - bw) / 2, by = wide ? 250 : H - 330, fs = bw < 470 ? 19 : 22;
-      ctx.fillStyle = 'rgba(60,20,12,0.62)'; rrect(bx, by, bw, 210, 18); ctx.fill();
-      CONTROLS.forEach((c, i) => text(c, bx + bw / 2, by + 30 + i * 38, fs, '#fff4dc'));
-      const pulse = 0.75 + 0.25 * Math.sin(state.t * 4);
-      ctx.globalAlpha = pulse; outlined('Toxun və ya Enter: Qaç!', W / 2, H - 70, 40, '#ffd77a'); ctx.globalAlpha = 1;
+      const rects = menuRects(), pulse = 0.85 + 0.15 * Math.sin(state.t * 4);
+      MENU.forEach(([label, key], i) => {
+        ctx.globalAlpha = i === 0 ? pulse : 1;
+        panelBtn(rects[i], label, i === menuSel, i === 0 ? '#2b7a48' : 'rgba(80,30,18,0.85)', key);
+        ctx.globalAlpha = 1;
+      });
+      if (W >= 900) { // the controls, small, under the menu
+        const r = rects[MENU.length - 1], y0 = r[1] + r[3] + 26;
+        ctx.fillStyle = 'rgba(60,20,12,0.6)'; rrect(r[0], y0 - 16, r[2], 104, 12); ctx.fill();
+        CONTROLS.slice(0, 4).forEach((c, i) => text(c, r[0] + r[2] / 2, y0 + 2 + i * 24, 17, '#fff4dc', 'center', 'normal'));
+      }
       text(`Rekord: ${save.get('best')}`, 24, H - 24, 22, '#fff4dc', 'left');
-      hudIconNar(W - 120, H - 28, 12); text(String(save.get('nar')), W - 96, H - 26, 22, '#fff4dc', 'left');
+      hudIconBread(W - 200, H - 26, 12); text(String(save.get('bread')), W - 182, H - 24, 22, '#ffd77a', 'left');
+      hudIconNar(W - 80, H - 28, 12); text(String(save.get('nar')), W - 62, H - 26, 22, '#fff4dc', 'left');
     },
   },
   play: {
@@ -1272,6 +1522,7 @@ const scenes = {
       const b = overButtons();
       if (canCont && (pressed('KeyC') || tapIn(...b.cont))) { continueRun(); scene = 'play'; return; }
       if (pressed('KeyR') || pressed('Enter') || tapIn(...b.again)) { reset(); scene = 'play'; sfx.div(); }
+      if (pressed('Escape') || tapIn(...b.menu)) { reset(); scene = 'title'; }
     },
     draw() {
       scenes.play.draw();
@@ -1292,6 +1543,10 @@ const scenes = {
       ctx.fillStyle = '#2b7a48'; rrect(...b.again, 18); ctx.fill();
       text('Yenidən qaç  Enter', b.again[0] + b.again[2] / 2, b.again[1] + b.again[3] / 2, 28, '#fff4dc');
       if (!canCont) text('Nar yoxdur: yolda nar tap', W / 2, b.cont[1] - 18, 20, '#ffe6b0');
+      ctx.fillStyle = 'rgba(80,30,18,0.85)'; rrect(...b.menu, 14); ctx.fill();
+      text('Menyu  Esc', b.menu[0] + b.menu[2] / 2, b.menu[1] + b.menu[3] / 2, 22, '#fff4dc');
+      const md = currentMissions().filter(m => m.prog >= m.target).length;
+      text(`Tapşırıqlar: ${md}/3 · vurğu x${save.get('mmult')}`, W / 2, b.menu[1] + b.menu[3] + 24, 20, '#ffe6b0', 'center', 'normal');
     },
   },
   results: { // the game is endless: no results screen, kept for the starter's shape
@@ -1301,7 +1556,7 @@ const scenes = {
 };
 function overButtons() {
   const bw = Math.min(W - 40, 440), bx = (W - bw) / 2;
-  return { cont: [bx, 420, bw, 72], again: [bx, 510, bw, 72] };
+  return { cont: [bx, 410, bw, 66], again: [bx, 490, bw, 66], menu: [bx + bw * 0.2, 570, bw * 0.6, 50] };
 }
 
 // ---- Loop: fixed step, frame time clamped ---------------------------------------------

@@ -8,6 +8,7 @@ The full design is the person's GDD, `design/source/Cirtdan_Oyun_Senedi.pdf` (v1
 From the GDD, word for word where it names the look: "Mobil endless runner oyunu", "3 zolaqlı", "Barmaqla sürüşdürmə (swipe): sola, sağa, yuxarı, aşağı", "Parlaq rəngli, cizgi filmi üslubunda 3D qrafika", "Milli naxışlar: buta, xalça ornamentləri, şəbəkə pəncərələr", "Div qorxulu yox, gülməli görünməlidir", "qızılı daş divarlar, mavi Xəzər, qırmızı-göy xalçalar", "Qız Qalası: uzaqda, səmada görünən əsas simvol".
 
 After play: "davam et" (no play notes yet; the build went on to Build order step 2)
+After play: "davam" (no play notes yet; the build went on to Build order step 3)
 
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
@@ -51,15 +52,21 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] Score = distance × multiplier; best score kept between visits
 - [x] Old-Baku scenery: sandstone houses, balconies, carpets, Qız Qalası on the skyline
 - [x] Title, pause, mute, game over with continue-with-nar and restart
+- [x] A menu on the title: Oyna, Nənənin dükanı, Personajlar, Tapşırıqlar
+- [x] Nənənin dükanı: 5 levels per power-up (longer each level), flying carpets to keep, Nənənin bağlaması (a random gift)
+- [x] Characters: Cırtdan, Tıq-Tıq xanım (5 000 bread), Keçəl (3 mission sets), Kəndirbaz (10 000 bread); Məlikməmməd, Pəri qız, Kosa shown locked until their events
+- [x] Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good
 
 ## Your systems
 - Div chasing behind · in the slice
 - Power-ups (Simurq, sehrli çarıq, nənənin sinisi, qoşa təndir, uçan xalça, kəndirbaz çubuğu) · thin stand-in *(guessed)*
 - Nar to continue after a crash · thin stand-in *(guessed)*
-- Score multiplier from missions · thin stand-in *(guessed)*
-- Nənənin dükanı (shop and upgrades) · later
-- Unlockable characters and costumes · later
-- Missions, daily word hunt, weekly hunt · later
+- Score multiplier from missions · in the slice
+- Nənənin dükanı (shop and upgrades) · in the slice
+- Unlockable characters · in the slice
+- Costumes, and characters that need events or magic stones · later
+- Missions · in the slice
+- Daily word hunt, weekly hunt, daily gifts · later
 - Leaderboards and leagues · later
 - Festival events (Novruz, winter, nar bayramı, Xəzər yayı) · later
 - Azerbaijan tour cities (Şəki, Qəbələ, ...) · later
@@ -75,8 +82,7 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Ads and purchases in this build *(from the GDD's child-audience note)*
 
 ## Out of scope
-- Coins spent on characters and upgrades (Nənənin dükanı): add it as a feature
-- Missions and daily goals, word hunt: add it as a feature
+- Costumes; daily word hunt, weekly hunt and daily gifts: add it as a feature
 - Scenery that changes the further you run, other cities: change it after play
 - Online leaderboards and leagues: needs a server: not built yet
 - A level mode with an end: grow it

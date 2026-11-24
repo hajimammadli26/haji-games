@@ -53,6 +53,16 @@ window.CONFIG = {
   carpets_per_run: { value: 1, min: 0, max: 5, step: 1 },     // flying carpets at the start of each run (shop later)
   start_nar: { value: 2, min: 0, max: 10, step: 1 },          // nar a new player is given by Nənə
 
+  // --- Nənənin dükanı, characters, missions ----------------------------------------------
+  upgrade_step: { value: 2.5, min: 0.5, max: 6, step: 0.5 },  // s added to a power-up per shop level (levels 0-4)
+  upgrade_cost: { value: 500, min: 100, max: 3000, step: 50 },// bread for level 1; each next level doubles
+  carpet_cost: { value: 400, min: 50, max: 3000, step: 50 },  // bread for one flying carpet to keep
+  box_cost: { value: 800, min: 100, max: 5000, step: 50 },    // bread for Nənənin bağlaması (a random gift)
+  tiqtiq_cost: { value: 5000, min: 0, max: 50000, step: 500 },// bread to unlock Tıq-Tıq xanım (GDD: 5 000)
+  kendirbaz_cost: { value: 10000, min: 0, max: 50000, step: 500 }, // bread to unlock Kəndirbaz (GDD: 10 000)
+  kecel_sets: { value: 3, min: 1, max: 20, step: 1 },         // mission sets finished to unlock Keçəl
+  mission_scale: { value: 0.5, min: 0, max: 2, step: 0.1 },   // how much harder each new set of missions gets
+
   // --- Score -----------------------------------------------------------------------------
   mult_every: { value: 500, min: 100, max: 2000, step: 50 },  // m per +1 multiplier (stand-in for missions)
   mult_cap: { value: 10, min: 1, max: 30, step: 1 },
