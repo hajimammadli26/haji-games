@@ -1,0 +1,24 @@
+L1	pass	evidence/play.png	sandstone walls, şəbəkə windows, balconies, red/blue/green carpets with buta, blue sky; figures in figures.png; no Caspian sea in view (walled street)
+L2	pass	index.html:643	obstacle set and power-ups follow the GDD pages; lane width and timing from the genre's values in config.js
+L3	pass	evidence/play.png	3D, fixed camera behind and above looking down the street
+F1	pass	evidence/play-portrait.png	3 lanes with grooves; speed ramps (index.html:683); swipes and keys (index.html:141)
+F2	pass	evidence/figures.png	baskets/jugs, carpet on ropes, stall, phaeton, hay cart with plank ramp, camel caravan, city gate all drawn and used (index.html:643)
+F3	pass	evidence/play-portrait2.png	stumble brings the Div close with red edges; a second stumble while close is caught (index.html:806)
+F4	pass	evidence/play.png	bread lines and arcs over baskets (index.html:707); nar pickup (index.html:774)
+F5	pass	index.html:922	tray magnet, çarıq super jump, qoşa təndir x2, flying carpet on double tap (index.html:141); thin stand-in
+F6	pass	index.html:932	score += speed x multiplier; best saved to localStorage (index.html:831)
+F7	pass	evidence/over.png	houses with balconies and carpets, city gate; Qız Qalası on the horizon (index.html:586)
+F8	pass	evidence/over.png	title (title.png), pause and mute buttons, game over with continue-with-nar and restart
+S1	pass	evidence/play-portrait.png	the Div runs behind at the start and after stumbles
+S2	pass	index.html:922	stand-in: 3 pickups + flying carpet; Simurq and kəndirbaz çubuğu not yet (later step 2)
+S3	pass	index.html:834	spend nar to continue; cost doubles each time
+S4	pass	index.html:932	stand-in: +1 multiplier every 500 m, capped at 10
+M1	pass	evidence/title.png	title with Cırtdan, Nənə, his saying and the controls
+M2	pass	evidence/play-portrait.png	the Div on screen for the first 3 s, a bread line on the empty street (index.html:676)
+M3	pass	index.html:710	intro rows: baskets, carpet, stall, then mixed, cart ramp, phaeton
+M4	pass	index.html:722	the first caravan is forced at ~38 s; the cart ramp is intro row 5 (index.html:710)
+M5	pass	evidence/play-portrait2.png	red edges and the Div close after a stumble; he falls back after div_near_time
+C1	pass	index.html:676	safe_start 8 s, double_block_after 45 s in config.js
+C2	pass	index.html:683	10 to 22 m/s at 0.08 m/s per s: cap at 150 s
+C3	pass	evidence/over.png	a head-on crash ends the run; continue with nar offered
+C4	pass	index.html:794	gates every 380-580 m; caravans and cart rows mixed in the random rows

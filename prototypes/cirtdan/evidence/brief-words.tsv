@@ -1,0 +1,9 @@
+Mobil endless runner oyunu	3-lane auto-runner, full-window canvas, swipe input	evidence/play.png
+3 zolaqlı	three lanes at lane_width, grooves between them	evidence/play.png
+Barmaqla sürüşdürmə (swipe): sola, sağa, yuxarı, aşağı	pointer swipes map to lane, jump, slide (index.html input section)	evidence/play.png
+Parlaq rəngli, cizgi filmi üslubunda 3D qrafika	three.js world, bright cartoon low-poly figures and warm palette	evidence/play.png
+Milli naxışlar: buta, xalça ornamentləri, şəbəkə pəncərələr	buta drawn on carpets and the vest, carpet textures, şəbəkə lattice windows on every house	evidence/figures.png
+Div qorxulu yox, gülməli görünməlidir	green round-bellied Div with mismatched goofy eyes, buck teeth, club	evidence/figures.png
+qızılı daş divarlar, mavi Xəzər, qırmızı-göy xalçalar	golden sandstone walls, red and blue carpets; blue Caspian: miss: the street is walled in, only blue sky shows (sea level later)	evidence/play.png
+Qız Qalası: uzaqda, səmada görünən əsas simvol	Maiden Tower with its buttress on the horizon, always ahead	evidence/play.png
+3D	three.js world: perspective camera behind the runner, lit 3D figures	evidence/play.png

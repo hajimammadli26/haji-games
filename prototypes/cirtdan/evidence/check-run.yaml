@@ -1,0 +1,135 @@
+# The one-shot's small check (check-run/1).
+# Written by one-shot-check.sh --record: the results are /prototype's reading of
+# evidence/self-check.tsv; never edited by hand.
+kind: check-run/1
+engine: web
+browser: "HeadlessChrome/158.0.0.0"
+time: "2026-11-24 22:56:03"
+checks:
+  - id: boots
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: shot
+    result: pass
+    evidence:
+      - "evidence/play.png"
+  - id: outlines
+    result: pass
+    evidence:
+      - "evidence/figures.png"
+  - id: brief-words
+    result: pass
+    evidence:
+      - "evidence/brief-words.tsv"
+  - id: emoji
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: nearest-game
+    result: pass
+    evidence:
+      - "evidence/nearest-game.txt"
+brief_checklist:
+  - id: L1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Look: bright, cartoon 3D, low-poly with rounded chunky shapes; golden sandstone walls with şəbəkə lattice windows and wooden balconies, red-and-blue carpets with buta patterns, blue Caspian sky, Qız Qalası standing on the horizon. Cırtdan is tiny with a red papaq, patterned vest and a patched bread sack; the Div is big, furry, horned, round-bellied, with a club, comic not scary. Warm late-afternoon light. Every figure drawn, no emoji, no plain circles."
+  - id: L2
+    result: pass
+    evidence: "index.html:643"
+    item: "References: the GDD's own pages (characters, place, power-ups); the genre's 3D lane runners for timing and lane width only."
+  - id: L3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "View: 3D · Camera: fixed behind and above the runner, looking down the street."
+  - id: F1
+    result: pass
+    evidence: "evidence/play-portrait.png"
+    item: "3 stone-street lanes, auto-run that speeds up, swipe and key controls"
+  - id: F2
+    result: pass
+    evidence: "evidence/figures.png"
+    item: "Jump and slide, with obstacles that each ask for one move: baskets and jugs (jump), carpet on ropes (slide), bazaar stalls (lane change), parked phaetons (lane change), hay carts (lane change or plank ramp onto the roof), oncoming camel caravan, city-gate tunnel"
+  - id: F3
+    result: pass
+    evidence: "evidence/play-portrait2.png"
+    item: "The Div chasing behind: a side bump brings him close, a second one catches you"
+  - id: F4
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Yağ çörəyi in lines and arcs; rare nar"
+  - id: F5
+    result: pass
+    evidence: "index.html:922"
+    item: "Power-ups: grandma's tray (magnet), magic çarıq (super jump), flying carpet (one-hit shield, double tap) (thin stand-in)"
+  - id: F6
+    result: pass
+    evidence: "index.html:932"
+    item: "Score = distance × multiplier; best score kept between visits"
+  - id: F7
+    result: pass
+    evidence: "evidence/over.png"
+    item: "Old-Baku scenery: sandstone houses, balconies, carpets, Qız Qalası on the skyline"
+  - id: F8
+    result: pass
+    evidence: "evidence/over.png"
+    item: "Title, pause, mute, game over with continue-with-nar and restart"
+  - id: S1
+    result: pass
+    evidence: "evidence/play-portrait.png"
+    item: "Div chasing behind · in the slice"
+  - id: S2
+    result: pass
+    evidence: "index.html:922"
+    item: "Power-ups (Simurq, sehrli çarıq, nənənin sinisi, qoşa təndir, uçan xalça, kəndirbaz çubuğu) · thin stand-in *(guessed)*"
+  - id: S3
+    result: pass
+    evidence: "index.html:834"
+    item: "Nar to continue after a crash · thin stand-in *(guessed)*"
+  - id: S4
+    result: pass
+    evidence: "index.html:932"
+    item: "Score multiplier from missions · thin stand-in *(guessed)*"
+  - id: M1
+    result: pass
+    evidence: "evidence/title.png"
+    item: "The title shows Cırtdan, grandma's line and the controls."
+  - id: M2
+    result: pass
+    evidence: "evidence/play-portrait.png"
+    item: "Enter or a tap: the Div bursts out behind and the run starts slow on an empty street with a row of bread to collect."
+  - id: M3
+    result: pass
+    evidence: "index.html:710"
+    item: "The first obstacles come one at a time with a beat to read each: a pile of baskets to jump, a carpet on a rope to slide under, a bazaar stall to swerve round."
+  - id: M4
+    result: pass
+    evidence: "index.html:722"
+    item: "By 40 seconds a plank ramp leads onto hay-cart roofs with bread along them, and the first camel caravan walks toward you in one lane."
+  - id: M5
+    result: pass
+    evidence: "evidence/play-portrait2.png"
+    item: "A side bump makes the Div loom up and the edges glow red; he drops back after a few seconds: the hook pays off."
+  - id: C1
+    result: pass
+    evidence: "index.html:676"
+    item: "The street is safe for the first 8 seconds; the first real trouble, two lanes blocked at once, comes at about 45 seconds."
+  - id: C2
+    result: pass
+    evidence: "index.html:683"
+    item: "Speed rises steadily to a cap around 2.5 minutes."
+  - id: C3
+    result: pass
+    evidence: "evidence/over.png"
+    item: "A head-on hit with a phaeton or caravan, or two side bumps close together, ends the run; a nar can be spent to continue (the cost doubles each time in a run)."
+  - id: C4
+    result: pass
+    evidence: "index.html:794"
+    item: "Later chunks mix moving caravans with roof routes and tunnels."
+measures:
+  - id: step-time
+    value: 5.000
+    unit: ms
+    by: browser
+    detail: "mean 0.042 ms, slowest 5.000 ms, 474 steps"

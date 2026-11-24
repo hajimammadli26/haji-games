@@ -1,0 +1,50 @@
+time	2026-11-24 22:56:03
+keep	lines	0	pinned	0
+briefword	3D	unlisted
+checklist	L1	unlisted	-	Look: bright, cartoon 3D, low-poly with rounded chunky shapes; golden sandstone walls with şəbəkə lattice windows and wooden balconies, red-and-blue carpets with buta patterns, blue Caspian sky, Qız Qalası standing on the horizon. Cırtdan is tiny with a red papaq, patterned vest and a patched bread sack; the Div is big, furry, horned, round-bellied, with a club, comic not scary. Warm late-afternoon light. Every figure drawn, no emoji, no plain circles.	
+checklist	L2	unlisted	-	References: the GDD's own pages (characters, place, power-ups); the genre's 3D lane runners for timing and lane width only.	
+checklist	L3	unlisted	-	View: 3D · Camera: fixed behind and above the runner, looking down the street.	
+checklist	F1	unlisted	-	3 stone-street lanes, auto-run that speeds up, swipe and key controls	
+checklist	F2	unlisted	-	Jump and slide, with obstacles that each ask for one move: baskets and jugs (jump), carpet on ropes (slide), bazaar stalls (lane change), parked phaetons (lane change or ramp onto the roof), oncoming camel caravan, city-gate tunnel	
+checklist	F3	unlisted	-	The Div chasing behind: a side bump brings him close, a second one catches you	
+checklist	F4	unlisted	-	Yağ çörəyi in lines and arcs; rare nar	
+checklist	F5	unlisted	-	Power-ups: grandma's tray (magnet), magic çarıq (super jump), flying carpet (one-hit shield, double tap) (thin stand-in)	
+checklist	F6	unlisted	-	Score = distance × multiplier; best score kept between visits	
+checklist	F7	unlisted	-	Old-Baku scenery: sandstone houses, balconies, carpets, Qız Qalası on the skyline	
+checklist	F8	unlisted	-	Title, pause, mute, game over with continue-with-nar and restart	
+checklist	S1	unlisted	-	Div chasing behind · in the slice	
+checklist	S2	unlisted	-	Power-ups (Simurq, sehrli çarıq, nənənin sinisi, qoşa təndir, uçan xalça, kəndirbaz çubuğu) · thin stand-in *(guessed)*	
+checklist	S3	unlisted	-	Nar to continue after a crash · thin stand-in *(guessed)*	
+checklist	S4	unlisted	-	Score multiplier from missions · thin stand-in *(guessed)*	
+checklist	M1	unlisted	-	The title shows Cırtdan, grandma's line and the controls.	
+checklist	M2	unlisted	-	Enter or a tap: the Div bursts out behind and the run starts slow on an empty street with a row of bread to collect.	
+checklist	M3	unlisted	-	The first obstacles come one at a time with a beat to read each: a pile of baskets to jump, a carpet on a rope to slide under, a parked phaeton to swerve round.	
+checklist	M4	unlisted	-	By 40 seconds a ramp leads onto phaeton roofs with bread along them, and the first camel caravan walks toward you in one lane.	
+checklist	M5	unlisted	-	A side bump makes the Div loom up and the edges glow red; he drops back after a few seconds: the hook pays off.	
+checklist	C1	unlisted	-	The street is safe for the first 8 seconds; the first real trouble, two lanes blocked at once, comes at about 45 seconds.	
+checklist	C2	unlisted	-	Speed rises steadily to a cap around 2.5 minutes.	
+checklist	C3	unlisted	-	A head-on hit with a phaeton or caravan, or two side bumps close together, ends the run; a nar can be spent once per run to continue.	
+checklist	C4	unlisted	-	Later chunks mix moving caravans with roof routes and tunnels.	
+webgl	ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
+browser	HeadlessChrome/158.0.0.0
+console	play	2000	[.WebGL-0x2b7c00345a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+scene	play	0	title
+scene	play	1	play
+digits	log	bold 22px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	5.393
+digits	log	bold 40px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	9.805
+digits	log	bold 44px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	10.785
+digits	log	bold 34px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	8.334
+digits	log	bold 30px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	7.354
+measure	step-time	play	0.042	5.000	474
+lane	play	stop	7.9	956
+console	play	0	[.WebGL-0x2b7c00345a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+console	play	0	[.WebGL-0x2b7c00345a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+uncaught	play	0
+text	play	canvas	172,30,219,60	58.5	10.53	inside	x1
+text	play	canvas	1086,24,1254,58	64.5	10.53	inside	000081
+text	play	canvas	1235,85,1255,110	49.5	8.35	inside	4
+text	play	canvas	1238,134,1255,157	43.5	7.29	inside	2
+text	play	canvas	80,660,236,682	31.5	4.46	inside	x1  iki toxunuş
+screen	play	drawn
+shot	play	prototypes/cirtdan/evidence/play.png
+responds	changed	124
