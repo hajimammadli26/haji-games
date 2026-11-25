@@ -21,6 +21,7 @@ var rows := 0
 var caravans := 0
 var simurqs := 0
 var reserved := [0.0, 0.0, 0.0] ## a caravan's lane stays clear up to this s
+var calm_until := 0.0 ## rows before this s block one lane at most (the caravan's neighbours stay open)
 var hunt_open := false ## the week's buta hunt is on: buta stones lie in the street
 var letters := true ## the day's word: its letters lie in the street, one at a time
 var treats := false ## this city has its own treat: some bread lines are made of it
@@ -66,6 +67,8 @@ func _row() -> void:
 				n = 2
 			if t > tune.double_block_after + 30.0 and r < 0.12 + 0.2 * d:
 				n = 3
+			if s < calm_until: # just after a caravan: never wall off the lanes beside its path
+				n = 1
 			n = mini(n, free.size())
 			_shuffle(free)
 			var safe := n < 3 # three lanes blocked: at least one must be jumped or slid
@@ -99,6 +102,7 @@ func _row() -> void:
 			var c := sim.add_obstacle("caravan", lane, at)
 			caravans += 1
 			reserved[lane] = at + c.length + 4.0
+			calm_until = maxf(calm_until, at + c.length + v * tune.after_caravan_gap)
 			end = maxf(end, s + 3.0)
 			_side_cart(row, lane, s, used)
 			continue
@@ -177,19 +181,22 @@ func _side_cart(row: Array, lane: int, s: float, used: Dictionary) -> void:
 	if side.is_empty() or rng.randf() >= tune.caravan_ramp_chance:
 		return
 	var l2 := side[rng.randi() % side.size()]
-	var c0 := s - 10.0
+	var c0 := s - 12.0 # a longer cart: more time to jump across onto the camels
 	var ramp_len: float = RunSim.KINDS["ramp"]["len"]
 	for q in sim.obstacles:
 		if q.lane == l2 and q.s1() > c0 - ramp_len - 2.0 and q.s0 < s:
 			return
 	for i in range(sim.pickups.size() - 1, -1, -1): # nothing left inside the cart
 		var p := sim.pickups[i]
-		if p.lane == l2 and p.s > c0 - ramp_len - 1.0 and p.s < c0 + 7.0 and p.y < 2.0:
+		if p.lane == l2 and p.s > c0 - ramp_len - 1.0 and p.s < c0 + 9.0 and p.y < 2.0:
+			if p.kind != "bread": # a buta, nar or power-up moves up onto the roof instead of vanishing
+				p.y = RunSim.KINDS["cart"]["top"] + 0.8
+				continue
 			if p.node != null:
 				p.node.queue_free()
 			sim.pickups.remove_at(i)
 	sim.add_obstacle("ramp", l2, c0 - ramp_len)
-	sim.add_obstacle("cart", l2, c0, {"len": 6.0})
+	sim.add_obstacle("cart", l2, c0, {"len": 8.0})
 	_bread_line(l2, c0 + 0.8, 3, RunSim.KINDS["cart"]["top"] + 0.6)
 	used[l2] = true
 

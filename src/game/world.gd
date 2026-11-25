@@ -186,7 +186,7 @@ func _animate_obstacle(o: RunSim.Obstacle, t: float) -> void:
 					c.rotation.x = sin(t * 2.0 + o.s0) * 0.06
 		return
 	var parts: Dictionary = n.get_meta("parts")
-	if parts.has("camels"):
+	if parts.has("camels") and o.moving: # they stand still once Cırtdan climbs on
 		var i := 0
 		for c in parts["camels"]:
 			var cp: Dictionary = c.get_meta("parts")

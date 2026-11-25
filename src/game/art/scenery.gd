@@ -265,7 +265,6 @@ static func backdrop(city: String) -> Node3D:
 				_c(g, "#ffffff", 12, hh * 0.32, Vector3(x, hh * 0.84, -50), Vector3.ZERO, 0.0)
 		"qobustan":
 			_hills(g, ["#a08a64", "#b09a72"], 6, 40)
-			Kit.part(g, Kit.plane(400, 90), Kit.mat("#2c6fd1"), Vector3(0, 0.3, 0), Vector3(-PI / 2, 0, 0))
 			for i in 4:
 				_c(g, "#6e6a62", 10, 7, Vector3(-40.0 + i * 26.0, 3.5, 10), Vector3.ZERO, 2.0)
 		_: # Baku: Qız Qalası with its buttress, the Caspian hills

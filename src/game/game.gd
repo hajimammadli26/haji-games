@@ -40,6 +40,8 @@ var camera: Camera3D
 var world: World
 var fx: Fx
 var anim := Animator.new()
+var last_bread := 0 ## the run's bread at the last pickup (a treat adds several at once)
+var pole_fig: Node3D ## the kəndirbaz pole in Cırtdan's hands while the power lasts
 var shake := 0.0 ## seconds of camera shake left (a stumble, a crash)
 var escaped_now := false ## the Div was just shaken off (Cırtdan sticks out his tongue)
 var anim_t := 0.0
@@ -86,7 +88,8 @@ func _ready() -> void:
 		args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	tune = load(TUNING_PATH)
 	if args.has("fresh"):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://check_save.json"))
+		for ext in ["", ".bak", ".tmp"]: # a truly empty save: no backup to fall back on either
+			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://check_save.json" + ext))
 		save = SaveData.new("user://check_save.json", tune.start_nar)
 		save.put("boosts", int(args.get("boosts", "0")))
 		save.put("bread", int(args.get("bread", "0")))
@@ -158,6 +161,11 @@ func _apply_look() -> void:
 	runner = Characters.runner(prog.look())
 	add_child(runner)
 	runner.add_child(fly_carpet)
+	pole_fig = Props.pickup("pole")
+	pole_fig.scale = Vector3.ONE * 0.7
+	pole_fig.position = Vector3(0, 0.95, -0.25)
+	pole_fig.visible = false
+	runner.add_child(pole_fig)
 	var city := String(save.get_value("city"))
 	if city != world.city:
 		world.set_city(city)
@@ -179,11 +187,14 @@ func _new_run() -> void:
 	sim.carpets += int(save.get_value("carpets"))
 	sim.boosts = int(save.get_value("boosts"))
 	sim.base_mult = int(save.get_value("mmult"))
+	sim.treat_worth = tune.halva_worth if world.city == "sheki" else tune.treat_worth
+	last_bread = 0
 	sim.bread_taken.connect(func(total: int) -> void:
 		snd.play("bread", 0.96 + 0.08 * float(total % 5) / 4.0)
 		fx.burst(runner.position + Vector3(0, 0.9, -0.4), Color("#ffd34a"), 8)
 		prog.mission("run_bread", total)
-		prog.mission("bread", 1))
+		prog.mission("bread", total - last_bread) # a city treat counts as several
+		last_bread = total)
 	sim.passed.connect(func(kind: String) -> void:
 		if kind == "basket" or kind == "carpet":
 			prog.mission(kind, 1))
@@ -301,6 +312,9 @@ func _sync(dt: float) -> void:
 		"dead": sim.dead, "idle": not started, "escaped": escaped_now})
 	escaped_now = false
 	fly_carpet.visible = sim.carpet_t > 0.0 or sim.power["fly"] > 0.0
+	pole_fig.visible = sim.power["pole"] > 0.0
+	if pole_fig.visible:
+		pole_fig.rotation.z = sin(anim_t * 3.0) * 0.15 # balancing
 	if fly_carpet.visible:
 		fly_carpet.rotation.z = sin(anim_t * 2.0) * 0.05
 		fly_carpet.rotation.x = sin(anim_t * 1.6) * 0.04
@@ -599,6 +613,12 @@ func _build_hud() -> void:
 		bar.max_value = 1.0
 		bar.step = 0.0
 		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var fill := UiKit.box(Color("#ffc43a"), 9, 0)
+		var bg := UiKit.box(Color(0.16, 0.05, 0.03, 0.8), 9, 0)
+		bg.border_color = Color("#ffe6a0")
+		bg.set_border_width_all(2)
+		bar.add_theme_stylebox_override("fill", fill)
+		bar.add_theme_stylebox_override("background", bg)
 		row.add_child(bar)
 		power_box.add_child(row)
 		power_rows[k] = [row, bar]

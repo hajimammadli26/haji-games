@@ -52,7 +52,7 @@ const KINDS := {
 	"stall": {"len": 1.5, "top": 3.0, "bottom": 0.0, "frontal": "crash", "half": 0.95},
 	"phaeton": {"len": 5.6, "top": 2.4, "bottom": 0.0, "frontal": "crash", "half": 0.85},
 	"cart": {"len": 6.0, "top": 1.6, "bottom": 0.0, "frontal": "crash", "half": 0.9, "roof": true},
-	"caravan": {"len": 7.2, "top": 2.2, "bottom": 0.0, "frontal": "crash", "half": 0.8, "roof": true, "moves": true},
+	"caravan": {"len": 12.0, "top": 2.2, "bottom": 0.0, "frontal": "crash", "half": 0.8, "roof": true, "moves": true},
 	"ramp": {"len": 4.0, "top": 1.6, "bottom": 0.0, "frontal": "", "half": 0.8, "ramp": true},
 }
 
@@ -132,6 +132,7 @@ var div_gap := 0.0
 var bread := 0
 var score := 0.0
 var mult := 1
+var treat_worth := 3 ## bread one of this city's treats is worth (Şəki halvası is worth more)
 var base_mult := 1 ## from missions (every third claim adds one); distance adds up to mult_cap - 1
 var dead := "" ## "", "crash" or "caught"
 var power := {} ## kind -> seconds left
@@ -301,7 +302,7 @@ func step(dt: float, input: RunInput) -> void:
 		prev_lane = lane
 		lane += 1
 	if input.jump:
-		jump_buf = tune.input_buffer
+		jump_buf = tune.input_buffer + dt # + one step: it is counted down in this same step
 	if input.carpet and carpets > 0 and carpet_t <= 0.0:
 		carpets -= 1
 		if free_carpets > 0:
@@ -329,6 +330,8 @@ func step(dt: float, input: RunInput) -> void:
 	air_t = 0.0 if grounded else air_t + dt
 	if jump_buf > 0.0 and (grounded or air_t < tune.coyote_time):
 		var hgt := tune.super_jump_height if power["shoe"] > 0.0 else tune.jump_height
+		if power["pole"] > 0.0: # the kəndirbaz's pole: every jump is a great leap, when the player wants it
+			hgt = maxf(hgt, tune.pole_height)
 		vy = sqrt(2.0 * tune.gravity * hgt)
 		grounded = false
 		jump_buf = 0.0
@@ -356,10 +359,8 @@ func step(dt: float, input: RunInput) -> void:
 		vy = 0.0
 		grounded = true
 		on_roof = _roof_kind
-		if power["pole"] > 0.0 and slide_t <= 0.0: # kəndirbaz hops
-			vy = sqrt(2.0 * tune.gravity * tune.pole_height)
-			grounded = false
-			jumped.emit()
+		if _roof_obj != null and _roof_obj.moving: # someone climbed on: the camels stop to look
+			_roof_obj.moving = false
 	else:
 		grounded = y - sup.x < 0.05 and vy <= 0.0
 	slide_t = maxf(0.0, slide_t - dt)
@@ -376,7 +377,7 @@ func step(dt: float, input: RunInput) -> void:
 	for o in obstacles:
 		if not o.passed and not o.hit and not o.cleared and not o.ramp and s - PDEPTH > o.s1():
 			o.passed = true
-			if o.lane == lane:
+			if o.lane == lane and not flying: # flown over by the Simurq or the carpet: not a jump or a slide
 				passed.emit(o.kind)
 	# the Div
 	if div_t > 0.0 and div_t <= dt:
@@ -385,7 +386,8 @@ func step(dt: float, input: RunInput) -> void:
 	stumble_t = maxf(0.0, stumble_t - dt)
 	intro_t = maxf(0.0, intro_t - dt)
 	invuln = maxf(0.0, invuln - dt)
-	carpet_t = maxf(0.0, carpet_t - dt)
+	if not flying: # the shield waits while he flies (nothing can hit him up there)
+		carpet_t = maxf(0.0, carpet_t - dt)
 	for k in POWERS:
 		power[k] = maxf(0.0, power[k] - dt)
 	var want := tune.div_near_gap if div_t > 0.0 or intro_t > 0.0 else tune.div_far_gap
@@ -398,12 +400,14 @@ func step(dt: float, input: RunInput) -> void:
 
 
 var _roof_kind := ""
+var _roof_obj: Obstacle
 var _dt := 0.0
 
 ## The ground under Cırtdan (x = height): the street, a ramp, a cart roof or the camels' backs.
 func _support_at(px: float, py: float, ps: float) -> Vector2:
 	var g := 0.0
 	_roof_kind = ""
+	_roof_obj = null
 	for o in obstacles:
 		if not (o.ramp or o.roof) or o.cleared:
 			continue
@@ -418,6 +422,7 @@ func _support_at(px: float, py: float, ps: float) -> Vector2:
 		if py >= h - tol and h > g:
 			g = h
 			_roof_kind = "" if o.ramp else o.kind
+			_roof_obj = null if o.ramp else o
 	return Vector2(g, 0.0)
 
 
@@ -516,7 +521,7 @@ func _take_pickups() -> void:
 				bread += 1
 				bread_taken.emit(bread)
 			elif p.kind == "treat": # the city's own treat counts as several bread
-				bread += tune.treat_worth
+				bread += treat_worth
 				bread_taken.emit(bread)
 			elif p.kind == "nar":
 				nar_got += 1

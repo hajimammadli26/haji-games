@@ -13,7 +13,7 @@ extends Resource
 
 @export_group("Jump and slide")
 @export var gravity: float = 30.0 ## m/s²
-@export var jump_height: float = 1.6 ## m apex: clears baskets (0.85), not cart roofs (1.6)
+@export var jump_height: float = 1.6 ## m apex: clears baskets (0.85); a well-timed jump also lands on a cart roof (1.6)
 @export var fast_fall_speed: float = 22.0 ## m/s down when sliding in the air
 @export var slide_time: float = 0.65 ## s a slide lasts
 @export var input_buffer: float = 0.12 ## s an early jump press before landing still counts
@@ -32,7 +32,8 @@ extends Resource
 @export var ramp_time: float = 150.0 ## s from easy to full difficulty
 @export var double_block_after: float = 45.0 ## s before two lanes are blocked at once
 @export var caravan_after: float = 38.0 ## s before the first camel caravan
-@export var caravan_speed: float = 6.0 ## m/s a caravan walks toward you
+@export var caravan_speed: float = 6.0 ## m/s a caravan walks toward you (it stops once Cırtdan climbs on)
+@export var after_caravan_gap: float = 1.6 ## s after a caravan passes when rows block at most one lane
 @export var caravan_ramp_chance: float = 0.7 ## a hay cart beside a caravan, to jump across onto the camels
 @export var view_ahead: float = 150.0 ## m of street built ahead
 
@@ -51,7 +52,7 @@ extends Resource
 @export var simurq_time: float = 8.0 ## s the Simurq carries Cırtdan over the street
 @export var simurq_height: float = 4.8 ## m he flies at: above every obstacle, under the city gate's arch
 @export var super_jump_height: float = 3.6 ## m apex with the magic çarıq
-@export var pole_height: float = 4.2 ## m apex of each kəndirbaz hop
+@export var pole_height: float = 4.2 ## m apex of a jump with the kəndirbaz pole (it also springs off obstacle tops)
 @export var magnet_radius: float = 6.0 ## m grandma's tray pulls bread from
 @export var carpet_time: float = 30.0 ## s the flying carpet shields one hit
 @export var carpets_per_run: int = 1 ## flying carpets free at the start of each run
@@ -81,6 +82,7 @@ extends Resource
 @export_group("City treats")
 @export var treat_share: float = 0.25 ## share of bread lines made of the city's own treat (halva, fındıq ...)
 @export var treat_worth: int = 3 ## bread one treat is worth
+@export var halva_worth: int = 5 ## bread a piece of Şəki halvası is worth
 
 @export_group("Hunts and gifts")
 @export var letter_chance: float = 0.16 ## chance per row of the next letter of the day's word

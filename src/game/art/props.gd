@@ -178,13 +178,13 @@ static func ramp() -> Node3D:
 	return g
 
 
-## Three camels in a line walking toward the runner. Parts: camels.
+## Five camels in a line walking toward the runner (12 m: room to run along their backs). Parts: camels.
 static func caravan() -> Node3D:
 	var g := Node3D.new()
 	var camels := []
-	for i in 3:
+	for i in 5:
 		var c := Characters.camel()
-		c.position.z = -i * 2.4 + 2.4
+		c.position.z = -i * 2.4 + 4.8
 		g.add_child(c)
 		camels.append(c)
 	g.set_meta("parts", {"camels": camels})
