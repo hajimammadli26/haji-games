@@ -389,11 +389,6 @@
   "en": "Online leaders",
   "ru": "Онлайн-лидеры"
  },
- "Ancaq ləqəb və xal göndərilir, ad yox": {
-  "tr": "Sadece lakap ve puan gönderilir, isim değil",
-  "en": "Only a nickname and a score are sent, never a name",
-  "ru": "Отправляются только прозвище и очки, без имени"
- },
  "Onlayn liderlər bağlıdır": {
   "tr": "Çevrimiçi liderler kapalı",
   "en": "Online leaders are off",
@@ -463,5 +458,10 @@
   "tr": "{n} puan",
   "en": "{n} points",
   "ru": "очки: {n}"
+ },
+ "Ləqəb, xal, məsafə və şəhər göndərilir, ad yox": {
+  "tr": "Lakap, puan, mesafe ve şehir gönderilir, isim değil",
+  "en": "Nickname, score, distance and city are sent, never a name",
+  "ru": "Отправляются прозвище, очки, дистанция и город, без имени"
  }
 }

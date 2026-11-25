@@ -39,8 +39,12 @@ Mağaza mətnləri, şəkillər və məxfilik siyasəti artıq hazırdır: `prod
      2. Faylı `.github/workflows/android-release.yml` adı ilə köçürün.
      3. Actions → "Android release (AAB)" → Run.
 4. **Liderlər cədvəli barədə qərar verin** (ətraflı: `store-listing.md` §5).
-   - **A (tövsiyə, ilk versiya üçün):** `leaderboard_url` boş qalır. Heç bir məlumat toplanmır. Data safety formasında "No data collected" seçilir.
-   - **B:** URL yazılır, Internet icazəsi açılır. Bundan əvvəl COPPA, silmə və saxlama müddəti məsələlərini həll edin.
+   - **Tövsiyə: 1.0-da AÇIQ**, Worker deploy olunubsa:
+     - `project.godot`-da `cirtdan/online/leaderboard_url` = Worker ünvanı (`https://…workers.dev`)
+     - Android ixracında Permissions → **Internet: On**
+     - GitHub Actions draft-ı `leaderboard_url` sahəsi doldurulanda hər ikisini özü edir.
+     - Data safety: install ID, ləqəb kodu, xal, məsafə, şəhər bəyan olunur.
+   - **Bağlı da olar**, əgər Worker hələ deploy olunmayıbsa: URL boş qalır, Data safety-də "No data collected" seçilir. Bu halda təsvirlərdəki liderlər cümləsini silin.
 5. **Tətbiqi yaradın** (Play Console → Create app): ad `Cırtdan: Köhnə Bakıda Qaçış`, dil az-AZ, **Game**, **Free**. Bəyanatları təsdiqləyin.
 6. **Daxili sınaq (Internal testing)** ilə başlayın: AAB-ni yükləyin, öz e-poçtunuzu sınaqçı kimi əlavə edin. Play-dən endirib real telefonda yoxlayın:
    - quraşdırma və açılış
@@ -55,30 +59,32 @@ Mağaza mətnləri, şəkillər və məxfilik siyasəti artıq hazırdır: `prod
    - Ads: **No**
    - App access: hər şey açıqdır
    - **Content rating** (IARC)
-   - **Target audience**: 5-8, 9-12. Bununla **Families policy** tətbiq olunur.
+   - **Target audience**: **13-15, 16-17, 18+**. 13 yaşdan kiçik qrupları **işarələməyin**. Oyun hamı üçündür, amma Families proqramında deyil.
+   - **"Could your app unintentionally appeal to children?"**: cizgi üslubuna görə Google bunu soruşa bilər. Düzgün cavab verin: oyun bütün yaşlar üçündür, uşaqlar üçün nəzərdə tutulmayıb.
+   - Mağaza səhifəsində **"uşaqlar üçün"** yazılmamalıdır (heç bir dildə). Yalnız "hər yaş üçün" və "bütün ailə üçün" yazılır. Mətnlər artıq buna uyğundur.
    - **Data safety**
    - News, Government, Financial, Health: hamısına **No**
 9. **Məxfilik siyasətini dərc edin:**
    - `[OWNER EMAIL]`, `[DEVELOPER NAME]`, `[DATE]` yerlərini doldurun.
    - `production/release/privacy-policy.html` faylını Render saytının **`site` branch-ına `privacy.html` adı ilə** qoyun. `tools/publish_web.sh` yalnız `index*` fayllarını əvəz edir, bu faylı silmir.
    - Ünvan: **https://cirtdan.onrender.com/privacy.html**. Bu ünvanı Play-də göstərin.
-   - Families tələbi: ən yaxşısı oyunun içində də (Ayarlar) bu linkin olmasıdır. Bu, proqramçının işidir.
+   - Tövsiyə: bu link oyunun içində də (Ayarlar) olsun. Bu, proqramçının işidir.
 10. **Store listing:** `store-listing.md`-dən 4 dildə ad, qısa və tam təsvir, kateqoriya (Games › Arcade), əlaqə e-poçtu.
     Şəkillər:
     - ikon: `graphics/app-icon-512.png`
     - feature graphic: `graphics/feature-graphic-1024x500.png`
     - 6 ekran görüntüsü: `screenshots/`
     Tərcümələri doğma dil daşıyıcısına yoxlatdırın.
-11. **Production-a buraxın:** ölkələri seçin, mərhələli buraxılış (məsələn, 20%) edin, ilk 72 saatda Android vitals-da çökmələrə baxın. Yoxlama bir neçə gün çəkə bilər. Families tətbiqlərində daha uzun da ola bilər.
+11. **Production-a buraxın:** ölkələri seçin, mərhələli buraxılış (məsələn, 20%) edin, ilk 72 saatda Android vitals-da çökmələrə baxın. Yoxlama bir neçə gün çəkə bilər.
 12. Play Console "target API level" xəbərdarlığı versə, buna Godot 4.7.2-nin hədəf SDK-sı səbəb olur. Xəbərdarlığı bizə göstərin, birlikdə həll edək.
 
 ## App Store (sonra)
 
 1. **Apple Developer Program**: **$99/il**.
 2. iOS build üçün **Mac + Xcode** lazımdır (Godot Xcode layihəsi ixrac edir). Mac yoxdursa, **Codemagic** kimi bulud macOS xidmətindən istifadə edin. Açarları (sertifikat, provisioning) orada saxlayın.
-3. **Kids Category**: yaş qrupları 6-8 və 9-11.
-   - Reklam və üçüncü tərəf analitika qadağandır.
-   - Xarici linklər (məsələn, sayta keçid) **valideyn qapısı** (parental gate) arxasında olmalıdır. Oyunda belə link olub-olmadığını yoxlatdırın.
+3. **Kids Category seçməyin**: oyun hamı üçündür.
+   - Yaş reytinqi anketi, çox güman, **4+** verəcək.
+   - Kateqoriya: Games › Arcade (və ya Casual).
 4. **App Privacy**: leaderboard söndürülübsə "Data Not Collected". Açıqdırsa: "Gameplay Content" və "User ID" (identity ilə bağlı deyil, izləmə üçün istifadə olunmur).
 5. Ekran görüntüləri yeni ölçüdə lazımdır (məsələn, 1290x2796). Eyni əmrlərlə `--resolution` dəyişib yığmaq olar.
 

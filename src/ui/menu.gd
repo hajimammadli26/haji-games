@@ -670,7 +670,7 @@ func _screen_settings() -> void:
 			settings_changed.emit()
 			_refresh(), "primary" if on else "plain")
 	var ol := bool(prog.save.get_value("online"))
-	_row("Onlayn liderlər", "Ancaq ləqəb və xal göndərilir, ad yox", "Açıq" if ol else "Bağlı", true, func() -> void:
+	_row("Onlayn liderlər", "Ləqəb, xal, məsafə və şəhər göndərilir, ad yox", "Açıq" if ol else "Bağlı", true, func() -> void:
 		prog.toggle("online")
 		_refresh(), "primary" if ol else "plain")
 	var cur := String(prog.save.get_value("lang"))

@@ -1,6 +1,7 @@
 # Store listing: Cırtdan: Köhnə Bakıda Qaçış (Google Play)
 
-Draft prepared 2026-11-25 for the first Google Play release. Fields marked `[...]` are for the owner to fill in.
+Draft prepared 2026-11-25 for the first Google Play release and revised the same day for the owner's decision: **a game for everyone, targeted at 13+ on Google Play, not in the Families programme.**
+Fields marked `[...]` are for the owner to fill in.
 The tr, en and ru text was written by the release manager, not a native speaker: **have native speakers check it before publishing.**
 Character limits were checked with a script (see the end of this file).
 
@@ -16,23 +17,26 @@ Character limits were checked with a script (see the end of this file).
 | Contact email | [OWNER EMAIL] (required, shown to the public) |
 | Website | https://cirtdan.onrender.com |
 | Privacy policy URL | https://cirtdan.onrender.com/privacy.html (after the file is put on the site, see release-checklist.md) |
+| Target audience | **13-15, 16-17, 18+** (not Families, see §5) |
 
 ---
 
 ## 1. Titles and descriptions
 
+Wording rule for every language: the game is described as **for all ages / for the whole family**, never as "for children" or "for kids". See §5 for the reason.
+
 ### az (Azərbaycan dili) – the main listing
 
 **Title (27/30):** Cırtdan: Köhnə Bakıda Qaçış
 
-**Short description (70/80):** Div Cırtdanı qovur! Yeddi şəhər, yeddi nağıl qəhrəmanı. Reklam yoxdur.
+**Short description (72/80):** Div Cırtdanı qovur! 7 şəhər, 7 nağıl qəhrəmanı. Hər yaş üçün, reklamsız.
 
 **Full description:**
 
 ```
 Div yenə Cırtdanın dalınca düşüb! Köhnə Bakının daş küçələri ilə qaç, sağa-sola sürüşdür, tullan, sürüş və Divə tutulma!
 
-Cırtdan: Köhnə Bakıda Qaçış – Azərbaycan nağılları əsasında uşaqlar üçün hazırlanmış şən qaçış oyunudur.
+Cırtdan: Köhnə Bakıda Qaçış – Azərbaycan nağılları əsasında yaradılmış, bütün ailə üçün sonsuz qaçış oyunudur. Kiçiklər üçün asan başlayır, böyüklər üçün isə çətin olur: nə qədər uzun qaçsan, o qədər sürətli və çətin olur. Rekordunu qır!
 
 AZƏRBAYCAN ŞƏHƏRLƏRİ
 • Köhnə Bakı: İçərişəhər, Qız Qalası, bazar və faytonlar
@@ -52,15 +56,15 @@ Nənənin sinisi çörəkləri özünə çəkir, Sehrli çarıq hündür tullan�
 BAYRAMLAR VƏ OYUNLAR
 Novruz, Qış və Nar bayramı, Xəzər yayı, söz ovu, gündəlik tapşırıqlar və nənənin hədiyyəsi.
 
-UŞAQLAR VƏ VALİDEYNLƏR ÜÇÜN
+HƏR YAŞ ÜÇÜN
 • Reklam yoxdur
 • Oyundaxili satınalma yoxdur – hər şey oyunda yığılan çörəklə alınır
 • Hesab, ad və ya e-poçt soruşulmur
 • İnternetsiz oynamaq olar
-• Alış edəndə oyun iki dəfə soruşur, uşaq təsadüfən çörək xərcləməsin
+• Alış təsdiq tələb edir, təsadüfən çörək xərclənmir
 • Dillər: Azərbaycan, Türkçe, English, Русский
 
-Onlayn liderlər cədvəli könüllüdür: yalnız hazır siyahıdan seçilən ləqəb (məsələn, "Cəld Simurq") və xal göndərilir. Ayarlar bölməsində söndürmək olar.
+Onlayn liderlər cədvəli könüllüdür: hazır siyahıdan seçilən ləqəb (məsələn, "Cəld Simurq"), xal, məsafə və şəhər göndərilir, şəxsi məlumat yox. Ayarlar bölməsində söndürmək olar.
 
 Brauzerdə oyna: https://cirtdan.onrender.com
 ```
@@ -69,14 +73,14 @@ Brauzerdə oyna: https://cirtdan.onrender.com
 
 **Title (26/30):** Cırtdan: Eski Bakü'de Koşu
 
-**Short description (71/80):** Dev, Cırtdan'ı kovalıyor! Yedi şehir, yedi masal kahramanı. Reklam yok.
+**Short description (74/80):** Dev, Cırtdan'ı kovalıyor! 7 şehir, 7 masal kahramanı. Her yaşa, reklamsız.
 
 **Full description:**
 
 ```
 Dev yine Cırtdan'ın peşinde! Eski Bakü'nün taş sokaklarında koş, sağa sola kay, zıpla, eğil ve Dev'e yakalanma!
 
-Cırtdan: Eski Bakü'de Koşu, Azerbaycan masallarından esinlenen, çocuklar için hazırlanmış neşeli bir koşu oyunudur.
+Cırtdan: Eski Bakü'de Koşu, Azerbaycan masallarından esinlenen, tüm aile için sonsuz bir koşu oyunudur. Küçükler için kolay başlar, büyükler için zorlaşır: ne kadar uzun koşarsan o kadar hızlanır ve zorlaşır. Rekorunu kır!
 
 AZERBAYCAN ŞEHİRLERİ
 • Eski Bakü: İçerişehir, Kız Kulesi, çarşı ve faytonlar
@@ -96,15 +100,15 @@ Ninenin sinisi ekmekleri kendine çeker, Sihirli çarık yükseğe zıplatır, S
 BAYRAMLAR VE OYUNLAR
 Nevruz, Kış ve Nar bayramı, Hazar yazı, kelime avı, günlük görevler ve ninenin hediyesi.
 
-ÇOCUKLAR VE EBEVEYNLER İÇİN
+HER YAŞ İÇİN
 • Reklam yok
 • Uygulama içi satın alma yok – her şey oyunda toplanan ekmekle alınır
 • Hesap, isim veya e-posta istenmez
 • İnternetsiz oynanabilir
-• Satın alırken oyun iki kez sorar, çocuk yanlışlıkla ekmek harcamasın
+• Satın alma onay ister, ekmek yanlışlıkla harcanmaz
 • Diller: Azərbaycan, Türkçe, English, Русский
 
-Çevrim içi liderlik tablosu isteğe bağlıdır: yalnızca hazır listeden seçilen bir takma ad (örneğin "Cəld Simurq") ve puan gönderilir. Ayarlar'dan kapatılabilir.
+Çevrim içi liderlik tablosu isteğe bağlıdır: hazır listeden seçilen bir takma ad (örneğin "Cəld Simurq"), puan, mesafe ve şehir gönderilir, kişisel bilgi gönderilmez. Ayarlar'dan kapatılabilir.
 
 Tarayıcıda oyna: https://cirtdan.onrender.com
 ```
@@ -113,14 +117,14 @@ Tarayıcıda oyna: https://cirtdan.onrender.com
 
 **Title (24/30):** Cırtdan: Run in Old Baku
 
-**Short description (71/80):** The Div is chasing Cırtdan! 7 cities, 7 folk-tale heroes. No ads, ever.
+**Short description (75/80):** The Div is chasing Cırtdan! 7 cities, 7 folk-tale heroes. All ages, no ads.
 
 **Full description:**
 
 ```
 The Div is after Cırtdan again! Race through the stone streets of Old Baku, swipe left and right, jump, slide and don't let the Div catch you!
 
-Cırtdan: Run in Old Baku is a cheerful endless runner for children, based on Azerbaijani folk tales.
+Cırtdan: Run in Old Baku is an endless runner for the whole family, based on Azerbaijani folk tales. It starts gently, then the longer you run, the faster and harder it gets, until even seasoned runners are tested. How far can you go?
 
 SEVEN AZERBAIJANI CITIES
 • Old Baku: the Old City, the Maiden Tower, the bazaar and horse carriages
@@ -140,15 +144,15 @@ Grandma's tray pulls the bread to you, the magic charyk shoes jump high, the Sim
 FESTIVALS AND FUN
 Novruz, Winter and the Pomegranate Festival, a Caspian summer, word hunts, daily missions and Grandma's daily gift.
 
-FOR CHILDREN AND PARENTS
+FOR ALL AGES
 • No ads
 • No in-app purchases: everything is bought with bread collected while playing
 • No account, no name, no email
 • Plays offline
-• Buying asks twice, so a child never spends bread by one stray tap
+• Purchases ask for confirmation, so bread is never spent by accident
 • Languages: Azerbaijani, Turkish, English, Russian
 
-The online leaderboard is optional: it only sends a nickname picked from a fixed list (such as "Cəld Simurq") and the score. You can turn it off in Settings (Ayarlar).
+The online leaderboard is optional: it sends a nickname picked from a fixed list (such as "Cəld Simurq"), the score, the distance and the city, and nothing personal. You can turn it off in Settings (Ayarlar).
 
 Play in your browser: https://cirtdan.onrender.com
 ```
@@ -157,14 +161,14 @@ Play in your browser: https://cirtdan.onrender.com
 
 **Title (29/30):** Джыртдан: Бег по Старому Баку
 
-**Short description (70/80):** Див гонится за Джыртданом! 7 городов, 7 сказочных героев. Без рекламы.
+**Short description (80/80):** Див гонится за Джыртданом! 7 городов, 7 сказочных героев. Для всех, без рекламы.
 
 **Full description:**
 
 ```
 Див снова гонится за Джыртданом! Беги по каменным улочкам Старого Баку, сворачивай влево и вправо, прыгай, подныривай и не дай Диву тебя поймать!
 
-«Джыртдан: Бег по Старому Баку» — весёлый бесконечный раннер для детей по мотивам азербайджанских народных сказок.
+«Джыртдан: Бег по Старому Баку» — бесконечный раннер для всей семьи по мотивам азербайджанских народных сказок. Начинается спокойно, но чем дольше бежишь, тем быстрее и сложнее, и даже опытным игрокам придётся постараться. Побей свой рекорд!
 
 СЕМЬ ГОРОДОВ АЗЕРБАЙДЖАНА
 • Старый Баку: Ичеришехер, Девичья башня, базар и фаэтоны
@@ -176,7 +180,7 @@ Play in your browser: https://cirtdan.onrender.com
 • Гобустан: наскальные рисунки, грязевые вулканы и Каспий
 
 СКАЗОЧНЫЕ ГЕРОИ
-Джыртдан, Тык-Тык ханум, Кечал, канатоходец Кендирбаз, Кёса, девочка-пери и Меликмамед — у каждого свой облик.
+Джыртдан, Тык-Тык ханум, Кечал, канатоходец Кендирбаз, Кёса, девушка-пери и Меликмамед — у каждого свой облик.
 
 ВОЛШЕБНЫЕ УСИЛЕНИЯ
 Бабушкин поднос притягивает хлеб, волшебные чарыхи помогают высоко прыгать, птица Симург поднимает в небо, а ковёр-самолёт спасает от одного столкновения.
@@ -184,38 +188,38 @@ Play in your browser: https://cirtdan.onrender.com
 ПРАЗДНИКИ И ЗАБАВЫ
 Новруз, Зима и Праздник граната, каспийское лето, охота за словами, ежедневные задания и бабушкин подарок.
 
-ДЛЯ ДЕТЕЙ И РОДИТЕЛЕЙ
+ДЛЯ ЛЮБОГО ВОЗРАСТА
 • Без рекламы
 • Без встроенных покупок: всё покупается за хлеб, собранный в игре
 • Не нужны аккаунт, имя или e-mail
 • Можно играть без интернета
-• Покупка требует двойного подтверждения, чтобы ребёнок не потратил хлеб случайно
+• Покупка требует подтверждения, хлеб не потратится случайно
 • Языки: азербайджанский, турецкий, английский, русский
 
-Онлайн-таблица рекордов необязательна: отправляется только прозвище из готового списка (например, «Cəld Simurq») и очки. Её можно выключить в Настройках (Ayarlar).
+Онлайн-таблица рекордов необязательна: отправляются только прозвище из готового списка (например, «Cəld Simurq»), очки, дистанция и город, никаких личных данных. Её можно выключить в Настройках (Ayarlar).
 
 Играть в браузере: https://cirtdan.onrender.com
 ```
 
 **Accuracy notes for the owner** (check against the build you upload):
-- "Plays offline" / "Oflayn": true in the code (the leaderboard never blocks play). Keep it only if the uploaded build really runs without internet.
-- The leaderboard sentence: **delete it from all four descriptions if you ship the first version with the leaderboard turned off** (Option A in section 5).
-- The leaderboard also sends a random install ID, the distance and the city (see section 5). The descriptions say "nickname and score" for short; the privacy policy gives the full list. If you want the descriptions to be exact as well, add "distance and city".
+- "Plays offline": true in the code (the leaderboard never blocks play). Keep it only if the uploaded build really runs without internet.
+- "Faster and harder the longer you run": per the coordinator, after the first 150 s the run keeps speeding up to 28 m/s. That change is in the working tree but not committed. Make sure the uploaded build contains it.
+- The leaderboard sentence: **delete it from all four descriptions if you ship v1.0 with the leaderboard off** (§5).
 
 ### Release notes for the first release (Play "What's new", 500 characters max)
 
 ```
 <az-AZ>
-İlk buraxılış! Cırtdanla yeddi Azərbaycan şəhərində qaç, Divdən qaç, çörək yığ. Reklam və satınalma yoxdur.
+İlk buraxılış! Cırtdanla yeddi Azərbaycan şəhərində qaç, Divdən qaç, çörək yığ. Nə qədər uzun qaçsan, o qədər sürətli. Reklam və satınalma yoxdur.
 </az-AZ>
 <tr-TR>
-İlk sürüm! Cırtdan ile yedi Azerbaycan şehrinde koş, Dev'den kaç, ekmek topla. Reklam ve satın alma yok.
+İlk sürüm! Cırtdan ile yedi Azerbaycan şehrinde koş, Dev'den kaç, ekmek topla. Uzun koştukça hızlanır. Reklam ve satın alma yok.
 </tr-TR>
 <en-US>
-First release! Run with Cırtdan through seven Azerbaijani cities, escape the Div and collect bread. No ads, no purchases.
+First release! Run with Cırtdan through seven Azerbaijani cities, escape the Div and collect bread. The longer you run, the faster it gets. No ads, no purchases.
 </en-US>
 <ru-RU>
-Первый выпуск! Беги с Джыртданом по семи городам Азербайджана, убегай от Дива и собирай хлеб. Без рекламы и покупок.
+Первый выпуск! Беги с Джыртданом по семи городам Азербайджана, убегай от Дива и собирай хлеб. Чем дольше бежишь, тем быстрее. Без рекламы и покупок.
 </ru-RU>
 ```
 
@@ -230,16 +234,19 @@ First release! Run with Cırtdan through seven Azerbaijani cities, escape the Di
 | Phone screenshots | `screenshots/01-home.png` … `06-shop.png` | 6 screenshots, 1080x1920 (9:16). The UI text is in Azerbaijani. |
 
 Screenshot order: 01 home, 02 Old Baku run, 03 Şəki run, 04 Qəbələ run, 05 characters, 06 Nənənin dükanı (shop).
-They were captured headless (Mesa llvmpipe, `--render_scale=1`). Before publishing, look at them on a phone-sized screen.
-Optional: run the same commands with `--lang=en` / `tr` / `ru` to get localized screenshot sets for each listing.
+They were captured headless (Mesa llvmpipe, `--render_scale=1`) at 12 s into a run. Before publishing, look at them on a phone-sized screen.
+Optional:
+- A late-run shot (for example `--shot_at=170`) would show the high-speed part that grown-ups will care about.
+- Run the same commands with `--lang=en` / `tr` / `ru` to get localized screenshot sets for each listing.
+
 Tablet screenshots (7" and 10") are optional, but leaving them out may limit how the app is featured on tablets.
 
 ---
 
 ## 3. Category and tags
 
-- **Category:** Games › **Arcade** (recommended: endless runners usually go here). **Casual** is the alternative if you want to be shown next to light family games. You choose.
-- **Tags** (pick up to 5 from Play's list in Store settings): Runner / Endless runner, Arcade, Casual, Single player, Offline, Cartoon / Stylized. Use only tags that are in Play's list. You cannot type your own.
+- **Category:** Games › **Arcade** (recommended: endless runners usually go here). **Casual** is the alternative. You choose.
+- **Tags** (pick up to 5 from Play's list in Store settings): Runner / Endless runner, Arcade, Casual, Single player, Offline, Stylized. Use only tags that are in Play's list. Avoid kid-focused tags.
 
 ---
 
@@ -250,70 +257,79 @@ Category to choose: **Game**. Answer for the build you upload. These are suggest
 | Question area | Suggested answer | Why |
 |---|---|---|
 | Violence | **No** (or at most "cartoon/fantasy, no injury" if you think the chase counts) | The Div chases Cırtdan. Nobody is hit or hurt and nothing bleeds. A crash just ends the run ("Div səni tutdu!"). |
-| Fear / scary content | **No** | The Div is a comic folk-tale giant: he trips, wears a scarf, Cırtdan sticks his tongue out at him. |
+| Fear / scary content | **No** | The Div is a comic folk-tale giant. |
 | Sexuality, nudity | No | |
 | Bad language | No | |
 | Drugs, alcohol, tobacco | No | |
-| Gambling / simulated gambling | **No** | There is no casino-style play and no real money. Note: "Nənənin bağlaması" is a random gift bought with in-game bread only. Answer honestly if the form asks about random items for real money (answer: no). |
+| Gambling / simulated gambling | **No** | There is no casino-style play and no real money. "Nənənin bağlaması" is a random gift bought with in-game bread only. |
 | Users interact / exchange content | **No** | There is no chat and no free text. The leaderboard only shows nicknames built from fixed lists. |
 | Shares user location | No | The "city" field is the in-game city, not where the player is. |
 | Digital purchases | No | |
 | Unrestricted internet / web browser | No | |
 
-Expected result: PEGI 3, ESRB Everyone, USK 0, and the matching ratings in other regions. If the questionnaire gives a higher rating, look at which answer caused it before you accept.
+Expected result: PEGI 3, ESRB Everyone, USK 0, and the matching ratings in other regions. A low age rating is **not** the same as targeting children. Rating = what the content is suitable for; target audience = who it is made for.
 
 ---
 
-## 5. Target audience, Families and Data safety
+## 5. Target audience and Data safety
 
-### Target audience and content
-- **Target age groups:** 5-8 and 9-12. Do not tick "Under 5" unless you want to (the swipe controls and reading are aimed at 5+). Ticking 13+ as well is allowed, but the Families policy still applies because children are in the audience.
-- "Could the app accidentally appeal to children?": not asked, because children are the target.
+### Target audience and content (App content → Target audience and content)
+- **Target age groups: 13-15, 16-17, 18+.** Do **not** tick any group under 13. The app is then **not** in the Families programme, and the Families policy and Teacher Approved do not apply.
+- **"Could your app unintentionally appeal to children?"** (Google may ask, or decide on review, because the art is cartoon style and the content comes from folk tales):
+  - Answer honestly. The game is made for a general audience of all ages and is not designed for children.
+  - Store listing, screenshots and in-game text must **not** present it as a children's app: no "for kids", "for children", "uşaqlar üçün", "для детей", and no kid-focused tags. The descriptions above use "for all ages / for the whole family", and the screenshots show normal play.
+  - "Whole family" wording plus a cartoon look can still lead Google to treat it as appealing to children. If Google decides the app appeals to children, it may still apply some Families requirements. The game already meets the data side of those requirements: no ads, no advertising ID, no hardware IDs.
 - **Ads:** "No, my app does not contain ads".
-- Because the audience includes children under 13, the app falls under the **Google Play Families policy**:
-  - no ad SDKs, no analytics SDKs that are not self-certified for Families (the game has none)
-  - it must not send the Android Advertising ID or hardware IDs (IMEI, MAC, serial and so on). The game sends none: its player ID is a random number the app makes itself (`Crypto.generate_random_bytes`).
-  - a privacy policy link is required, both on the store listing and inside the app (see release-checklist.md, step 9)
-  - the app must not ask for location or other sensitive permissions (it asks for none; the release build only needs INTERNET, and only if the leaderboard is on)
-- **Teacher Approved:** there is no application form. Google's reviewers choose from Families-compliant apps and put them in the Kids tab. You only need to meet the Families policy and make the content good. A good fit: no ads, no purchases, folk tales and culture.
+- **Permissions:** only INTERNET, and only when the leaderboard is on.
 
-### Data safety form: two honest variants
+### Leaderboard in v1.0: recommendation
 
-**Check which build you are uploading.** Right now `project.godot` has `cirtdan/online/leaderboard_url=""`, so the online leaderboard is **off in every build** (`online.gd` `enabled()` returns false and nothing is sent).
+**Recommended: leaderboard ON in v1.0, as soon as the Worker is deployed.** Without a child target audience the COPPA concern from the first draft no longer blocks it. Two build changes are needed, and the workflow draft makes both when given a URL:
+1. `cirtdan/online/leaderboard_url` = the Worker URL (`https://…workers.dev`)
+2. `permissions/internet=true` in the Android preset
 
-**Option A: first release with the leaderboard off (URL empty).** This is the simplest path for Families review.
-- Does your app collect or share any of the required user data types? **No.**
-- The form then ends with "No data collected / No data shared".
-- Remove the leaderboard sentence from the descriptions. Keep the privacy policy as written: it explains both cases.
+Leaving it **OFF** (URL empty, as it is now) is also fine if the Worker is not deployed yet. In that case use the "No data collected" answers below, and add the leaderboard in a later update with an updated Data safety form.
 
-**Option B: release with the leaderboard on (URL set, INTERNET permission on).** What the code really sends (`src/core/online.gd`, `server/leaderboard/schema.sql`):
-`player` (a random 32-hex-digit ID made on the device, not linked to the phone), `nick` (a number into the fixed adjective+hero list), `score`, `metres` (distance), `city` (the in-game city). The server adds the week and a timestamp. Nothing else is stored. Cloudflare sees the IP address while delivering the request, but the Worker does not store it (ephemeral processing, which does not need to be declared).
+### Data safety form: leaderboard ON (recommended)
 
-> **Correction to the brief:** it says "nickname + score only". The code also sends the random install ID, the distance and the city. The settings text "Ancaq ləqəb və xal göndərilir, ad yox" (`src/ui/menu.gd:673`) is therefore not complete either. I did not change `src/`. That is for the programmer.
+What the code sends (`src/core/online.gd`, `server/leaderboard/schema.sql`):
+- `player`: a random 32-hex-digit install ID made on the device, not linked to the phone or a person
+- `nick`: a number into the fixed adjective+hero list
+- `score`
+- `metres` (distance)
+- `city` (the in-game city)
 
-| Form question | Answer (Option B) |
+The server adds the week and a timestamp. Nothing else is stored. Cloudflare sees the IP address while delivering the request, but the Worker does not store it (ephemeral processing, which does not need to be declared).
+
+| Form question | Answer |
 |---|---|
-| Collects or shares user data? | Yes |
-| Is all collected data encrypted in transit? | Yes, **if** the leaderboard URL is `https://` (workers.dev is) |
-| Can users request deletion? | Yes, by emailing [OWNER EMAIL] with the nickname and score (see the gap below) |
-| **Device or other IDs** | Collected; not shared; processed ephemerally: No; **optional** (yes); purpose: **App functionality** |
-| **App activity › Other actions** (score, distance, city of the best run, preset nickname) | Collected; not shared; optional; purpose: **App functionality** |
+| Collects or shares user data? | **Yes** |
+| Is all collected data encrypted in transit? | **Yes** (`https://` Worker URL) |
+| Can users request deletion? | **Yes**: by email to [OWNER EMAIL] with the nickname and score |
+| **Device or other IDs** (the random install ID) | Collected; **not shared**; not ephemeral; **optional**; purpose: **App functionality** |
+| **App activity › Other actions** (score, distance, in-game city, preset nickname code) | Collected; **not shared**; not ephemeral; **optional**; purpose: **App functionality** |
 | Everything else (location, personal info, contacts, photos, audio, files, health, financial, messages, web history, app info and performance, crash logs) | Not collected |
 
-"Shared" = No: Cloudflare runs the Worker on your behalf as a service provider, which Play does not count as sharing.
+- "Shared" = No: Cloudflare runs the Worker on your behalf as a service provider, which Play does not count as sharing.
+- "Optional" = Yes: nothing is sent until the player picks a nickname, and it can be turned off in Ayarlar.
 
-**Gaps to decide before Option B** (product/legal decisions for the owner and producer, not the release manager):
-1. **COPPA / GDPR-K:** a persistent identifier collected from children under 13 can count as personal information under COPPA unless it is used only for "support for internal operations", and a public leaderboard is arguably more than that. Safer choices: (a) ship Option A first, or (b) make the leaderboard **off by default** (`save_data.gd` currently defaults `"online": true`; nothing is sent until a nickname is chosen) and put it behind a simple parent gate. If unsure, ask a lawyer. This is not legal advice.
-2. **Deletion:** a player does not know their player ID, so a deletion request can only match the nickname and score. An in-game "delete my score" button would make the "Yes" answer above solid.
-3. **Retention:** rows are kept with no time limit. Decide a rule (for example, delete rows not updated for 12 months) and put the same rule in the privacy policy.
-4. **INTERNET permission:** the Android preset does not turn on `permissions/internet`. Without it, the leaderboard cannot reach the server in a release build. It is needed for Option B only.
+### Data safety form: leaderboard OFF
+
+- Does your app collect or share any of the required user data types? **No.**
+- The form ends with "No data collected / No data shared".
+- Remove the leaderboard sentence from the four descriptions.
+
+### Still open (owner / producer decisions; none blocks v1.0)
+1. **Settings text:** "Ancaq ləqəb və xal göndərilir, ad yox" (`src/ui/menu.gd:673`) leaves out the install ID, distance and city. Suggest "Ləqəb, xal, məsafə və şəhər göndərilir; şəxsi məlumat yox". That is the programmer's change.
+2. **Deletion:** a player does not know their install ID, so deletion requests can only match the nickname and score. An in-game "delete my score" button would be cleaner.
+3. **Retention:** rows are kept with no time limit. Decide a rule (for example, delete rows not updated for 12 months) and add it to the privacy policy.
 
 ---
 
 ## Length check
 
 ```
-az title 27, short 70 | tr title 26, short 71 | en title 24, short 71 | ru title 29, short 70
-full descriptions: az 1497, tr 1508, en 1675, ru 1611 (limit 4000)
-release notes: az 107, tr 104, en 121, ru 116 (limit 500)
+az title 27, short 72 | tr title 26, short 74 | en title 24, short 75 | ru title 29, short 80
+full descriptions: az 1625, tr 1615, en 1840, ru 1756 (limit 4000)
+release notes: az 146, tr 128, en 161, ru 148 (limit 500)
 ```

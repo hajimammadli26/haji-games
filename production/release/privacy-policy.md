@@ -10,7 +10,7 @@
 
 ## Azərbaycan dili
 
-"Cırtdan: Köhnə Bakıda Qaçış" uşaqlar üçün hazırlanmış oyundur. Biz uşaqların məxfiliyinə hörmət edirik və imkan qədər az məlumat toplayırıq.
+"Cırtdan: Köhnə Bakıda Qaçış" bütün yaşlar üçün oyundur. Biz oyunçuların məxfiliyinə hörmət edirik və imkan qədər az məlumat toplayırıq.
 
 **Qısaca:**
 - Reklam yoxdur. Oyundaxili satınalma yoxdur.
@@ -29,7 +29,7 @@ Bu məlumatlar yalnız liderlər cədvəlini göstərmək üçün istifadə olun
 
 **Silmək:** nəticənin silinməsini istəyirsinizsə, [OWNER EMAIL] ünvanına ləqəbi və təxmini xalı yazın, onu siləcəyik. Oyunu cihazdan silmək cihazdakı bütün məlumatları silir.
 
-**Uşaqlar haqqında (COPPA, GDPR-K).** Biz uşaqlardan bilərəkdən şəxsi məlumat toplamırıq. Valideyn uşağın məlumatı ilə bağlı sual verə, onun silinməsini istəyə və ya liderlər cədvəlini Ayarlar bölməsindən söndürə bilər.
+**Uşaqlar haqqında.** Oyun uşaqlar üçün nəzərdə tutulmayıb, bütün yaşlar üçündür. Biz 13 yaşdan kiçik uşaqlardan bilərəkdən şəxsi məlumat toplamırıq. Liderlər cədvəli heç bir şəxsi məlumat göndərmir, yalnız yuxarıda sadalananları göndərir. Valideyn uşağın nəticəsi ilə bağlı sual verə, onun silinməsini istəyə və ya liderlər cədvəlini Ayarlar bölməsindən söndürə bilər.
 
 **İcazələr.** Oyun yalnız liderlər cədvəli üçün internet icazəsindən istifadə edir. Kamera, mikrofon, yer və kontaktlara giriş istəmir.
 
@@ -39,7 +39,7 @@ Bu məlumatlar yalnız liderlər cədvəlini göstərmək üçün istifadə olun
 
 ## English
 
-"Cırtdan: Köhnə Bakıda Qaçış" is a game made for children. We respect children's privacy and collect as little as possible.
+"Cırtdan: Köhnə Bakıda Qaçış" is a game for players of all ages. We respect your privacy and collect as little as possible.
 
 **In short:**
 - No ads. No in-app purchases.
@@ -58,7 +58,7 @@ This data is used only to show the leaderboard. It is never sold, never used for
 
 **Deletion:** to have a leaderboard entry removed, email [OWNER EMAIL] with the nickname and the approximate score, and we will delete it. Uninstalling the game deletes everything stored on the device.
 
-**Children (COPPA, GDPR-K).** We do not knowingly collect personal information from children. A parent or guardian can ask about their child's data, ask for it to be deleted, or turn the leaderboard off in Ayarlar (Settings).
+**Children.** The game is made for a general audience, not specifically for children. We do not knowingly collect personal information from children under 13. The leaderboard sends no personal information, only the items listed above. A parent or guardian can ask about their child's leaderboard entry, ask for it to be deleted, or turn the leaderboard off in Ayarlar (Settings).
 
 **Permissions.** The game uses the internet permission only for the leaderboard. It does not ask for the camera, microphone, location or contacts.
 
