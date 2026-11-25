@@ -168,7 +168,7 @@ document.addEventListener('visibilitychange', () => { // leaving the app: pause 
 let touch = null, lastTap = -1, taps = []; // taps: HUD-space points of this step's taps
 function hudPoint(e) { return { x: e.clientX / HUD_SX, y: e.clientY / HUD_SCALE }; } // the same scales the HUD is drawn with
 addEventListener('pointerdown', e => {
-  startAudio();
+  startAudio(false); // makes the context ready; the touch's end opens it
   touch = { x: e.clientX, y: e.clientY, t: clock.now(), done: false, id: e.pointerId };
 });
 addEventListener('pointermove', e => {
@@ -180,7 +180,7 @@ addEventListener('pointermove', e => {
   else hit.add(dy > 0 ? 'SwipeDown' : 'SwipeUp');
 });
 addEventListener('pointerup', e => {
-  startAudio(); // iOS only unlocks sound on the end of a touch
+  startAudio(); // the end of a touch: a gesture iOS accepts
   if (!touch || e.pointerId !== touch.id) return;
   if (!touch.done) {
     const p = hudPoint(e), now = clock.now();
@@ -200,24 +200,42 @@ function tapIn(x, y, w, h) { return taps.some(p => p.x >= x && p.x <= x + w && p
 
 // ---- Audio: started on first input, mute on M --------------------------------------------
 let audio = null, muted = false;
-function startAudio() {
+// iPhone: (1) only a touch END (or click) counts as the gesture that may open sound, so the unlock is tried on
+// every gesture until the context really runs; (2) the ring/silent switch mutes Web Audio unless the page asks for
+// 'playback' (navigator.audioSession, iOS 16.4+); older iOS gets its sound through an <audio> element instead.
+const IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let keepAlive = null;
+function silentWavUrl() { // 0.2 s of silence as a real WAV, so iOS will play it
+  const n = 1600, b = new Uint8Array(44 + n), v = new DataView(b.buffer), w = (o, t) => [...t].forEach((c, k) => b[o + k] = c.charCodeAt(0));
+  w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, 8000, true); v.setUint32(28, 8000, true); v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+  b.fill(128, 44); return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
+}
+function startAudio(gesture = true) {
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
   if (!audio) {
     try {
       const ac = window.GAME_AUDIO || new (window.AudioContext || window.webkitAudioContext)(); // a check may inject one
       const out = ac.createGain(); out.gain.value = muted ? 0 : tune.volume;
-      out.connect(ac.destination); audio = { ac, out };
+      audio = { ac, out, unlocked: false };
+      if (IOS && !navigator.audioSession && ac.createMediaStreamDestination) { // old iOS: play through a media element, which the silent switch leaves alone
+        const dest = ac.createMediaStreamDestination(); out.connect(dest);
+        const el = document.createElement('audio'); el.setAttribute('playsinline', ''); el.srcObject = dest.stream; audio.el = el;
+      } else out.connect(ac.destination);
     } catch (e) { return; }
   }
-  if (audio.ac.state === 'suspended') audio.ac.resume();
-  if (!audio.unlocked) { // iOS and Android only open sound inside a touch: play one silent sample now
-    try { const b = audio.ac.createBuffer(1, 1, 22050), src = audio.ac.createBufferSource(); src.buffer = b; src.connect(audio.ac.destination); src.start(0); audio.unlocked = true; } catch (e) {}
-    try { // a looping silent <audio> puts iPhone's sound in 'playback' mode, so the ring/silent switch does not mute the game
-      const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA='); a.loop = true; a.setAttribute('playsinline', ''); a.volume = 0.01; a.play().catch(() => {});
-    } catch (e) {}
+  if (!gesture) return;
+  if (audio.ac.state !== 'running') audio.ac.resume().catch(() => {});
+  if (audio.el && audio.el.paused) audio.el.play().catch(() => {});
+  if (!audio.unlocked) { // a silent sample inside the gesture: this is what actually opens sound on iOS
+    try { const b = audio.ac.createBuffer(1, 1, 22050), src = audio.ac.createBufferSource(); src.buffer = b; src.connect(audio.ac.destination); src.start(0); } catch (e) {}
+    if (IOS && !keepAlive) { try { keepAlive = new Audio(silentWavUrl()); keepAlive.loop = true; keepAlive.setAttribute('playsinline', ''); } catch (e) {} }
+    if (keepAlive && keepAlive.paused) keepAlive.play().catch(() => {});
+    if (audio.ac.state === 'running') audio.unlocked = true; // tried again on the next touch until it really runs
   }
 }
-['touchend', 'click'].forEach(ev => addEventListener(ev, () => startAudio(), { passive: true }));
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && audio && audio.ac.state === 'suspended') audio.ac.resume(); });
+['touchend', 'click', 'keydown'].forEach(ev => addEventListener(ev, () => startAudio(), { passive: true, capture: true }));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && audio) { audio.ac.resume().catch(() => {}); if (audio.el) audio.el.play().catch(() => {}); } });
 function setMuted(m) { muted = m; if (audio) audio.out.gain.value = m ? 0 : tune.volume; if (music.gain) music.gain.gain.value = tune.music_volume; }
 addEventListener('tune', () => setMuted(muted)); // the tweak panel (an add-on), when added, moved a value: the volume follows
 function tone(freq, dur, type = 'square', vol = 0.3, slideTo = 0, delay = 0) {

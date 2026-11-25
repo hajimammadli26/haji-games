@@ -21,6 +21,8 @@ After play: "Demek  bu versoyada qaliriq oyun mexanizmlerini oynu tam hazir vezi
 
 After play: "Tedbirleri yigisdir umumen / Geyim ayri mağazaya çıxar geyim dükani / Şeherleri açmaq qizilnan olsun / Personajlarda kilidlileride qizil qoy / Tapşırıq sehifesinde tapşırıq bitibse üstünə basaq qizili versin yerinə təzə tapşırıq gelsin / Ses musiqi mende islemir telfonnan girirem atdiqin linke gelmir / Nenemin dukaninda alinada nese eger leveli qalxirsa meselem nenemin sinisin onu ele ele qabaqinda bidene işare artsinli görsün ne qeder qalib tamamlamaqa / Dukana jetpack - əvəzləyən nəsə əlavə et baslayanda nese uçan xalça var oda olsun ama oyun baslayanda bor defe basim ona uçub aparsin qabaqa qizillaro yiqa bilsin oda qizilnan olsun / Birde oyunda bidene körpü var altindan keçende orda nese yan divarda sehflik var izah edenmirem ama duzeldersen ."
 
+After play: "İphone du ses gelmir  hee yağ çöreyo deyirdim bidene agent skili varsa test eden ona de oynu iynasin çoxlu test elesin her bir sheyini ve sene ne duzelmelidi desin"
+
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
 **Genre:** endless runner, 3 lanes, seen from behind
