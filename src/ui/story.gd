@@ -58,7 +58,7 @@ func _ready() -> void:
 	_cam.fov = 55
 	_vp.add_child(_cam)
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UiKit.box(Color(0.16, 0.05, 0.03, 0.85), 22, 22))
+	panel.add_theme_stylebox_override("panel", UiKit.carpet(30))
 	panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 20)
 	panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	add_child(panel)
@@ -110,10 +110,10 @@ func _show(i: int) -> void:
 	_stage.add_child(ground)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3
-	for side in [-1, 1]:
-		var h: Node3D = Scenery.house("baku", side, rng)[0]
+	for x in [-4.5, 3.5]: # two house fronts behind, facing the camera
+		var h: Node3D = Scenery.house("baku", 1, rng)[0]
 		h.rotation.y = PI / 2
-		h.position = Vector3(side * 2.5, 0, -7.5)
+		h.position = Vector3(x, 0, -5.0)
 		_stage.add_child(h)
 	if night:
 		Kit.part(_stage, Kit.ball(1.2), Kit.mat("#fff0c0", true), Vector3(6, 9, -20))
@@ -165,10 +165,9 @@ func _show(i: int) -> void:
 				b.rotation = Vector3(k, k * 2, 0)
 				_stage.add_child(b)
 	var far: bool = p["stage"] == "steal" or p["stage"] == "chase"
-	_cam.position = Vector3(0.4, 2.9 if far else 2.2, 9.5 if far else 7.2)
-	_cam.look_at(Vector3(0.4, 1.7 if far else 1.4, 0))
-	_cam.position.y -= 1.0 # the caption covers the lower part of the screen: lift the picture
-	_cam.look_at(Vector3(0.4, (1.7 if far else 1.4) - 1.4, 0))
+	# the caption covers the lower third: the camera looks a little down so the figures sit in the upper part
+	_cam.position = Vector3(0.4, 3.2 if far else 2.6, 11.5 if far else 9.0)
+	_cam.look_at(Vector3(0.4, 0.4 if far else 0.2, 0))
 
 
 func _at(n: Node3D, x: float, z: float, ry: float, sc: float) -> Node3D:

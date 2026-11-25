@@ -62,6 +62,7 @@ var _was_lane := 1
 var hud_score: Label
 var hud_bread: Label
 var hud_nar: Label
+var hud_counts: VBoxContainer
 var hud_banner: Label
 var banner_t := 0.0
 var word_box: HBoxContainer ## the day's word as tiles, shown for a moment when a letter is taken
@@ -563,14 +564,17 @@ func _build_hud() -> void:
 	hud_score = _label(root, 52, Color("#fff4dc"))
 	hud_score.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
 	hud_score.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	hud_bread = _label(root, 38, Color("#ffd77a"))
-	hud_bread.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
-	hud_bread.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	hud_bread.position.y += 76
-	hud_nar = _label(root, 34, Color("#ffb3bd"))
-	hud_nar.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
-	hud_nar.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	hud_nar.position.y += 130
+	hud_counts = VBoxContainer.new()
+	hud_counts.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
+	hud_counts.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	hud_counts.position.y += 76
+	hud_counts.alignment = BoxContainer.ALIGNMENT_END
+	hud_counts.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(hud_counts)
+	hud_bread = UiKit.counts(hud_counts, ["bread"], 38, Color("#ffd77a"))[0]
+	hud_nar = UiKit.counts(hud_counts, ["nar"], 32, Color("#ffb3bd"))[0]
+	for l in [hud_bread, hud_nar]:
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	pause_btn = _button(root, "II", Color(0.27, 0.1, 0.06, 0.75), 40)
 	pause_btn.position = Vector2(24, 24)
 	pause_btn.custom_minimum_size = Vector2(96, 96)
@@ -663,6 +667,9 @@ func _panel(root: Control, t: String) -> Control:
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.add_theme_stylebox_override("normal", UiKit.carpet(30))
+	l.offset_left = 40
+	l.offset_right = -40
 	var box := VBoxContainer.new()
 	box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 260)
 	box.grow_horizontal = Control.GROW_DIRECTION_BOTH
@@ -673,11 +680,12 @@ func _panel(root: Control, t: String) -> Control:
 
 
 func _update_hud() -> void:
-	for l in [hud_score, hud_bread, hud_nar]:
+	hud_counts.visible = started
+	for l in [hud_score]:
 		l.visible = started
 	hud_score.text = "%06d" % int(sim.score)
-	hud_bread.text = "çörək %d" % sim.bread
-	hud_nar.text = "nar %d" % int(save.get_value("nar"))
+	hud_bread.text = str(sim.bread)
+	hud_nar.text = str(int(save.get_value("nar")))
 	for k in power_rows:
 		var left: float = sim.carpet_t if k == "carpet" else sim.power[k]
 		var full: float = tune.carpet_time if k == "carpet" else sim.power_time(k)

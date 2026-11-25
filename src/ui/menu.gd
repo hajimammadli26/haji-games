@@ -43,7 +43,8 @@ var _title: Label
 var _sub: Label
 var _rows: VBoxContainer
 var _scroll: ScrollContainer
-var _wallet: Label
+var _wallet: Control
+var _wallet_n: Array = [] ## the bread and nar numbers
 var _toast: Label
 var _home_info: Label
 var _hint: Label
@@ -61,14 +62,17 @@ func _ready() -> void:
 	add_child(shade)
 	_build_home()
 	_build_list()
-	_wallet = UiKit.label(self, 34, GOLD)
-	_wallet.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 28)
+	_wallet = MarginContainer.new()
+	_wallet.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
 	_wallet.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_wallet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_wallet)
+	_wallet_n = UiKit.counts(_wallet, ["bread", "nar"], 32, GOLD)
 	_toast = UiKit.label(self, 34, CREAM)
 	_toast.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM, Control.PRESET_MODE_MINSIZE, 60)
 	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_toast.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	_toast.add_theme_stylebox_override("normal", UiKit.box(Color(0.1, 0.03, 0.02, 0.85), 16, 14))
+	_toast.add_theme_stylebox_override("normal", UiKit.carpet(22))
 	_toast.visible = false
 	open(screen)
 
@@ -115,7 +119,13 @@ func _build_home() -> void:
 	_home.alignment = BoxContainer.ALIGNMENT_CENTER
 	_home.add_theme_constant_override("separation", 14)
 	add_child(_home)
-	var t := UiKit.label(_home, 76, GOLD)
+	var logo := TextureRect.new()
+	logo.texture = Kit.texture("logo_buta")
+	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	logo.custom_minimum_size = Vector2(0, 110)
+	_home.add_child(logo)
+	var t := UiKit.label(_home, 84, GOLD)
 	t.text = "Cırtdan"
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var t2 := UiKit.label(_home, 40, CREAM)
@@ -228,7 +238,8 @@ func _price_btn(key: String, price: int) -> String:
 func _refresh() -> void:
 	if _rows == null:
 		return
-	_wallet.text = "çörək %d · nar %d" % [prog.bread(), int(prog.save.get_value("nar"))]
+	_wallet_n[0].text = str(prog.bread())
+	_wallet_n[1].text = str(int(prog.save.get_value("nar")))
 	var md := 0
 	for m in prog.missions():
 		if m["done"]:

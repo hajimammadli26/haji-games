@@ -91,6 +91,9 @@ static func ink(node: Node) -> void:
 		var m: Material = node.material_override
 		if m is StandardMaterial3D and ((m as StandardMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED or (m as StandardMaterial3D).emission_enabled):
 			return
+		var mi := node as MeshInstance3D
+		if mi.mesh != null and (mi.mesh.get_aabb().size * mi.scale).length() < 0.25:
+			return # eyes, glints, buttons: an outline there only muddies the face
 		node.material_overlay = ink_mat()
 
 
