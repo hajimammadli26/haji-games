@@ -139,12 +139,13 @@ func has_costume(id: String) -> bool:
 	return id == "none" or _owns("costumes", id)
 
 
-## Puts on a costume, buying it first if needed.
+## Puts on a costume, buying it first if needed. Costumes are Cırtdan's: he becomes the runner.
 func choose_costume(id: String) -> bool:
 	if not has_costume(id):
 		if not spend(tune.costume_cost):
 			return false
 		_own("costumes", id)
+	save.put("char", "cirtdan")
 	save.set_value("costume", id)
 	return true
 
@@ -162,6 +163,13 @@ func choose_city(id: String) -> bool:
 		_own("cities", id)
 	save.set_value("city", id)
 	return true
+
+
+## Cırtdan's own look with his costume (the story is about him, whoever runs).
+func cirtdan_look() -> Dictionary:
+	var l: Dictionary = (Catalog.find(Catalog.CHARS, "cirtdan")["look"] as Dictionary).duplicate()
+	l.merge(Catalog.find(Catalog.COSTUMES, String(save.get_value("costume")))["look"], true)
+	return l
 
 
 ## The look for Characters.runner(): the character's colours with the costume on top (costumes are Cırtdan's).
@@ -230,6 +238,14 @@ func claim(i: int) -> int:
 		return 0
 	var sl := _slots().duplicate()
 	var nxt := int(save.get_value("mnext")) if save.get_value("mnext") != null else 3
+	var kinds := []
+	for j in 3:
+		if j != i:
+			kinds.append(Catalog.MISSIONS[int(sl[j]) % Catalog.MISSIONS.size()]["k"])
+	var guard := 0
+	while Catalog.MISSIONS[nxt % Catalog.MISSIONS.size()]["k"] in kinds and guard < Catalog.MISSIONS.size():
+		nxt += 1 # never two missions of the same kind at once
+		guard += 1
 	sl[i] = nxt
 	save.put("mslots", sl)
 	save.put("mnext", nxt + 1)

@@ -136,7 +136,7 @@ func reset(seed_value: int) -> void:
 	for g in _gates:
 		g[0].queue_free()
 	_gates.clear()
-	_house_next = {-1: -20.0, 1: -20.0}
+	_house_next = {-1: -60.0, 1: -60.0} # houses behind the start too: the menu camera looks back
 	_rng.seed = seed_value + 17
 	_obj_rng.seed = seed_value + 29
 	_gate_next = 300.0 + _rng.randf() * 200.0

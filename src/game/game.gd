@@ -109,6 +109,7 @@ func _ready() -> void:
 	var g := prog.daily_gift() if not args.has("shot") else ""
 	if g != "":
 		menu.toast("Nənənin bu günkü hədiyyəsi: %s" % g, 4.0)
+		menu.refresh()
 	if args.has("story") and args.has("shot"):
 		_show_story(false)
 		for i in int(args["story"]):
@@ -270,7 +271,7 @@ func _physics_process(dt: float) -> void:
 func _process(dt: float) -> void:
 	anim_t += dt
 	banner_t = maxf(0.0, banner_t - dt)
-	hud_banner.visible = banner_t > 0.0
+	hud_banner.visible = banner_t > 0.0 and started and not menu.visible
 	word_t = maxf(0.0, word_t - dt)
 	word_box.visible = word_t > 0.0 and started
 	word_box.modulate.a = minf(1.0, word_t / 0.5)
@@ -398,7 +399,7 @@ func _on_play() -> void:
 
 ## Shows the story over everything; then starts a run (then_play) or returns to the menu.
 func _show_story(then_play: bool) -> void:
-	story = Story.new(prog.look())
+	story = Story.new(prog.cirtdan_look(), then_play)
 	story.sfx.connect(snd.play)
 	hud_layer.add_child(story)
 	story.finished.connect(func() -> void:
@@ -454,9 +455,12 @@ func _on_dead(_kind: String) -> void:
 	var best := maxi(int(sim.score), int(save.get_value("best")))
 	var cost := sim.continue_cost()
 	var have := int(save.get_value("nar"))
-	over_text.text = "\n".join([tr("Hamm! Div səni tutdu!" if sim.dead == "caught" else "Bam! Div səni tutdu!"), "",
-		tr("Xal: %d" % int(sim.score)), tr("Yağ çörəyi: %d" % sim.bread), tr("Rekord: %d" % best)])
-	continue_btn.text = "Nar ilə davam et (%d)" % cost
+	var lines := [tr("Hamm! Div səni tutdu!" if sim.dead == "caught" else "Bam! Toqquşdun!"), "",
+		tr("Xal: %d" % int(sim.score)), tr("Yağ çörəyi: %d" % sim.bread), tr("Rekord: %d" % best)]
+	if int(sim.score) > int(save.get_value("best")):
+		lines.insert(1, tr("Yeni rekord!"))
+	over_text.text = "\n".join(lines)
+	continue_btn.text = "Nar ilə davam et (%d)" % cost if have >= cost else tr("Nar çatmır: %d lazımdır, səndə %d" % [cost, have])
 	continue_btn.disabled = have < cost
 	over_panel.visible = true
 
@@ -607,7 +611,7 @@ func _build_hud() -> void:
 	boost_btn.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	boost_btn.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	boost_btn.pressed.connect(func() -> void: input.boost = true)
-	hud_banner = _label(root, 50, Color("#ffd77a"))
+	hud_banner = _label(root, 44, Color("#ffd77a"))
 	hud_banner.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE, Control.PRESET_MODE_MINSIZE, 0)
 	hud_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hud_banner.position.y = 300
@@ -615,7 +619,7 @@ func _build_hud() -> void:
 	hud_banner.visible = false
 	word_box = HBoxContainer.new()
 	word_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	word_box.position.y = 420
+	word_box.position.y = 560
 	word_box.alignment = BoxContainer.ALIGNMENT_CENTER
 	word_box.add_theme_constant_override("separation", 4)
 	word_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -691,11 +695,11 @@ func _update_hud() -> void:
 		var full: float = tune.carpet_time if k == "carpet" else sim.power_time(k)
 		power_rows[k][0].visible = left > 0.0
 		power_rows[k][1].value = left / full
-	carpet_btn.visible = sim.carpets > 0 and sim.carpet_t <= 0.0 and sim.dead == "" and started
+	carpet_btn.visible = sim.carpets > 0 and sim.carpet_t <= 0.0 and sim.dead == "" and started and not paused
 	carpet_btn.text = "Xalça x%d" % sim.carpets
-	boost_btn.visible = sim.boost_open() and started
+	boost_btn.visible = sim.boost_open() and started and not paused
 	boost_btn.text = "Uçuş! x%d" % sim.boosts
-	pause_btn.visible = started and sim.dead == ""
+	pause_btn.visible = started and sim.dead == "" and not paused
 
 
 # --- unattended checks (developer flags only) --------------------------------------------------

@@ -30,6 +30,7 @@ const GREEN := Color("#2b7a48")
 const RED := Color("#8e1d22")
 const BROWN := Color(0.27, 0.1, 0.06, 0.85)
 const GOLD := Color("#ffd77a")
+const GOLD_BTN := Color("#d89a1a")
 const CREAM := Color("#fff4dc")
 
 var prog: Progress
@@ -73,6 +74,11 @@ func _ready() -> void:
 	_toast.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_toast.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	_toast.add_theme_stylebox_override("normal", UiKit.carpet(22))
+	_toast.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE, Control.PRESET_MODE_MINSIZE, 40)
+	_toast.offset_left = 40
+	_toast.offset_right = -40
 	_toast.visible = false
 	open(screen)
 
@@ -163,13 +169,14 @@ func _build_list() -> void:
 	_list.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_list.offset_left = 24
 	_list.offset_right = -24
-	_list.offset_top = 100
+	_list.offset_top = 110
 	_list.offset_bottom = -24
 	_list.add_theme_constant_override("separation", 12)
 	add_child(_list)
 	var back := UiKit.button(self, "←", BROWN, 40)
 	back.position = Vector2(24, 20)
-	back.custom_minimum_size = Vector2(90, 70)
+	back.custom_minimum_size = Vector2(120, 96)
+	back.position = Vector2(16, 8)
 	back.pressed.connect(open.bind("home"))
 	_list.visibility_changed.connect(func() -> void: back.visible = _list.visible)
 	_title = UiKit.label(_list, 50, GOLD)
@@ -188,7 +195,7 @@ func _build_list() -> void:
 
 
 ## One row: a title, a line under it, and a button on the right (or none when btn is "").
-func _row(title: String, sub: String, btn: String, can: bool, act: Callable, color := GREEN) -> void:
+func _row(title: String, sub: String, btn: String, can: bool, act: Callable, color := GREEN, icon := "") -> void:
 	var panel := PanelContainer.new()
 	panel.add_theme_stylebox_override("panel", UiKit.box(Color(0.22, 0.08, 0.04, 0.82), 18, 16))
 	_rows.add_child(panel)
@@ -206,8 +213,17 @@ func _row(title: String, sub: String, btn: String, can: bool, act: Callable, col
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	if btn == "":
 		return
-	var k := UiKit.button(h, btn, color, 26)
-	k.custom_minimum_size = Vector2(170, 76)
+	var confirming := btn == "Təsdiq?"
+	var k := UiKit.button(h, ("✓ " + tr(btn)) if confirming else btn, GOLD_BTN if confirming else color, 26)
+	k.custom_minimum_size = Vector2(190, 96)
+	if icon != "" and not confirming:
+		k.icon = Kit.texture("icon_" + icon)
+		k.add_theme_constant_override("icon_max_width", 34)
+	if confirming: # a pulse so a child sees it is waiting for the second tap
+		k.pivot_offset = k.custom_minimum_size / 2.0
+		var tw := k.create_tween().set_loops()
+		tw.tween_property(k, "scale", Vector2(1.06, 1.06), 0.25)
+		tw.tween_property(k, "scale", Vector2.ONE, 0.25)
 	k.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	k.disabled = not can
 	k.pressed.connect(act)
@@ -216,6 +232,11 @@ func _row(title: String, sub: String, btn: String, can: bool, act: Callable, col
 ## A purchase: the first tap asks "Təsdiq?", the second spends the bread.
 func _buy(key: String, price: int, act: Callable) -> Callable:
 	return func() -> void:
+		if price > prog.bread():
+			_confirm_key = ""
+			sfx.emit("no")
+			toast(tr("Yağ çörəyi çatmır: %d lazımdır, səndə %d" % [price, prog.bread()]))
+			return
 		if price >= prog.tune.confirm_from and _confirm_key != key:
 			_confirm_key = key
 			_confirm_t = 2.5
@@ -230,10 +251,15 @@ func _buy(key: String, price: int, act: Callable) -> Callable:
 
 
 func _price_btn(key: String, price: int) -> String:
-	return "Təsdiq?" if _confirm_key == key else "%d çörək" % price
+	return "Təsdiq?" if _confirm_key == key else str(price)
 
 
 # --- the screens ---------------------------------------------------------------------------------
+
+## Redraws the shown screen (the wallet, the lists) after something changed outside the menu.
+func refresh() -> void:
+	_refresh()
+
 
 func _refresh() -> void:
 	if _rows == null:
@@ -264,41 +290,40 @@ func _screen_shop() -> void:
 		var marks := "●".repeat(lv) + "○".repeat(mx - lv)
 		var sub := "%s\n%s  %s" % [tr(p["what"]), marks, tr("səviyyə %d/%d" % [lv, mx])]
 		if lv >= mx:
-			_row(p["name"], sub, "", false, Callable())
+			_row(p["name"], sub, "Tam ✓", false, Callable(), GOLD_BTN)
 			continue
 		var cost := prog.level_cost(k)
-		_row(p["name"], sub, _price_btn("lv_" + k, cost), prog.bread() >= cost, _buy("lv_" + k, cost, func() -> void:
+		_row(p["name"], sub, _price_btn("lv_" + k, cost), true, _buy("lv_" + k, cost, func() -> void:
 			if prog.buy_level(k):
-				toast("%s: səviyyə %d" % [p["name"], prog.level(k)])))
+				toast("%s: səviyyə %d" % [p["name"], prog.level(k)])), GREEN, "bread")
 	var t := prog.tune
 	_row("Uçan xalça", "Qaçışda bir dəfə: səni bir zərbədən qoruyur · var: %d" % int(prog.save.get_value("carpets")),
-		_price_btn("carpet", t.carpet_cost), prog.bread() >= t.carpet_cost, _buy("carpet", t.carpet_cost, func() -> void:
+		_price_btn("carpet", t.carpet_cost), true, _buy("carpet", t.carpet_cost, func() -> void:
 			if prog.buy_carpet():
-				toast("Uçan xalça alındı")))
+				toast("Uçan xalça alındı")), GREEN, "bread")
 	_row("Xalça ilə uçuş", "Qaçışın əvvəlində bas: uçub irəli get, çörəkləri yığ · var: %d" % int(prog.save.get_value("boosts")),
-		_price_btn("boost", t.boost_cost), prog.bread() >= t.boost_cost, _buy("boost", t.boost_cost, func() -> void:
+		_price_btn("boost", t.boost_cost), true, _buy("boost", t.boost_cost, func() -> void:
 			if prog.buy_boost():
-				toast("Xalça ilə uçuş alındı")))
+				toast("Xalça ilə uçuş alındı")), GREEN, "bread")
 	_row("Nənənin bağlaması", "İçində nə var? Çörək, nar və ya uçan xalça",
-		_price_btn("box", t.box_cost), prog.bread() >= t.box_cost, _buy("box", t.box_cost, func() -> void:
+		_price_btn("box", t.box_cost), true, _buy("box", t.box_cost, func() -> void:
 			var got := prog.open_box()
 			if got != "":
-				toast(got)))
+				toast(got)), GREEN, "bread")
 
 
 func _screen_costumes() -> void:
-	_sub.text = "Cırtdanın geyimləri"
+	_sub.text = "Cırtdanın geyimləri · geyinəndə Cırtdan seçilir"
 	var cost := prog.tune.costume_cost
-	var cur := String(prog.save.get_value("costume"))
+	var cur := String(prog.save.get_value("costume")) if String(prog.save.get_value("char")) == "cirtdan" else ""
 	for c in Catalog.COSTUMES:
 		var id: String = c["id"]
 		var own := prog.has_costume(id)
 		var btn := "Geyinib" if cur == id else ("Geyin" if own else _price_btn("cos_" + id, cost))
-		var can := cur != id and (own or prog.bread() >= cost)
-		_row(c["name"], c["desc"], btn, can, _buy("cos_" + id, 0 if own else cost, func() -> void:
+		_row(c["name"], c["desc"], btn, cur != id, _buy("cos_" + id, 0 if own else cost, func() -> void:
 			if prog.choose_costume(id):
 				toast("Cırtdan: %s" % c["name"])
-				look_changed.emit()))
+				look_changed.emit()), GREEN, "" if own else "bread")
 
 
 func _screen_chars() -> void:
@@ -317,11 +342,10 @@ func _screen_chars() -> void:
 		if c.get("claims", false) and not own:
 			sub += " · " + tr("pulsuz: %d/%d tapşırıq" % [mini(int(prog.save.get_value("claims")), prog.tune.kecel_claims), prog.tune.kecel_claims])
 		var btn := "Seçilib" if cur == id else ("Seç" if own else _price_btn("ch_" + id, price))
-		var can := cur != id and (own or prog.bread() >= price)
-		_row(c["name"], sub, btn, can, _buy("ch_" + id, 0 if own else price, func() -> void:
+		_row(c["name"], sub, btn, cur != id, _buy("ch_" + id, 0 if own else price, func() -> void:
 			if prog.choose_char(id):
 				toast("Personaj: %s" % c["name"])
-				look_changed.emit()))
+				look_changed.emit()), GREEN, "" if own else "bread")
 
 
 func _screen_cities() -> void:
@@ -332,11 +356,10 @@ func _screen_cities() -> void:
 		var own := prog.has_city(id)
 		var price: int = c["price"]
 		var btn := "Buradasan" if cur == id else ("Get" if own else _price_btn("ci_" + id, price))
-		var can := cur != id and (own or prog.bread() >= price)
-		_row(c["name"], c["desc"], btn, can, _buy("ci_" + id, 0 if own else price, func() -> void:
+		_row(c["name"], c["desc"], btn, cur != id, _buy("ci_" + id, 0 if own else price, func() -> void:
 			if prog.choose_city(id):
 				toast("Şəhər: %s" % c["name"])
-				look_changed.emit()))
+				look_changed.emit()), GREEN, "" if own else "bread")
 
 
 func _screen_missions() -> void:
@@ -350,7 +373,7 @@ func _screen_missions() -> void:
 				var got := prog.claim(i)
 				sfx.emit("buy")
 				toast("+%d çörək! Yeni tapşırıq" % got)
-				_refresh(), RED)
+				_refresh(), RED, "bread")
 		else:
 			_row(m["txt"], "%s · mükafat %d çörək" % [p, m["reward"]], "", false, Callable())
 	var dw := prog.day_word()
@@ -368,7 +391,7 @@ func _screen_missions() -> void:
 
 func _screen_leaders() -> void:
 	var best := int(prog.save.get_value("best"))
-	_sub.text = "%s · Rekord: %d · onlayn reytinq server tələb edir (sonra)" % [prog.league(best), best]
+	_sub.text = "%s · Rekord: %d" % [prog.league(best), best]
 	var runs: Array = prog.save.get_value("runs")
 	if runs.is_empty():
 		_row("Hələ qaçış yoxdur", "Oyna və ilk rekordunu qoy!", "", false, Callable())
@@ -388,9 +411,12 @@ func _screen_settings() -> void:
 			settings_changed.emit()
 			_refresh(), GREEN if on else BROWN)
 	var cur := String(prog.save.get_value("lang"))
+	var head := UiKit.label(_rows, 34, GOLD)
+	head.text = "Dil"
+	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for c in Lang.choices():
 		var code: String = c[0]
-		_row(c[1], "Dil" if code == "az" else "", "Seçilib" if cur == code else "Seç", cur != code, func() -> void:
+		_row(c[1], "", "Seçilib" if cur == code else "Seç", cur != code, func() -> void:
 			prog.set_lang(code)
 			_refresh())
 	_row("Nağıl", "Cırtdanın hekayəsinə yenidən bax", "Bax", true, func() -> void: story.emit())

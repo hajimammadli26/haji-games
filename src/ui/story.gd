@@ -21,6 +21,7 @@ const PAGES := [
 ]
 
 var page := 0
+var runs_after := true ## the story leads into a run ("Qaç!") or back to the menu ("Bağla")
 var look := {}
 var _vp: SubViewport
 var _stage: Node3D
@@ -32,8 +33,9 @@ var _next: Button
 var _t := 0.0
 
 
-func _init(runner_look: Dictionary = {}) -> void:
+func _init(runner_look: Dictionary = {}, then_run: bool = true) -> void:
 	look = runner_look
+	runs_after = then_run
 
 
 func _ready() -> void:
@@ -89,7 +91,7 @@ func _show(i: int) -> void:
 	page = i
 	var p: Dictionary = PAGES[i]
 	_cap.text = p["cap"]
-	_next.text = "Qaç!" if i == PAGES.size() - 1 else "Növbəti →"
+	_next.text = ("Qaç!" if runs_after else "Bağla") if i == PAGES.size() - 1 else "Növbəti →"
 	if p.has("voice"):
 		sfx.emit(p["voice"])
 	if _stage != null:
@@ -104,7 +106,7 @@ func _show(i: int) -> void:
 	_sun.light_color = Color("#9fb4ff") if night else Color("#fff1d6")
 	var ground := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
-	pm.size = Vector2(40, 40)
+	pm.size = Vector2(160, 160)
 	ground.mesh = pm
 	ground.material_override = Kit.tex("cobble", Vector2(6, 6))
 	_stage.add_child(ground)
@@ -122,33 +124,35 @@ func _show(i: int) -> void:
 			_at(Characters.runner(look), -0.4, 0, PI - 0.3, 1.3)
 			_at(Characters.nene(), 1.1, -0.3, -0.3, 1.1)
 		"bake":
-			_at(Characters.nene(), -0.9, -0.2, 0.4, 1.1)
-			_at(Props.tendir(), 0.5, -0.6, 0, 1.4)
+			_at(Characters.nene(), -1.5, -0.2, 0.4, 1.1)
+			_at(Props.tendir(), -0.1, -0.6, 0, 1.4)
 			for k in 5:
 				var b := Props.pickup("bread")
-				b.position = Vector3(1.4 + (k % 3) * 0.35, 0.3 + (k / 3) * 0.2, 0.2)
+				b.position = Vector3(0.8 + (k % 3) * 0.3, 0.25 + (k / 3) * 0.2, 0.2)
+				b.scale = Vector3.ONE * 0.7
 				_stage.add_child(b)
-			_at(Characters.runner(look), 2.4, 0.4, PI - 0.6, 1.3)
+			_at(Characters.runner(look), 1.9, 0.4, PI - 0.6, 1.3)
 		"steal":
 			var d := _at(Characters.div(), 0, -0.5, 0.5, 1.0)
 			d.get_meta("parts")["arm_l"].rotation.x = -2.2
 			d.get_meta("parts")["arm_r"].rotation.x = -2.2
-			_at(Props.tendir(), 1.6, 0.6, 0, 1.0).position.y = 1.7
-			for k in 4:
+			_at(Props.tendir(), 0, 0.0, 0, 1.1).position.y = 3.6 # the oven held high over his head
+			for k in 5:
 				var b := Props.pickup("bread")
-				b.position = Vector3(-1.6 + (k % 2) * 0.4, 1.4 + k * 0.25, 0.7)
+				b.position = Vector3(-1.3 + (k % 3) * 0.35, 0.25 + (k / 3) * 0.3, 0.9)
+				b.scale = Vector3.ONE * 0.8
 				_stage.add_child(b)
 		"cave":
 			for k in 9:
-				var r := Kit.part(_stage, Kit.ball(1.2, -1, 7), Kit.mat("#4a4552"), Vector3(-6 + k * 1.6, 1.0, -3.0 - (k % 2)))
+				var r := Kit.part(_stage, Kit.ball(1.2, -1, 7), Kit.mat("#6a5a4a"), Vector3(-6 + k * 1.6, 1.0, -3.0 - (k % 2)))
 				r.scale = Vector3(1.0, 1.3, 0.9)
-			var d := _at(Characters.div(), -0.6, -0.8, 0.3, 1.0)
+			var d := _at(Characters.div(), -0.2, -0.8, 0.3, 0.9)
 			d.rotation.z = PI / 2 - 0.15
 			d.position.y = 0.9
-			var c := _at(Characters.runner(look), 1.8, 0.6, PI + 0.9, 1.3)
+			var c := _at(Characters.runner(look), 1.7, 0.6, PI + 0.9, 1.3)
 			c.get_meta("parts")["leg_l"].rotation.x = 0.7
 			c.get_meta("parts")["leg_r"].rotation.x = -0.5
-			Kit.part(_stage, Kit.ball(0.45, 0.8), Kit.mat("#c9a46a"), Vector3(2.7, 0.45, 0.5))
+			Kit.part(_stage, Kit.ball(0.4, 0.7), Kit.mat("#c9a46a"), Vector3(2.4, 0.38, 0.6))
 		_:
 			var d := _at(Characters.div(), -1.8, -1.0, 0.7, 1.0)
 			d.get_meta("parts")["arm_l"].rotation.x = -2.4
@@ -161,8 +165,9 @@ func _show(i: int) -> void:
 			parts["arm_r"].rotation.x = 0.9
 			for k in 8:
 				var b := Props.pickup("bread")
-				b.position = Vector3(0.6 + k * 0.45, 0.25 + absf(sin(k)) * 0.8, 0.3 + (k % 3) * 0.4)
+				b.position = Vector3(0.4 + k * 0.32, 0.25 + absf(sin(k)) * 0.8, 0.3 + (k % 3) * 0.4)
 				b.rotation = Vector3(k, k * 2, 0)
+				b.scale = Vector3.ONE * 0.5
 				_stage.add_child(b)
 	var far: bool = p["stage"] == "steal" or p["stage"] == "chase"
 	# the caption covers the lower third: the camera looks a little down so the figures sit in the upper part

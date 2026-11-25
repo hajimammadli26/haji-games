@@ -19,13 +19,21 @@ var _path := PATH
 func _init(path: String = PATH, start_nar: int = 2) -> void:
 	_path = path
 	_d = _defaults(start_nar)
-	if FileAccess.file_exists(_path):
-		var f := FileAccess.open(_path, FileAccess.READ)
-		if f != null:
-			var parsed: Variant = JSON.parse_string(f.get_as_text())
-			if parsed is Dictionary:
-				for k in parsed:
-					_d[k] = parsed[k]
+	var parsed: Variant = _read(_path)
+	if not parsed is Dictionary: # damaged or missing: the last good copy
+		parsed = _read(_path + ".bak")
+	if parsed is Dictionary:
+		for k in parsed:
+			_d[k] = parsed[k]
+
+
+func _read(path: String) -> Variant:
+	if not FileAccess.file_exists(path):
+		return null
+	var f := FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return null
+	return JSON.parse_string(f.get_as_text())
 
 
 func _defaults(start_nar: int) -> Dictionary:
@@ -54,10 +62,22 @@ func put(key: String, value: Variant) -> void:
 	_d[key] = value
 
 
-## Writes everything to the file. Returns false if the file could not be written.
+## Writes everything safely: to a temporary file first, then swapped in, the old one kept as .bak,
+## so a crash or a full disk mid-write never loses the player's progress. False if it could not be written.
 func flush() -> bool:
-	var f := FileAccess.open(_path, FileAccess.WRITE)
+	var tmp := _path + ".tmp"
+	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
 		return false
 	f.store_string(JSON.stringify(_d))
-	return true
+	f.close()
+	if not _read(tmp) is Dictionary:
+		return false
+	var dir := DirAccess.open(_path.get_base_dir())
+	if dir == null:
+		return false
+	if FileAccess.file_exists(_path):
+		if FileAccess.file_exists(_path + ".bak"):
+			dir.remove(_path.get_file() + ".bak")
+		dir.rename(_path.get_file(), _path.get_file() + ".bak")
+	return dir.rename(tmp.get_file(), _path.get_file()) == OK

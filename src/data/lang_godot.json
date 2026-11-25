@@ -318,5 +318,45 @@
   "tr": "Bohçadan çıktı",
   "en": "Out of the bundle",
   "ru": "Из узелка"
+ },
+ "Yağ çörəyi çatmır: {n} lazımdır, səndə {m}": {
+  "tr": "Yağlı çörek yetmiyor: {n} gerek, sende {m}",
+  "en": "Not enough bread: you need {n}, you have {m}",
+  "ru": "Не хватает хлеба: нужно {n}, у тебя {m}"
+ },
+ "Nar çatmır: {n} lazımdır, səndə {m}": {
+  "tr": "Nar yetmiyor: {n} gerek, sende {m}",
+  "en": "Not enough pomegranates: you need {n}, you have {m}",
+  "ru": "Не хватает гранатов: нужно {n}, у тебя {m}"
+ },
+ "Bam! Toqquşdun!": {
+  "tr": "Bam! Çarptın!",
+  "en": "Bam! You crashed!",
+  "ru": "Бам! Ты врезался!"
+ },
+ "Yeni rekord!": {
+  "tr": "Yeni rekor!",
+  "en": "New record!",
+  "ru": "Новый рекорд!"
+ },
+ "Bağla": {
+  "tr": "Kapat",
+  "en": "Close",
+  "ru": "Закрыть"
+ },
+ "Tam ✓": {
+  "tr": "Tam ✓",
+  "en": "Max ✓",
+  "ru": "Макс ✓"
+ },
+ "Cırtdanın geyimləri · geyinəndə Cırtdan seçilir": {
+  "tr": "Cırtdan'ın kıyafetleri · giyince Cırtdan seçilir",
+  "en": "Jirtdan's outfits · wearing one picks Jirtdan",
+  "ru": "Наряды Джыртдана · надев наряд, играешь Джыртданом"
+ },
+ "{s} · Rekord: {n}": {
+  "tr": "{s} · Rekor: {n}",
+  "en": "{s} · Best: {n}",
+  "ru": "{s} · Рекорд: {n}"
  }
 }
