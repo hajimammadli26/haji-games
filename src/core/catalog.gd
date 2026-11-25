@@ -13,7 +13,7 @@ const CHARS := [
 	{"id": "kecel", "name": "Keçəl", "desc": "Zarafatcıl və bic oğlan", "price": 3000, "claims": true,
 		"look": {"hat": "bald", "hat_color": "#ffe7c4", "vest": "#7a2c3e", "trim": "#c89b45", "shirt": "#e9e2cf", "pants": "#2a2a3a"}},
 	{"id": "kendirbaz", "name": "Kəndirbaz", "desc": "İp üstündə oynayan cəld oğlan", "price": 10000,
-		"look": {"hat": "tall", "hat_color": "#f3ecd8", "vest": "#c8322c", "trim": "#1f9e9a", "shirt": "#f2b632", "pants": "#1d4f9a"}},
+		"look": {"hat": "tall", "hat_color": "#f3ecd8", "vest": "#d9692b", "trim": "#c89b45", "shirt": "#f3ecd8", "pants": "#1d4f9a"}},
 	{"id": "kosa", "name": "Kosa", "desc": "Novruz bayramının obrazı", "price": 8000,
 		"look": {"hat": "kosa", "hat_color": "#3b2414", "vest": "#8a6a44", "trim": "#c89b45", "shirt": "#c9a46a", "pants": "#5a3a22"}},
 	{"id": "peri", "name": "Pəri qız", "desc": "Sehrli qanadlı qız", "price": 12000, "stones": true,

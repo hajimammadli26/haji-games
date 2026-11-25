@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dt3hh8wy8xpve"
-path="res://.godot/imported/vest_c8322c_1f9e9a.png-6b145e9cfcd2b49bf019634171d72cae.ctex"
+uid="uid://c6iqumlgcnw2x"
+path="res://.godot/imported/vest_d9692b_c89b45.png-6945662361088f1861fc7ea0f88dd246.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/textures/vest_c8322c_1f9e9a.png"
-dest_files=["res://.godot/imported/vest_c8322c_1f9e9a.png-6b145e9cfcd2b49bf019634171d72cae.ctex"]
+source_file="res://assets/textures/vest_d9692b_c89b45.png"
+dest_files=["res://.godot/imported/vest_d9692b_c89b45.png-6945662361088f1861fc7ea0f88dd246.ctex"]
 
 [params]
 
@@ -23,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +37,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=0
+detect_3d/compress_to=1

@@ -166,7 +166,7 @@ static func cart(length: float) -> Node3D:
 	_b(g, Kit.tex("wood", Vector2(1, length / 2.0)), 1.7, 0.25, length, Vector3(0, 0.75, 0))
 	var z := -length / 2.0 + 0.7
 	while z < length / 2.0:
-		_b(g, Kit.tex("hay", Vector2.ONE, Color("#cdbf9f")), 1.6, 0.68, 1.3, Vector3(0, 1.24, z)) # toned: bread owns bright gold
+		_b(g, Kit.tex("hay", Vector2.ONE, Color("#b9b29c")), 1.6, 0.68, 1.3, Vector3(0, 1.24, z)) # toned: bread owns bright gold
 		_b(g, "#9c6b25", 1.62, 0.7, 0.08, Vector3(0, 1.24, z))
 		z += 1.4
 	for x in [-0.95, 0.95]:

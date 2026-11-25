@@ -27,6 +27,8 @@ var _chunk_n := 0
 const CHUNK_HOUSES := 4
 const NEAR := 80.0 ## houses in full detail up to here; beyond, each is one simple block (art bible §8: < 300 draws)
 const PICKUP_RANGE := 60.0 ## pickups appear from this far (2.7 s ahead at top speed)
+const POWER_KINDS := ["magnet", "shoe", "double", "pole", "simurq"] ## pickups that pulse
+const POWER_PULSE := 0.12 ## how much a power-up grows and shrinks as it breathes
 const OBSTACLE_RANGE := 100.0 ## obstacles appear from this far (4.5 s ahead at top speed: time to read them)
 ## The flat colour of the far blocks, per city (wall colour; a hedge green or rock for the nature cities).
 const FAR := {"baku": "#d9a95f", "sheki": "#e9dfcc", "naxcivan": "#b5653a", "qebele": "#3f6f3f",
@@ -129,7 +131,7 @@ func _build_sky() -> void:
 	rng.seed = 5
 	var band := Kit.joint(_sky) # the clouds as one band, drawn twice side by side so it scrolls without a seam
 	for i in 10: # puffy clouds: a few balls each
-		var c := Kit.joint(band, Vector3(-160.0 + i * 32.0 + rng.randf() * 10.0, 55.0 + rng.randf() * 25.0, -120.0 - rng.randf() * 160.0))
+		var c := Kit.joint(band, Vector3(-160.0 + i * 32.0 + rng.randf() * 10.0, 40.0 + rng.randf() * 14.0, -190.0 - rng.randf() * 130.0))
 		for k in 4 + rng.randi() % 3:
 			var m := Kit.part(c, Kit.ball(4.0 + rng.randf() * 4.0, -1.0, 10), white, Vector3(k * 5.0 - 10.0, rng.randf() * 2.5, rng.randf() * 3.0))
 			m.scale.y = 0.6
@@ -232,6 +234,7 @@ func update(sim: RunSim, s: float, t: float) -> void:
 				text = letter_text.call()
 			p.node = Props.pickup(p.kind, text, city)
 			_ranges(p.node, 0.0, PICKUP_RANGE)
+			p.node.set_meta("base", p.node.scale)
 			add_child(p.node)
 		if p.taken:
 			p.node.scale = p.node.scale * 0.8
@@ -241,6 +244,8 @@ func update(sim: RunSim, s: float, t: float) -> void:
 			var bob := 0.0 if p.kind == "bread" else sin(t * 3.0 + p.s) * 0.12
 			p.node.position = Vector3(p.x, p.y + bob, -p.s)
 			p.node.rotation.y = t * 3.0 + p.s
+			if p.kind in POWER_KINDS: # power-ups breathe so they read as magic
+				p.node.scale = p.node.get_meta("base") * (1.0 + sin(t * 5.0 + p.s) * POWER_PULSE)
 
 
 func _animate_obstacle(o: RunSim.Obstacle, t: float) -> void:

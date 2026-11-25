@@ -348,8 +348,8 @@ static func _hat(h: Node3D, head: Node3D, torso: Node3D, hat: String, c: String,
 		_: # Kəndirbaz: a tall white felt hat with a tassel, the balance pole across his shoulders
 			_cyl(h, c, 0.2, 0.42, Vector3(0, 0.5, 0), Vector3.ZERO, 0.17)
 			_cyl(h, c, 0.3, 0.04, Vector3(0, 0.32, 0))
-			_ink(_egg(h, "#c8322c", 0.07, 0.07, 0.07, Vector3(0, 0.75, 0)))
-			_cyl(h, "#1f9e9a", 0.205, 0.05, Vector3(0, 0.38, 0))
+			_ink(_egg(h, "#d9692b", 0.07, 0.07, 0.07, Vector3(0, 0.75, 0)))
+			_cyl(h, "#c89b45", 0.205, 0.05, Vector3(0, 0.38, 0))
 			_cyl(torso, "#8a5a2e", 0.024, 1.5, Vector3(0, 0.47 * th, 0.34), Vector3(0, 0, PI / 2))
 			for sd in [-1.0, 1.0]:
 				_ink(_egg(torso, AGOLD, 0.05, 0.05, 0.05, Vector3(sd * 0.75, 0.47 * th, 0.34)))
