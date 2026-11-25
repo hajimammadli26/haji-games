@@ -184,28 +184,140 @@ firuzəyi sehrli güc. Heç bir məna yalnız rəngə bağlı deyil.)*
 
 ## 5. Character Design Direction
 
-[To be designed] — the player character's visual archetype, how players tell
-enemies, NPCs and allies apart at a glance, expression and pose style, and how
-much detail survives at game camera distance (LOD philosophy).
+**Player archetype:** the clever little hero — chibi proportions (head ≈ 40% of body height), big eyes with a glint,
+quick and light. *Serves:* readability at speed; the comic chase (small and quick against big and clumsy).
+- **Designed from the back first:** the run camera sees his back. Identity at run distance = the hat's top contour
+  + the bread sack + the vest's back colour block. *Test:* a back view at 15% of screen height names the character.
+- **Seven playables share one body**; the hat sets the outline class (Section 3) and carries a Player Red band.
+  Costumes belong to Cırtdan and change vest, trim and hat colours, never the silhouette class.
+
+**Telling roles apart at a glance**
+| Role | Cue |
+|---|---|
+| Player | Player Red papaq/band, Ink outline, always bottom centre of the screen |
+| The Div | Div Olive, two to three times the player's height, always behind, round and soft |
+| Animals in the way (camels, horse) | wide four-legged silhouettes, warm browns, carpet saddles; characters, never threats |
+| Nənə and story-only figures | appear only in story pictures and menus, never on the runway |
+
+**Expression and pose**
+- Exaggerated, snappy cartoon poses; each action's pose reads before the action lands (anticipation ≥ 1/3 s at the
+  jump, the slide, a stumble).
+- Face states (Cırtdan): smile · "O" mouth (jump, fright) · blink · worried brows (stumble) · tongue out (escaped
+  the Div). The Div: grin, roar with club up, surprised, snoring, proud ("Hamm!").
+- Squash and stretch on landing ≤ 25%; lean into lane changes ≤ 20°.
+- *Test:* if a pose could read as hurt or frightened, push it toward comic surprise.
+
+**Detail at camera distance (LOD philosophy)**
+- In the run Cırtdan is ≈ 15% of the screen height: silhouette + three colour blocks (hat, vest, trousers) carry
+  him; parts smaller than ~5 px on a phone (glints, buttons, patches) are for menus and story close-ups.
+- Tiny parts get no ink outline (it muddies faces); faces are read from the front only in menus and the story.
+- One model per character serves run, menu and story; no separate LOD meshes (they are small and few).
+
+*(az: Cırtdan — balaca, zirək qəhrəman, iri baş və gözlər; qaçışda arxadan görünür, ona görə papağın silueti, torba
+və jiletin rəngi onu tanıdır. Div — iri, yumru, həmişə arxada; dəvə və at — personaj, təhlükə yox. Pozlar mübaliğəli və
+komik; qaçışda xırda detallar yox, iri formalar danışır.)*
 
 ## 6. Environment Design Language
 
-[To be designed] — architectural style and its tie to the world's culture,
-texture philosophy (painted, PBR or stylised, and why), prop density rules per
-area type, and environmental storytelling guidelines.
+**Architecture tied to place and history** — every city is built from what that place really looks like:
+- Köhnə Bakı (İçərişəhər): golden sandstone houses, wooden eyvan balconies, şəbəkə windows, carpets drying on rails,
+  copper pots by shop doors, qala gates, Qız Qalası on the skyline.
+- Şəki: whitewashed river-stone walls with brick bands, red tiled roofs, deep wooden eyvans, the Xan sarayı's painted façade.
+- Qəbələ: forest trail, pines and oaks, log huts, mossy boulders, the waterfall.
+- Naxçıvan: flat-roofed terracotta brick with muted turquoise girih bands and pointed-arch windows; Möminə Xatın.
+- Lənkəran: rows of tea bushes, citrus trees, tin-roofed houses, rain, the lighthouse.
+- Quba: apple orchards behind wooden fences, carpet looms, snowy Şahdağ.
+- Qobustan: rock slabs carved with dancers, boats and goats; mud volcanoes; the Caspian beyond.
+- *Test:* a building or prop that could stand in any "eastern" city is replaced by one only this city has.
+
+**Texture philosophy: hand-painted, flat, stylised** — *why:* the folk-tale picture book (Section 1) and phones.
+- Colour lives in the texture; light is simple two-band toon shading with a soft rim; no normal maps, no PBR
+  roughness detail, no photo textures.
+- Patterns are painted (buta, carpet medallions, şəbəkə diamonds, brick, setts) at 128–256 px, tiling, with slight
+  hand variation; ornament stays inside its surface, never protruding geometry.
+
+**Prop density**
+- The lane corridor holds only gameplay objects; the road surface carries no ornament.
+- House fronts are dense (lanterns, pots, carpets, doors) because they frame the run at the edges.
+- Density falls with distance: near houses detailed, far ones simple blocks in haze, the horizon one landmark.
+- Per city: Baku and Şəki dense (bazaar town), Naxçıvan and Quba medium, Qəbələ, Lənkəran and Qobustan open (nature).
+
+**Storytelling without text**
+- The city's landmark on the horizon says where you are; the light says the time (warm afternoon in the run).
+- The Div's theft shows in the world: bread scattered along the street, a torn sack in the story pictures.
+- Life by the doors (a sleeping cat, a lantern, washing on a line) says people live here, so the chase is through a home.
+
+**Legible against the characters**
+- Environment stays mid-value and lower saturation behind the runner; no thick outlines on buildings; ornament
+  never at lane height behind the player; walls begin at the kerb, clear of the lanes.
+- *Test:* a greyscale phone screenshot shows Cırtdan, the Div, the obstacles and the bread before any wall detail.
+
+*(az: Hər şəhər öz həqiqi memarlığı ilə qurulur; teksturalar əllə boyanmış kimi, düz, sadə işıqla; yolun zolaqları
+yalnız oyun əşyaları üçündür, evlərin önü isə detallıdır; uzaq mənzərə sadələşir; personajlar fondan həmişə öndə
+oxunur.)*
 
 ## 7. UI/HUD Visual Direction
 
-[To be designed] — diegetic versus screen-space HUD, typography (personality,
-weight, size hierarchy, minimum readable size), iconography style, UI animation
-feel, and any art-direction versus readability conflict and how it was decided.
+**Art view**
+- **Screen-space HUD, minimal in the run:** score top right; bread and nar as icon + number; pause top left;
+  power-up timers on the left; carpet and boost buttons at the bottom. Menus, shops, story captions and the game-over
+  card are carpet-framed panels (the carpet layer, Section 1).
+- **Typography:** warm, chunky, rounded-humanist sans with full Azerbaijani (ə ğ ı ş ç ö ü) and Cyrillic coverage
+  (now: Godot's default font with DejaVu Sans as fallback for symbols). Sizes at the 720 px-wide base: title 76–84,
+  screen headings 50, body 28–32, minimum 22. Text over 3D carries an Ink outline.
+- **Icons:** illustrated flat icons with an Ink outline, painted like the textures (bread disc, nar, buta, stone,
+  carpet); round, as round means collectable/touchable (Section 3).
+- **Motion:** soft springy pops (scale ≤ 1.06), slides and fades of 0.15–0.3 s; the UI shakes only for the Div cue.
+
+**UX view**
+- The run's most important information is the obstacles: HUD stays at the screen edges, never over the lanes;
+  banners in the upper third, one at a time, ≤ 1.6 s; the day's-word tiles show only when a letter is taken, then fade.
+- Players are 7+ and beginning readers: prefer icon + number over words wherever a word is not needed.
+- Touch targets ≥ 96 px tall at the 720 px base (≈ 48 pt); nothing important within the screen's outer 24 px.
+- Accessibility floor: no meaning by colour alone (Section 4 backups); no flashing; layout holds from small phones to
+  tablets and desktop windows; keyboard works on desktop (no gamepad target).
+- Feedback: every tap answers with a sound and a visible change; a purchase confirms; too little bread says how much is needed.
+
+**Decided (owner, 2026-11-25): ornament on the big frames only.** Screen frames, story captions and the game-over
+card are carpet-bordered; list rows inside them are plain (dark Madder plate, a thin Antique Gold line), so text
+keeps its room on small phones.
+
+*(az: Qaçışda ekran minimaldır və kənarlardadır; menyu, nağıl və oyun sonu xalça çərçivəlidir, siyahı sətirləri
+sadədir; şrift iri və isti, ən kiçik yazı 22 px; uşaq üçün sözdən çox ikon və rəqəm; düymələr ən azı 96 px.)*
 
 ## 8. Asset Standards
 
-[To be designed] — file formats, naming convention, texture resolution tiers,
-LOD levels, export settings, and the engine's hard limits (poly budgets per
-asset category, texture memory, material slots). Where an art preference and a
-technical limit disagree, record both and the trade-off chosen.
+**Art view — what is delivered and how**
+- **3D:** `.glb` (glTF 2.0), e.g. from Blender; 1 unit = 1 m; origin at the feet / base centre; transforms applied;
+  the runner faces −Z, figures and obstacles that meet him face +Z. Rigged characters: one skeleton, clips named
+  `run`, `jump`, `slide`, `stumble`, `idle`, `fly`.
+- **Images:** `.png` (sRGB). **Sound:** effects `.wav`, music `.ogg`.
+- **Naming:** `[category]_[name]_[variant].[ext]` — `char_cirtdan_base.glb`, `prop_cart_long.glb`,
+  `env_baku_house_a.glb`, `tex_carpet_red.png`, `ui_icon_bread.png`, `sfx_jump.wav`, `mus_run.ogg`.
+  Owner deliveries go to `assets/incoming/`; placed files move to `assets/<category>/`.
+- **Texture tiers:** hero characters 256–512 px · props 128–256 · tiling environment 256 · far backdrops ≤ 512 ·
+  UI icons 128–256 (drawn at 2× for dense screens). Painted, flat, tiling where it repeats (Section 6).
+- **Materials:** ≤ 4 per character, ≤ 3 per prop; prefer one shared palette texture per city.
+- **LOD:** no LOD meshes for characters (small and few); far scenery is simplified by distance (blocks in haze).
+
+**Technical view — the limits that bind** (Godot 4.7, Mobile renderer; the browser uses Compatibility)
+- Budgets from the project: 60 fps (16.6 ms), **< 300 draw calls a frame on mid-range phones**, ≤ 512 MB memory.
+  No texture-memory budget is set separately.
+- Measured 2026-11-25 at 45 s into a run: 565–815 draw calls per city (down from 2000–2600 after mesh merging) —
+  still **over** the 300 budget. Primitives 170–310k a frame.
+- Per asset: Cırtdan ≤ 5k triangles · the Div ≤ 8k · an obstacle ≤ 3k · a house ≤ 2k; ≤ 50 live particles.
+- Every unique material is a separate draw and breaks merging: new assets reuse the shared materials and textures.
+- Merged chunks cut draw calls but cull coarsely (a chunk draws if any part is visible).
+- Import: glTF is Godot's native 3D path; skeletal animation on imported models plays through AnimationPlayer —
+  how it joins the code animator is unverified until the first rigged model arrives.
+
+**Decided (owner, 2026-11-25): meet the 300 budget.** Far houses become simple blocks and the scenery view distance
+shortens; bread draws as one batch; near houses keep their detail with fewer material kinds. Every asset change is
+measured (draws per frame, per city) before it ships.
+
+*(az: 3D — .glb, şəkil — .png, səs — .wav/.ogg; adlar `char_…`, `prop_…`, `env_…`, `tex_…`, `ui_…`; teksturalar
+128–512 px; telefon büdcəsi — kadrda 300 çəkilişdən az; indi 565–815-dir, ona endiriləcək; göndərdiyin fayllar
+`assets/incoming/` qovluğuna gedir.)*
 
 ## 9. Reference Direction
 
