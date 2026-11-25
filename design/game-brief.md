@@ -14,6 +14,7 @@ After play: "Davam" (no play notes yet; the build went on to the daily word hunt
 After play: "Sürüt yerinde simurt tapa bilçirem oyunda gelmirem rastima . Develerin ustundede gezmek olsun qabaqdan deyebənde ölsün.   Bunnari duzelt ve davam et bir başa"
 After play: "Davam" (no play notes; the build went on to Qəbələ)
 After play: "Şəhərlərin hamisini birdən aç və davam ele  birde nağara sözün yiqmisam  qalib sehifede onu ele eleki her defe yiqa bilim"
+After play: "Oyunda bug var yagli corekden basqa nese ekranda var ve oyunda gelir oni yigirsan . Sonram herf yiqmaq ekranda gorunmesin daimi herfi gpturdukce görsensin ve itsin oynanamaqa mane olur oyundaki buglari aradan qaldir hamisini . ( google play ve app store saxla en axira hele isimiz çoxdu oyun tam duzelden sonraç keçeçeyik dizaym merhelesin personojıarin yerlerin ayri ayri duzeldecik her sheyi animasiyalar elave edeceyik ) telesme)"
 
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
@@ -96,6 +97,8 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Sürət yerində (the speed is right) *(you said)* · pins: speed_start 10, speed_max 22, speed_ramp 0.08
 
 ## Avoid
+- The word's letters on screen all the time: show them only when a letter is taken, then let them fade *(you said)*
+- Rushing: "telesme" *(you said)*
 - Subway Surfers' name, art, characters and UI (it is a genre reference in the GDD, never copied)
 - A scary Div: he must look funny *(from the GDD)*
 - Ads and purchases in this build *(from the GDD's child-audience note)*
@@ -112,6 +115,9 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 1. The slice: an endless run on 3 lanes in old Baku with the Div behind, bread, the obstacle set, speed ramp, score and best, ending on a crash or the Div catching you, with continue-with-nar and restart.
 2. Power-ups to full strength and the remaining two (Simurq flight, kəndirbaz çubuğu).
 3. Grandma's shop, characters, missions.
+4. Fix every bug until the game is fully right *(you said)*.
+5. The design stage: each character and each place made properly one by one, with animations *(you said)*.
+6. Google Play and App Store last *(you said)*.
 
 ---
 **Kill condition:** if lane changes and the Div's threat still don't read at speed on a phone after two tuning rounds.
