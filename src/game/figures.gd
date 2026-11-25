@@ -76,7 +76,10 @@ static func _shadow(parent: Node3D, r: float) -> void:
 
 ## Cırtdan: small, a big head, red papaq, blue patterned vest, a bread sack on his back. Faces -z.
 ## Parts for animation: "leg_l", "leg_r", "arm_l", "arm_r", "rig".
-static func cirtdan() -> Node3D:
+static func cirtdan(look: Dictionary = {}) -> Node3D:
+	var vest := Color(look.get("vest", "#1f4f8f"))
+	var shirt := Color(look.get("shirt", "#f3ecd8"))
+	var pants := Color(look.get("pants", "#4b3221"))
 	var g := Node3D.new()
 	var rig := Node3D.new()
 	g.add_child(rig)
@@ -86,29 +89,62 @@ static func cirtdan() -> Node3D:
 		var leg := Node3D.new()
 		leg.position = Vector3(sx, 0.52, 0)
 		rig.add_child(leg)
-		_part(leg, _cyl(0.085, 0.085, 0.4), Color("#4b3221"), Vector3(0, -0.2, 0))
+		_part(leg, _cyl(0.085, 0.085, 0.4), pants, Vector3(0, -0.2, 0))
 		_part(leg, _box(0.16, 0.1, 0.28), Color("#7a3b16"), Vector3(0, -0.45, -0.04))
 		legs.append(leg)
-	_part(rig, _cyl(0.2, 0.22, 0.44), Color("#f3ecd8"), Vector3(0, 0.74, 0))
-	_part(rig, _box(0.44, 0.36, 0.34), Color("#1f4f8f"), Vector3(0, 0.78, 0))
+	_part(rig, _cyl(0.2, 0.22, 0.44), shirt, Vector3(0, 0.74, 0))
+	_part(rig, _box(0.44, 0.36, 0.34), vest, Vector3(0, 0.78, 0))
 	_part(rig, _ball(0.24, 0.5), Color("#c9a46a"), Vector3(0, 0.8, 0.24)) # the sack, on his back (+z faces the camera)
 	var arms := []
 	for sx in [-0.27, 0.27]:
 		var arm := Node3D.new()
 		arm.position = Vector3(sx, 0.92, 0)
 		rig.add_child(arm)
-		_part(arm, _cyl(0.06, 0.06, 0.32), Color("#f3ecd8"), Vector3(0, -0.16, 0))
+		_part(arm, _cyl(0.06, 0.06, 0.32), shirt, Vector3(0, -0.16, 0))
 		_part(arm, _ball(0.07), skin, Vector3(0, -0.34, 0))
 		arms.append(arm)
 	_part(rig, _ball(0.3, 0.58), skin, Vector3(0, 1.32, 0))
 	for sx in [-0.11, 0.11]:
 		_part(rig, _ball(0.085, 0.2), Color.WHITE, Vector3(sx, 1.34, -0.24))
 		_part(rig, _ball(0.045, 0.11), Color("#2a1a10"), Vector3(sx, 1.34, -0.29))
-	_part(rig, _cyl(0.26, 0.26, 0.22), Color("#c8221d"), Vector3(0, 1.58, 0)) # papaq
-	_part(rig, _cyl(0.27, 0.27, 0.06), Color("#7a1512"), Vector3(0, 1.47, 0))
+	_hat(rig, String(look.get("hat", "papaq")), Color(look.get("hat_color", "#c8221d")))
+	if look.get("hat", "") == "peri": # wings on the back
+		for sx in [-1.0, 1.0]:
+			_part(rig, _box(0.04, 0.5, 0.36), Color(0.85, 0.95, 1.0), Vector3(sx * 0.3, 1.0, 0.3), Vector3(0, sx * 0.6, sx * 0.3))
 	_shadow(g, 0.32)
 	g.set_meta("parts", {"rig": rig, "leg_l": legs[0], "leg_r": legs[1], "arm_l": arms[0], "arm_r": arms[1]})
 	return g
+
+
+## The headwear that tells the characters apart (the design stage replaces these with real models).
+static func _hat(rig: Node3D, kind: String, c: Color) -> void:
+	match kind:
+		"bald": # Keçəl: a shiny bare head
+			_part(rig, _ball(0.29, 0.4), c, Vector3(0, 1.45, 0))
+		"scarf": # Tıq-Tıq: a kerchief
+			_part(rig, _ball(0.32, 0.5), c, Vector3(0, 1.42, 0.03))
+			_part(rig, _cyl(0.0, 0.12, 0.22), c, Vector3(0, 1.2, 0.26), Vector3(0.6, 0, 0))
+		"tall": # Kəndirbaz: a tall felt cap
+			_part(rig, _cyl(0.16, 0.25, 0.42), c, Vector3(0, 1.68, 0))
+		"kosa": # Kosa: a pointed hat and a beard
+			_part(rig, _cyl(0.0, 0.28, 0.5), c, Vector3(0, 1.72, 0))
+			_part(rig, _cyl(0.12, 0.0, 0.22), Color("#e9e2cf"), Vector3(0, 1.1, -0.2))
+		"peri": # Pəri: golden hair
+			_part(rig, _ball(0.32, 0.56), c, Vector3(0, 1.38, 0.06))
+		"crown": # Məlikməmməd: a crown
+			_part(rig, _cyl(0.24, 0.24, 0.16), c, Vector3(0, 1.6, 0))
+			for i in 5:
+				var a := i * TAU / 5.0
+				_part(rig, _cyl(0.0, 0.05, 0.14), c, Vector3(cos(a) * 0.2, 1.74, sin(a) * 0.2))
+		"winter": # a woolly hat with a pompom
+			_part(rig, _ball(0.3, 0.42), c, Vector3(0, 1.52, 0))
+			_part(rig, _ball(0.09), Color("#c8221d"), Vector3(0, 1.75, 0))
+		"sailor": # a white cap with a blue band
+			_part(rig, _cyl(0.24, 0.28, 0.12), c, Vector3(0, 1.58, 0))
+			_part(rig, _cyl(0.285, 0.285, 0.05), Color("#1d4f9a"), Vector3(0, 1.53, 0))
+		_: # Cırtdan's papaq
+			_part(rig, _cyl(0.26, 0.26, 0.22), c, Vector3(0, 1.58, 0))
+			_part(rig, _cyl(0.27, 0.27, 0.06), c.darkened(0.4), Vector3(0, 1.47, 0))
 
 
 ## The Div: huge, furry green, horned, a round belly and a wooden club. Comic, not scary. Faces +z
@@ -222,12 +258,12 @@ static func bread() -> Node3D:
 
 
 ## A stretch of old-Baku houses beside the street: sandstone, a balcony now and then. side is -1 or 1.
-static func house(side: int, rng: RandomNumberGenerator) -> Array:
+static func house(side: int, rng: RandomNumberGenerator, wall := Color("#d9a95f")) -> Array:
 	var g := Node3D.new()
 	var h := 5.0 + rng.randf() * 5.0
 	var w := 5.0 + rng.randf() * 3.0
-	_part(g, _box(5.0, h, w), Color("#d9a95f"), Vector3(side * 2.5, h * 0.5, 0))
-	_part(g, _box(5.3, 0.4, w + 0.2), Color("#c4934f"), Vector3(side * 2.5, h + 0.2, 0))
+	_part(g, _box(5.0, h, w), wall.lightened(rng.randf() * 0.12), Vector3(side * 2.5, h * 0.5, 0))
+	_part(g, _box(5.3, 0.4, w + 0.2), wall.darkened(0.12), Vector3(side * 2.5, h + 0.2, 0))
 	var floors := maxi(1, int(h / 3.0))
 	for f in floors:
 		var y := 1.6 + f * 3.0

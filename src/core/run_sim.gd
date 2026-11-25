@@ -30,6 +30,10 @@ signal nar_taken
 signal shield_used
 ## The Simurq or the boost put Cırtdan back on the ground.
 signal landed_from_flight
+## Cırtdan got past an obstacle in his own lane without touching it (over a basket, under a carpet).
+signal passed(kind: String)
+## The Div had come close after a stumble and Cırtdan got away again.
+signal escaped
 
 ## Power-ups and how long each lasts is power_time(kind).
 const POWERS := ["magnet", "shoe", "double", "pole", "simurq", "fly"]
@@ -126,6 +130,7 @@ var div_gap := 0.0
 var bread := 0
 var score := 0.0
 var mult := 1
+var base_mult := 1 ## from missions (every third claim adds one); distance adds up to mult_cap - 1
 var dead := "" ## "", "crash" or "caught"
 var power := {} ## kind -> seconds left
 var levels := {} ## shop levels by power kind (set by the game from the save)
@@ -366,7 +371,14 @@ func step(dt: float, input: RunInput) -> void:
 			o.s0 -= tune.caravan_speed * dt
 	_dt = dt
 	_take_pickups()
+	for o in obstacles:
+		if not o.passed and not o.hit and not o.cleared and not o.ramp and s - PDEPTH > o.s1():
+			o.passed = true
+			if o.lane == lane:
+				passed.emit(o.kind)
 	# the Div
+	if div_t > 0.0 and div_t <= dt:
+		escaped.emit()
 	div_t = maxf(0.0, div_t - dt)
 	stumble_t = maxf(0.0, stumble_t - dt)
 	intro_t = maxf(0.0, intro_t - dt)
@@ -378,7 +390,7 @@ func step(dt: float, input: RunInput) -> void:
 	var rate := 3.0 if want < div_gap else 0.8
 	div_gap += (want - div_gap) * minf(1.0, dt * rate)
 	# score
-	mult = 1 + mini(tune.mult_cap - 1, int(s / tune.mult_every))
+	mult = base_mult + mini(tune.mult_cap - 1, int(s / tune.mult_every))
 	score += speed * dt * mult * (2.0 if power["double"] > 0.0 else 1.0)
 	_forget_behind()
 

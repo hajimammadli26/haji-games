@@ -61,3 +61,19 @@ extends Resource
 @export_group("Score")
 @export var mult_every: float = 500.0 ## m per +1 multiplier
 @export var mult_cap: int = 10
+
+@export_group("Prices and rewards (bread)")
+@export var max_level: int = 5 ## shop levels per power-up
+@export var upgrade_cost: int = 500 ## bread for level 1; each next level doubles
+@export var carpet_cost: int = 400 ## one flying carpet to keep
+@export var boost_cost: int = 600 ## one 'Xalça ilə uçuş' start boost
+@export var box_cost: int = 800 ## Nənənin bağlaması, a random gift
+@export var costume_cost: int = 1500 ## each of Cırtdan's costumes
+@export var confirm_from: int = 1 ## purchases at or above this price ask twice (all of them, for children)
+@export var mission_reward: int = 150 ## bread for claiming a finished mission (grows with each new one)
+@export var mission_scale: float = 0.5 ## how much harder each new mission gets
+@export var mission_mult_cap: int = 10 ## the most missions can raise the base multiplier to
+@export var kecel_claims: int = 9 ## missions claimed that unlock Keçəl for free
+@export var league_silver: int = 5000
+@export var league_gold: int = 15000
+@export var league_div: int = 40000

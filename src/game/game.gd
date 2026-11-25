@@ -11,6 +11,9 @@
 ##   --auto_continue  after the first game over, spend nar on the continue at once
 ##   --shot=PATH      save a screenshot to PATH ...
 ##   --shot_at=SEC    ... after SEC seconds of running, then quit (or a second after a game over)
+##   --menu=SCREEN    with --shot: open that menu screen (home, shop, chars ...) and shoot it instead of a run
+##   --bread=N        that throwaway save starts with N bread
+##   --char=ID --costume=ID --city=ID   that throwaway save wears this look
 extends Node3D
 
 const TUNING_PATH := "res://src/data/tuning.tres"
@@ -19,6 +22,11 @@ const POWER_NAMES := {"magnet": "Nənənin sinisi", "shoe": "Sehrli çarıq", "d
 
 var tune: Tuning
 var save: SaveData
+var prog: Progress
+var menu: Menu
+var recorded := true ## the last run is already in the leaderboard
+var roof_t := 0.0 ## seconds on cart roofs, counted toward the roof mission in whole seconds
+var dist_t := 0.0
 var sim: RunSim
 var gen: TrackGen
 var input := RunSim.RunInput.new()
@@ -27,6 +35,9 @@ var div_fig: Node3D
 var bird: Node3D
 var fly_carpet: Node3D
 var camera: Camera3D
+var world_env: Environment
+var sky_mat: ProceduralSkyMaterial
+var wall_color := Color("#d9a95f")
 var street: MeshInstance3D
 var houses: Array = [] ## [node, far end s]
 var house_next := {-1: -20.0, 1: -20.0}
@@ -53,7 +64,6 @@ var power_rows := {} ## kind -> [row, bar]
 var carpet_btn: Button
 var boost_btn: Button
 var pause_btn: Button
-var title_panel: Control
 var pause_panel: Control
 var over_panel: Control
 var over_text: Label
@@ -69,12 +79,23 @@ func _ready() -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://check_save.json"))
 		save = SaveData.new("user://check_save.json", tune.start_nar)
 		save.put("boosts", int(args.get("boosts", "0")))
+		save.put("bread", int(args.get("bread", "0")))
+		for k in ["char", "costume", "city"]: # a look to check, without buying it
+			if args.has(k):
+				save.put(k, args[k])
 	else:
 		save = SaveData.new(SaveData.PATH, tune.start_nar)
+	prog = Progress.new(save, tune)
+	prog.mission_done.connect(func(_t: String) -> void: _banner("Tapşırıq bitdi!"))
 	_build_world()
 	_build_hud()
+	_apply_look()
 	_new_run()
-	if args.has("shot"): # an unattended check starts at once
+	if args.has("menu") and args.has("shot"):
+		menu.open(args["menu"])
+		await get_tree().create_timer(1.0).timeout
+		_shoot()
+	elif args.has("shot"): # an unattended check starts at once
 		_start()
 
 
@@ -119,12 +140,9 @@ func _build_world() -> void:
 		gr.position.x = sx * tune.lane_width / 2.2
 		gr.set_meta("follow", true)
 		add_child(gr)
-	runner = Figures.cirtdan()
-	add_child(runner)
 	fly_carpet = Figures.flying_carpet()
 	fly_carpet.position.y = 0.08
 	fly_carpet.visible = false
-	runner.add_child(fly_carpet)
 	div_fig = Figures.div()
 	div_fig.scale = Vector3.ONE * 0.85
 	div_fig.rotation.y = PI # runs toward -z, his back to the camera
@@ -132,10 +150,31 @@ func _build_world() -> void:
 	bird = Figures.simurq()
 	bird.visible = false
 	add_child(bird)
+	world_env = e
+	sky_mat = sm
 	camera = Camera3D.new()
 	camera.fov = 60
 	camera.far = 400
 	add_child(camera)
+
+
+## Draws Cırtdan as the chosen character and costume, and the street in the chosen city's colours.
+func _apply_look() -> void:
+	if runner != null:
+		runner.remove_child(fly_carpet)
+		runner.queue_free()
+	runner = Figures.cirtdan(prog.look())
+	add_child(runner)
+	runner.add_child(fly_carpet)
+	var city := Catalog.find(Catalog.CITIES, String(save.get_value("city")))
+	street.material_override = Figures.mat(Color(city["street"]))
+	world_env.fog_light_color = Color(city["fog"])
+	sky_mat.sky_horizon_color = Color(city["fog"]).lightened(0.2)
+	sky_mat.ground_horizon_color = Color(city["fog"])
+	if wall_color != Color(city["wall"]):
+		wall_color = Color(city["wall"])
+		if sim != null and not started:
+			_new_run() # rebuild the houses in the new colour
 
 
 func _new_run() -> void:
@@ -155,6 +194,14 @@ func _new_run() -> void:
 	sim.levels = save.get_value("levels")
 	sim.carpets += int(save.get_value("carpets"))
 	sim.boosts = int(save.get_value("boosts"))
+	sim.base_mult = int(save.get_value("mmult"))
+	sim.bread_taken.connect(func(total: int) -> void:
+		prog.mission("run_bread", total)
+		prog.mission("bread", 1))
+	sim.passed.connect(func(kind: String) -> void:
+		if kind == "basket" or kind == "carpet":
+			prog.mission(kind, 1))
+	sim.escaped.connect(prog.mission.bind("escape", 1))
 	sim.stumbled.connect(_banner.bind("Ay Cırtdaaan!"))
 	sim.crashed.connect(_on_dead)
 	sim.caught.connect(_on_dead.bind(""))
@@ -173,7 +220,7 @@ func _new_run() -> void:
 func _fill_houses() -> void:
 	for side in [-1, 1]:
 		while house_next[side] < sim.s + tune.view_ahead + 20.0:
-			var made: Array = Figures.house(side, house_rng)
+			var made: Array = Figures.house(side, house_rng, wall_color)
 			var node: Node3D = made[0]
 			var w: float = made[1]
 			node.position = Vector3(side * 4.3, 0, -(house_next[side] + w * 0.5))
@@ -211,6 +258,15 @@ func _physics_process(dt: float) -> void:
 		save.set_value("carpets", maxi(0, int(save.get_value("carpets")) - 1))
 	if sim.boosts < boosts_before:
 		save.set_value("boosts", sim.boosts)
+	if sim.on_roof == "cart" and sim.grounded:
+		roof_t += dt
+		if roof_t >= 1.0:
+			roof_t -= 1.0
+			prog.mission("roof", 1)
+	dist_t += dt
+	if dist_t >= 0.5:
+		dist_t = 0.0
+		prog.mission("run_dist", sim.s)
 	gen.fill()
 	_fill_houses()
 	if args.has("shot") and sim.time >= float(args.get("shot_at", "3")) and not shooting:
@@ -327,7 +383,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_B: input.boost = true
 			KEY_P, KEY_ESCAPE: _set_paused(not paused)
 			KEY_ENTER:
-				if not started or sim.dead != "":
+				if (not started and menu.screen == "home") or sim.dead != "":
 					_start()
 	elif event is InputEventScreenTouch:
 		if event.pressed:
@@ -336,7 +392,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif not touch_done: # a tap
 			touch_done = true
 			if not started:
-				_start()
 				return
 			var now := Time.get_ticks_msec() / 1000.0
 			if now - last_tap < 0.32: # two taps: the flying carpet
@@ -362,13 +417,38 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _start() -> void:
 	if sim.dead != "":
+		_finish_run()
 		_new_run()
 	started = true
-	title_panel.visible = false
+	paused = false
+	pause_panel.visible = false
+	menu.visible = false
+	recorded = false
+
+
+## Back to the menu: the run so far is banked and recorded, and a fresh street waits behind the menu.
+func _to_menu() -> void:
+	_bank()
+	_finish_run()
+	started = false
+	paused = false
+	pause_panel.visible = false
+	_new_run()
+	menu.open("home")
+	menu.visible = true
+
+
+## Puts the finished run on the leaderboard, once.
+func _finish_run() -> void:
+	if recorded:
+		return
+	recorded = true
+	prog.mission("run_dist", sim.s)
+	prog.record_run(int(sim.score), int(sim.s), sim.bread)
 
 
 func _set_paused(on: bool) -> void:
-	if not started or sim.dead != "":
+	if not started or sim.dead != "" or menu.visible:
 		return
 	paused = on
 	pause_panel.visible = on
@@ -379,25 +459,31 @@ func _set_paused(on: bool) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		_set_paused(true)
+		save.flush()
 
 
 # --- events from the run ------------------------------------------------------------------------
 
 func _on_dead(_kind: String) -> void:
 	_bank()
-	if int(sim.score) > int(save.get_value("best")):
-		save.set_value("best", int(sim.score))
+	prog.mission("run_dist", sim.s)
+	save.flush()
+	var best := maxi(int(sim.score), int(save.get_value("best")))
 	var cost := sim.continue_cost()
 	var have := int(save.get_value("nar"))
 	over_text.text = "%s\n\nXal: %d\nYağ çörəyi: %d\nRekord: %d" % [
 		"Hamm! Div səni tutdu!" if sim.dead == "caught" else "Bam! Div səni tutdu!",
-		int(sim.score), sim.bread, int(save.get_value("best"))]
+		int(sim.score), sim.bread, best]
 	continue_btn.text = "Nar ilə davam et (%d)" % cost
 	continue_btn.disabled = have < cost
 	over_panel.visible = true
 
 
 func _on_power(kind: String) -> void:
+	if kind != "fly" and kind != "carpet":
+		prog.mission("powers", 1)
+	if kind == "simurq":
+		prog.mission("simurq", 1)
 	_banner(POWER_NAMES.get(kind, kind) + "!")
 
 
@@ -432,34 +518,11 @@ func _banner(t: String) -> void:
 # --- HUD ----------------------------------------------------------------------------------------
 
 func _label(parent: Control, size: int, color: Color) -> Label:
-	var l := Label.new()
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", color)
-	l.add_theme_color_override("font_outline_color", Color("#3c140a"))
-	l.add_theme_constant_override("outline_size", maxi(6, size / 4))
-	parent.add_child(l)
-	return l
+	return UiKit.label(parent, size, color)
 
 
 func _button(parent: Control, t: String, color: Color, size: int = 34) -> Button:
-	var b := Button.new()
-	b.text = t
-	b.add_theme_font_size_override("font_size", size)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = color
-	sb.set_corner_radius_all(18)
-	sb.content_margin_left = 24
-	sb.content_margin_right = 24
-	sb.content_margin_top = 14
-	sb.content_margin_bottom = 14
-	for st in ["normal", "hover", "pressed", "focus"]:
-		b.add_theme_stylebox_override(st, sb)
-	var dis := sb.duplicate()
-	dis.bg_color = Color(color, 0.4)
-	b.add_theme_stylebox_override("disabled", dis)
-	b.focus_mode = Control.FOCUS_NONE
-	parent.add_child(b)
-	return b
+	return UiKit.button(parent, t, color, size)
 
 
 func _build_hud() -> void:
@@ -519,10 +582,11 @@ func _build_hud() -> void:
 	hud_banner.position.y = 300
 	hud_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hud_banner.visible = false
-	title_panel = _panel(root, "Cırtdan\nKöhnə Bakıda Qaçış\n\nToxun və ya Enter: Qaç!\n\nSürüşdür: ← → zolaq, ↑ tullan, ↓ sürüş\nİki dəfə toxun: uçan xalça")
 	pause_panel = _panel(root, "Fasilə")
 	var go := _button(pause_panel.get_child(1), "Davam", Color("#2b7a48"), 44)
 	go.pressed.connect(_set_paused.bind(false))
+	var pm := _button(pause_panel.get_child(1), "Menyu", Color(0.27, 0.1, 0.06, 0.9), 38)
+	pm.pressed.connect(_to_menu)
 	pause_panel.visible = false
 	over_panel = _panel(root, "")
 	over_text = over_panel.get_child(0)
@@ -531,7 +595,13 @@ func _build_hud() -> void:
 	continue_btn.pressed.connect(_on_continue)
 	var again := _button(box, "Yenidən qaç", Color("#2b7a48"), 44)
 	again.pressed.connect(_start)
+	var om := _button(box, "Menyu", Color(0.27, 0.1, 0.06, 0.9), 38)
+	om.pressed.connect(_to_menu)
 	over_panel.visible = false
+	menu = Menu.new(prog)
+	root.add_child(menu)
+	menu.play.connect(_start)
+	menu.look_changed.connect(_apply_look)
 
 
 ## A full-screen shaded panel: text in the upper half, a column of buttons (its child 1) under it.
@@ -559,6 +629,8 @@ func _panel(root: Control, t: String) -> Control:
 
 
 func _update_hud() -> void:
+	for l in [hud_score, hud_bread, hud_nar]:
+		l.visible = started
 	hud_score.text = "%06d" % int(sim.score)
 	hud_bread.text = "çörək %d" % sim.bread
 	hud_nar.text = "nar %d" % int(save.get_value("nar"))
