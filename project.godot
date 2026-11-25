@@ -1,17 +1,31 @@
 ; Engine configuration file.
-; Written by /setup-engine (Godot 4.7.2, GDScript, Mobile renderer). The main scene is not set yet:
-; the first Godot scene sets run/main_scene. The web prototype in prototypes/cirtdan/ is the spec.
+; Written by /setup-engine (Godot 4.7.2, GDScript, Mobile renderer). The web prototype in prototypes/cirtdan/ is the spec.
 
 config_version=5
 
 [application]
 
 config/name="Cırtdan: Köhnə Bakıda Qaçış"
+run/main_scene="res://src/game/game.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
 
 [display]
 
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/size/window_width_override=405
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
 window/handheld/orientation=1
+
+[input_devices]
+
+pointing/emulate_touch_from_mouse=true
+
+[physics]
+
+common/physics_ticks_per_second=60
 
 [rendering]
 
