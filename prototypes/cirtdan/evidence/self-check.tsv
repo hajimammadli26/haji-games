@@ -1,4 +1,4 @@
-time	2026-11-25 00:29:58
+time	2026-11-25 00:33:53
 keep	lines	1	pinned	1
 keep	1	same	speed_start	10	10
 keep	1	same	speed_max	22	22
@@ -28,20 +28,30 @@ checklist	F18	unlisted	-	Run along the camels' backs; a hay cart with a ramp oft
 checklist	F19	unlisted	-	Şəki, the first city of the Azerbaijan tour: whitewashed stone houses with red tiled roofs and deep wooden eyvans, the Xan sarayı and green mountains on the horizon, Şəki halvası worth 5 bread; chosen in Şəhərlər	
 checklist	F20	unlisted	-	Qəbələ: a forest trail of packed earth and leaves, pines and autumn oaks, log huts, green mountains with a waterfall; stumps to jump, fallen trunks to slide under, mossy boulders to swerve round, fındıq worth 3 bread	
 checklist	F21	unlisted	-	The whole Azerbaijan tour open: Naxçıvan (brick houses with turquoise bands, Möminə xatın türbəsi, İlandağ, salt crystals), Lənkəran (tea rows, rain, lighthouse, naringi), Quba (apple orchards, carpet looms, snowy Şahdağ, apples), Qobustan (carved rocks, mud volcanoes, the Caspian); each with its own obstacle looks and treat	
-checklist	F22	unlisted	-	Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good	
+checklist	F22	unlisted	-	Costumes for Cırtdan (Novruz, Qış, Dənizçi; 1 500 bread each); a festival dresses him in its own	
+checklist	F23	unlisted	-	Məlikməmməd (crown, cape, sword; won by the weekly hunt of 40 buta stones) and Pəri qız (wings, flower crown; 25 magic stones)	
+checklist	F24	unlisted	-	Nənə's daily gift on the title; the Div's comic trips at 1 000, 2 500, 5 000 and 10 000 m with Cırtdan sticking his tongue out	
+checklist	F25	unlisted	-	Liderlər: your best 10 runs and your league (Bürünc, Gümüş, Qızıl, Div liqası); Ayarlar: language, sound, music, festivals, costumes, the story	
+checklist	F26	unlisted	-	Xəzər yayı: a seaside run (sand, umbrellas, the sea, old ships, oil derricks; sandcastles to jump, ice-cream kiosks to swerve), Cırtdan in his sailor suit	
+checklist	F27	unlisted	-	Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good	
 checklist	S1	pass	evidence/play-portrait.png	Div chasing behind · in the slice	the Div runs behind at the start and after stumbles
 checklist	S2	pass	index.html:922	Power-ups (Simurq, sehrli çarıq, nənənin sinisi, qoşa təndir, uçan xalça, kəndirbaz çubuğu) · thin stand-in *(guessed)*	stand-in: 3 pickups + flying carpet; Simurq and kəndirbaz çubuğu not yet (later step 2)
 checklist	S3	pass	index.html:834	Nar to continue after a crash · thin stand-in *(guessed)*	spend nar to continue; cost doubles each time
 checklist	S4	pass	index.html:932	Score multiplier from missions · in the slice	stand-in: +1 multiplier every 500 m, capped at 10
 checklist	S5	unlisted	-	Nənənin dükanı (shop and upgrades) · in the slice	
 checklist	S6	unlisted	-	Unlockable characters · in the slice	
-checklist	S7	unlisted	-	Kosa, unlocked with Novruz sweets · in the slice	
-checklist	S8	unlisted	-	Missions · in the slice	
-checklist	S9	unlisted	-	Word hunt, repeatable · in the slice	
-checklist	S10	unlisted	-	Festival events (Novruz, winter, nar bayramı) · in the slice	
-checklist	S11	unlisted	-	Azerbaijan tour: Şəki, Qəbələ, Naxçıvan, Lənkəran, Quba, Qobustan · in the slice	
-checklist	S12	unlisted	-	Intro story · in the slice	
-checklist	S13	unlisted	-	Music and voice lines · in the slice	
+checklist	S7	unlisted	-	Costumes, Məlikməmməd and Pəri qız · in the slice	
+checklist	S8	unlisted	-	Kosa, unlocked with Novruz sweets · in the slice	
+checklist	S9	unlisted	-	Missions · in the slice	
+checklist	S10	unlisted	-	Word hunt, repeatable · in the slice	
+checklist	S11	unlisted	-	Weekly hunt, daily gifts · in the slice	
+checklist	S12	unlisted	-	Local leaderboard and leagues · in the slice	
+checklist	S13	unlisted	-	Festival events (Novruz, winter, nar bayramı) · in the slice	
+checklist	S14	unlisted	-	Xəzər yayı seaside run · in the slice	
+checklist	S15	unlisted	-	Azerbaijan tour: Şəki, Qəbələ, Naxçıvan, Lənkəran, Quba, Qobustan · in the slice	
+checklist	S16	unlisted	-	Intro story · in the slice	
+checklist	S17	unlisted	-	Comic moments at milestones · in the slice	
+checklist	S18	unlisted	-	Music and voice lines · in the slice	
 checklist	M1	pass	evidence/title.png	The title shows Cırtdan, grandma's line and the controls.	title with Cırtdan, Nənə, his saying and the controls
 checklist	M2	pass	evidence/play-portrait.png	Enter or a tap: the Div bursts out behind and the run starts slow on an empty street with a row of bread to collect.	the Div on screen for the first 3 s, a bread line on the empty street (index.html:676)
 checklist	M3	pass	index.html:710	The first obstacles come one at a time with a beat to read each: a pile of baskets to jump, a carpet on a rope to slide under, a bazaar stall to swerve round.	intro rows: baskets, carpet, stall, then mixed, cart ramp, phaeton
@@ -54,7 +64,7 @@ checklist	C4	pass	index.html:794	Later chunks mix moving caravans with roof rout
 webgl	ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
 browser	HeadlessChrome/158.0.0.0
 saved	play	0	localstorage	cirtdan-save
-console	play	3213	[.WebGL-0x3d5c0037da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+console	play	3242	[.WebGL-0x352400338e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
 scene	play	0	title
 scene	play	41	story
 scene	play	81	play
@@ -65,17 +75,17 @@ digits	log	bold 40px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportiona
 digits	log	bold 44px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	10.785
 digits	log	bold 34px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	8.334
 digits	log	bold 30px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	7.354
-measure	step-time	play	0.047	5.300	312
-lane	play	stop	5.2	822
-console	play	0	[.WebGL-0x3d5c0037da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-console	play	0	[.WebGL-0x3d5c0037da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+measure	step-time	play	0.049	5.100	376
+lane	play	stop	6.3	944
+console	play	0	[.WebGL-0x352400338e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+console	play	0	[.WebGL-0x352400338e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
 uncaught	play	0
 text	play	canvas	172,30,219,60	58.5	10.53	inside	x1
-text	play	canvas	1086,24,1255,58	64.5	10.53	inside	000039
+text	play	canvas	1086,24,1255,58	64.5	10.53	inside	000050
 text	play	canvas	1235,84,1255,111	49.5	8.35	inside	0
 text	play	canvas	1238,134,1255,157	43.5	7.29	inside	2
 text	play	canvas	72,667,98,683	31.5	3.55	inside	x1
-text	play	canvas	438,576,843,604	42.0	4.30	inside	← → zolaq   ↑ tullan   ↓ sürüş
+text	play	canvas	438,576,843,604	42.0	1.09	inside	← → zolaq   ↑ tullan   ↓ sürüş
 screen	play	drawn
 shot	play	prototypes/cirtdan/evidence/play.png
 responds	changed	144

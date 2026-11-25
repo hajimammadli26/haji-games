@@ -56,7 +56,7 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] The Div chasing behind: a side bump brings him close, a second one catches you
 - [x] Yağ çörəyi in lines and arcs; rare nar
 - [x] Power-ups: grandma's tray (magnet), magic çarıq (super jump), qoşa təndir (x2), Simurq (flies high over the street for 8 s, bread in the sky), kəndirbaz çubuğu (big hops, bounces off obstacle tops), flying carpet (one-hit shield, double tap) (thin stand-in: upgrades later)
-- [x] Score = distance × multiplier; best score kept between visits
+- [x] Score = distance × multiplier; best score kept between visits; a new street every run
 - [x] Old-Baku scenery: sandstone houses, balconies, carpets, Qız Qalası on the skyline
 - [x] Title, pause, mute, game over with continue-with-nar and restart
 - [x] A menu on the title: Oyna, Nənənin dükanı, Personajlar, Tapşırıqlar
@@ -77,6 +77,7 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] Nənə's daily gift on the title; the Div's comic trips at 1 000, 2 500, 5 000 and 10 000 m with Cırtdan sticking his tongue out
 - [x] Liderlər: your best 10 runs and your league (Bürünc, Gümüş, Qızıl, Div liqası); Ayarlar: language, sound, music, festivals, costumes, the story
 - [x] Xəzər yayı: a seaside run (sand, umbrellas, the sea, old ships, oil derricks; sandcastles to jump, ice-cream kiosks to swerve), Cırtdan in his sailor suit
+- [x] Languages: Azərbaycan, Türkçe, English, Русский, chosen in Ayarlar (translations by the localization-lead agent, in lang.js)
 - [x] Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good
 
 ## Your systems

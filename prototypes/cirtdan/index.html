@@ -22,6 +22,7 @@
 <canvas id="world"></canvas>
 <canvas id="game"></canvas>
 <script src="vendor/three.js"></script>
+<script src="lang.js"></script>
 <script src="config.js"></script>
 <script>
 'use strict';
@@ -55,6 +56,7 @@ function rng() { // mulberry32; every gameplay random call reads this, never Mat
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 const events = []; // window.game.events: anything the game wants a run to see
+const pushEvent = e => { events.push(e); if (events.length > 200) events.splice(0, events.length - 200); };
 
 // ---- Saved between visits (wrapped: storage may be blocked) -------------------------------
 const save = (() => {
@@ -63,6 +65,7 @@ const save = (() => {
     costume: 'none', costumes: [], stones: 0, huntWeek: -1, huntGot: 0, huntDone: -1, giftDay: -1, runs: [], music: true, lang: 'az' };
   try { Object.assign(d, JSON.parse(localStorage.getItem('cirtdan-save') || '{}')); } catch (e) {}
   if (d.nar === null) d.nar = tune.start_nar;
+  if (!Array.isArray(d.mprog)) d.mprog = [0, 0, 0]; while (d.mprog.length < 3) d.mprog.push(0); d.mprog = d.mprog.map(v => Number(v) || 0); // old or short saves
   return {
     get: k => d[k],
     set(k, v) { d[k] = v; this.flush(); },
@@ -75,14 +78,14 @@ const save = (() => {
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 const worldCanvas = document.getElementById('world');
-let HUD_SCALE = 1;
+let HUD_SCALE = 1, HUD_SX = 1;
 function fit() { // fills the window at any size and pixel ratio
-  H = 720; W = Math.max(400, Math.round(H * innerWidth / innerHeight));
-  HUD_SCALE = innerHeight / H;
-  const r = HUD_SCALE * Math.min(devicePixelRatio || 1, 2);
-  canvas.width = Math.round(W * r); canvas.height = Math.round(H * r);
+  H = 720; W = Math.max(320, Math.round(H * innerWidth / innerHeight)); // a narrow phone keeps its true width
+  HUD_SCALE = innerHeight / H; HUD_SX = innerWidth / W;
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  canvas.width = Math.round(innerWidth * dpr); canvas.height = Math.round(innerHeight * dpr);
   canvas.style.width = innerWidth + 'px'; canvas.style.height = innerHeight + 'px';
-  ctx.setTransform(r, 0, 0, r, 0, 0); ctx.imageSmoothingEnabled = true;
+  ctx.setTransform(HUD_SX * dpr, 0, 0, HUD_SCALE * dpr, 0, 0); ctx.imageSmoothingEnabled = true;
   if (renderer) {
     renderer.setSize(innerWidth, innerHeight, true);
     camera.aspect = innerWidth / innerHeight;
@@ -94,11 +97,45 @@ function fit() { // fills the window at any size and pixel ratio
   }
 }
 function clear() { ctx.clearRect(0, 0, W, H); }
+// ---- Languages: every drawn text passes through tr(); lang.js maps the Azerbaijani text to tr, en, ru ------
+// Keys are the Azerbaijani strings with {placeholders} where the code fills in numbers and names; a drawn
+// string is matched exactly first, then against those patterns, and the filled-in parts are translated too.
+let LANG_PATTERNS = null;
+const trCache = new Map();
+function curLang() { try { return save.get('lang') || 'az'; } catch (e) { return 'az'; } }
+function trPart(v, lang) { // a filled-in part: a name, a gift list, or a number
+  const T = window.LANG.t;
+  if (T[v] && T[v][lang]) return T[v][lang];
+  if (v.includes(', ')) return v.split(', ').map(x => tr(x, lang)).join(', ');
+  return tr(v, lang);
+}
+function tr(str, lang = curLang()) {
+  if (lang === 'az' || !window.LANG || typeof str !== 'string' || !str) return str;
+  const key = lang + '\u0001' + str;
+  if (trCache.has(key)) return trCache.get(key);
+  const T = window.LANG.t; let out = str;
+  if (T[str] && T[str][lang]) out = T[str][lang];
+  else {
+    if (!LANG_PATTERNS) LANG_PATTERNS = Object.keys(T).filter(k => /\{\w+\}/.test(k)).map(k => {
+      const names = [], lit = k.replace(/\{\w+\}/g, '').length;
+      const re = new RegExp('^' + k.split(/(\{\w+\})/).map(p => { const m = p.match(/^\{(\w+)\}$/); if (m) { names.push(m[1]); return '(.+?)'; } return p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('') + '$');
+      return { k, re, names, lit };
+    }).sort((a, b) => b.lit - a.lit); // the most specific pattern wins
+    for (const p of LANG_PATTERNS) {
+      const m = str.match(p.re); if (!m || !T[p.k][lang]) continue;
+      let o = T[p.k][lang]; p.names.forEach((n, i) => { o = o.split('{' + n + '}').join(trPart(m[i + 1], lang)); }); out = o; break;
+    }
+  }
+  if (trCache.size > 3000) trCache.clear();
+  trCache.set(key, out); return out;
+}
 function text(s, x, y, size, c, align = 'center', weight = 'bold') {
+  s = tr(s);
   ctx.fillStyle = c; ctx.font = `${weight} ${size}px ${FONT}`; ctx.textAlign = align;
   ctx.textBaseline = 'middle'; ctx.fillText(s, x, y);
 }
 function outlined(s, x, y, size, c, align = 'center') { // text readable over any scenery; shrinks to fit the width
+  s = tr(s);
   ctx.font = `bold ${size}px ${FONT}`;
   const room = W - 28; if (ctx.measureText(s).width > room) size = Math.floor(size * room / ctx.measureText(s).width);
   ctx.font = `bold ${size}px ${FONT}`; ctx.textAlign = align; ctx.textBaseline = 'middle';
@@ -121,10 +158,15 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => down.delete(e.code));
 addEventListener('blur', () => down.clear());
+document.addEventListener('visibilitychange', () => { // leaving the app: pause the run and keep what it earned
+  if (document.visibilityState !== 'hidden') return;
+  if (typeof scene !== 'undefined' && scene === 'play' && state && !state.dead) { scene = 'pause'; bankBread(); }
+  try { save.flush(); } catch (e) {}
+});
 // Touch: a swipe is a lane change, jump or slide; a tap is a tap (HUD buttons, screens);
 // two taps close together are the flying carpet.
 let touch = null, lastTap = -1, taps = []; // taps: HUD-space points of this step's taps
-function hudPoint(e) { return { x: e.clientX / HUD_SCALE, y: e.clientY / HUD_SCALE }; }
+function hudPoint(e) { return { x: e.clientX / HUD_SX, y: e.clientY / HUD_SCALE }; } // the same scales the HUD is drawn with
 addEventListener('pointerdown', e => {
   startAudio();
   touch = { x: e.clientX, y: e.clientY, t: clock.now(), done: false, id: e.pointerId };
@@ -138,6 +180,7 @@ addEventListener('pointermove', e => {
   else hit.add(dy > 0 ? 'SwipeDown' : 'SwipeUp');
 });
 addEventListener('pointerup', e => {
+  startAudio(); // iOS only unlocks sound on the end of a touch
   if (!touch || e.pointerId !== touch.id) return;
   if (!touch.done) {
     const p = hudPoint(e), now = clock.now();
@@ -314,7 +357,7 @@ try {
   renderer = new THREE.WebGLRenderer({ canvas: worldCanvas, antialias: !CHEAP, powerPreference: 'high-performance' });
   renderer.setPixelRatio(CHEAP ? 0.5 : Math.min(devicePixelRatio || 1, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-} catch (e) { renderer = null; events.push({ type: 'error', what: 'webgl: ' + e.message }); }
+} catch (e) { renderer = null; pushEvent({ type: 'error', what: 'webgl: ' + e.message }); }
 addEventListener('resize', fit); fit();
 
 const SKY_FAR = new THREE.Color('#f3d6a4');
@@ -849,7 +892,7 @@ function makeNarTree() { // a pomegranate tree for the Nar festival
 }
 function makeTower() { // Qız Qalası: the Maiden Tower, with its buttress, on the skyline
   const g = new THREE.Group(), t = texMat('tower', TEX.tower);
-  part(new THREE.CylinderGeometry(7, 8, 30, 28), t, 1, 1, 1, 0, 15, 0, g);
+  part(G.towerCyl || (G.towerCyl = new THREE.CylinderGeometry(7, 8, 30, 28)), t, 1, 1, 1, 0, 15, 0, g);
   part(G.box, t, 7, 28, 9, 0, 14, -7.5, g); // the buttress that makes it unmistakable
   part(G.cyl, mat('towerTop', '#a98351'), 7.2, 1.4, 7.2, 0, 30.6, 0, g);
   return g;
@@ -918,7 +961,7 @@ const CITIES = [
   { id: 'baku', name: 'Köhnə Bakı', what: 'İçərişəhər: Qız Qalası, bazar, faytonlar' },
   { id: 'sheki', name: 'Şəki', what: 'Xan sarayı, şəbəkə pəncərələr, Şəki halvası' },
   { id: 'qebele', name: 'Qəbələ', what: 'meşə cığırı, şəlalə, kötüklər, qayalar, fındıq' },
-  { id: 'naxcivan', name: 'Naxçıvan', what: 'Möminə xatın türbəsi, İlandağ, duz kristalları' },
+  { id: 'naxcivan', name: 'Naxçıvan', what: 'Möminə Xatın türbəsi, İlandağ, Badamlı suyu' },
   { id: 'lenkeran', name: 'Lənkəran', what: 'çay plantasiyaları, yağış, mayak, naringi' },
   { id: 'quba', name: 'Quba', what: 'alma bağları, xalça dəzgahları, Şahdağ' },
   { id: 'qobustan', name: 'Qobustan', what: 'qayaüstü təsvirlər, palçıq vulkanları, Xəzər' },
@@ -996,7 +1039,7 @@ function makeHouseNax(side, rnd) { // flat-roofed brick houses, pointed-arch tur
   if (rnd() < 0.25) part(G.sphere, mat('naxDome', '#1f9e9a'), 1.4, 1.1, 1.4, side * 2.5, h + 0.3, 0, g);
   return { g, w };
 }
-function makeNaxBack() { // Möminə xatın türbəsi and İlandağ's split peak
+function makeNaxBack() { // Möminə Xatın türbəsi and İlandağ's split peak
   const g = new THREE.Group();
   hills(g, ['#8a5a3a', '#a06a42'], 6, 50, null);
   part(G.cone, mat('ilandag', '#6e4a32', { flatShading: true }), 16, 70, 16, 40, 35, -30, g); part(G.cone, mat('ilandag', '#6e4a32', { flatShading: true }), 12, 60, 12, 52, 30, -28, g);
@@ -1012,6 +1055,14 @@ function makeSaltPile() { // duz: a pile of white salt crystals from the caves: 
   blobShadow(g, 0.9); return g;
 }
 function makeSalt() { const g = new THREE.Group(), geo = G.octa || (G.octa = new THREE.OctahedronGeometry(1)); [[0, 0, 0.18], [0.15, -0.05, 0.12], [-0.13, -0.06, 0.11]].forEach(([x, y, r], i) => { const c = part(geo, mat('salt0', '#ffe6ef', { flatShading: true }), r, r * 1.6, r, x, y, 0, g); c.rotation.z = (i - 1) * 0.4; }); return g; }
+function makeBottle() { // Badamlı: a little bottle of Naxçıvan's mineral water
+  const g = new THREE.Group();
+  part(G.cyl, mat('glass', '#5fb4e8', { transparent: true, opacity: 0.85 }), 0.13, 0.42, 0.13, 0, 0, 0, g);
+  part(G.cyl, mat('glass', '#5fb4e8', { transparent: true, opacity: 0.85 }), 0.05, 0.14, 0.05, 0, 0.28, 0, g);
+  part(G.cyl, mat('cap', '#1d4f9a'), 0.06, 0.05, 0.06, 0, 0.37, 0, g);
+  part(G.cyl, mat('label', '#f6f2ea'), 0.135, 0.14, 0.135, 0, 0, 0, g);
+  return g;
+}
 function makeTeaField(side, rnd) { // Lənkəran: rows of round tea bushes, now and then a citrus tree and a tin-roofed house
   const g = new THREE.Group(), w = 6 + rnd() * 3;
   part(G.box, mat('teaSoil', '#6e5a3a'), 7, 0.2, w, side * 3.8, 0.1, 0, g);
@@ -1095,7 +1146,7 @@ function makeQobBack() { // the Caspian beyond, mud volcanoes and bare hills
   return fogless(g);
 }
 const CITY_LOOK = { // what each tour city changes: houses, the horizon, the road, three obstacle looks, its treat, rain
-  naxcivan: { house: makeHouseNax, back: () => makeNaxBack(), map: 'cobble', tint: '#f0d4b8', fog: '#ead2b8', curb: '#9a4e2a', swap: { basket: makeSaltPile }, treat: ['duz', makeSalt] },
+  naxcivan: { house: makeHouseNax, back: () => makeNaxBack(), map: 'cobble', tint: '#f0d4b8', fog: '#ead2b8', curb: '#9a4e2a', swap: { basket: makeSaltPile }, treat: ['badamli', makeBottle] },
   lenkeran: { house: makeTeaField, back: () => makeLenBack(), map: 'cobble', tint: '#c9d2d4', fog: '#c9d6d8', curb: '#5f7a64', treat: ['naringi', makeTangerine], rain: true },
   quba: { house: makeOrchard, back: () => makeQubaBack(), map: 'cobble', tint: '#ffffff', fog: '#dfe8e0', curb: '#8a5a2b', swap: { basket: makeAppleCrates, stall: makeLoom }, treat: ['alma', makeApple] },
   qobustan: { house: makeRocksArt, back: () => makeQobBack(), map: 'trail', tint: '#e0d4bc', fog: '#e8dcc4', curb: '#a08a64', swap: { basket: makeMudVolcano, stall: makeArtBoulder, carpet: makeRockArch } },
@@ -1179,11 +1230,11 @@ function makeQebeleBack() { // mountains, a waterfall, the forest on the horizon
   g.traverse(m => { if (m.material) { m.material = m.material.clone(); m.material.fog = false; } }); // the horizon shows through the haze
   return g;
 }
-function makeHouse(side, rnd) {
-  if (city() === 'sheki') return makeHouseSheki(side, rnd);
-  if (city() === 'qebele') return makeForest(side, rnd);
-  if (activeEvent() === 'xezer' && side < 0) return makeBeach(side, rnd);
-  if (CITY_LOOK[city()]) return CITY_LOOK[city()].house(side, rnd);
+function makeHouse(side, rnd, baku = false) { // baku: the story always shows old Baku's houses
+  if (!baku && city() === 'sheki') return makeHouseSheki(side, rnd);
+  if (!baku && city() === 'qebele') return makeForest(side, rnd);
+  if (!baku && activeEvent() === 'xezer' && side < 0) return makeBeach(side, rnd);
+  if (!baku && CITY_LOOK[city()]) return CITY_LOOK[city()].house(side, rnd);
   const g = new THREE.Group(), h = 5 + rnd() * 5, w = 5 + rnd() * 3, d = 5;
   const wallM = texMat('wallM', TEX.wall);
   part(G.box, wallM, d, h, w, side * (d / 2), h / 2, 0, g);
@@ -1258,7 +1309,7 @@ const KIND = { // what each obstacle asks for, and what a head-on hit does
 };
 let obstacles = [], pickups = [], scenery = [], gates = [];
 let gen; // the street generator's state
-const PSTAND = 1.15, PSLIDE = 0.5, PHALF = 0.3, PDEPTH = 0.3;
+const PSTAND = 1.45, PSLIDE = 0.5, PHALF = 0.3, PDEPTH = 0.3; // standing height matches the model (papaq included), so a carpet at 1.15 needs a slide
 const laneX = lane => (lane - 1) * tune.lane_width;
 
 // ---- Missions: three at a time; finish all three and the base multiplier goes up by one ----------
@@ -1286,10 +1337,10 @@ function mission(kind, v) {
   let changed = false, done = false;
   ms.forEach((m, i) => {
     if (m.k !== kind || prog[i] >= m.target) return;
-    const nv = Math.min(m.target, m.run ? Math.max(prog[i], v) : prog[i] + v);
-    if (nv === prog[i]) return;
+    const cur = prog[i] || 0, nv = Math.min(m.target, m.run ? Math.max(cur, v) : cur + v);
+    if (nv === cur) return;
     prog[i] = nv; changed = true;
-    if (nv >= m.target) { done = true; banner('Tapşırıq bitdi!'); sfx.nar(); events.push({ type: 'mission', what: m.k }); }
+    if (nv >= m.target) { done = true; banner('Tapşırıq bitdi!'); sfx.nar(); pushEvent({ type: 'mission', what: m.k }); }
   });
   if (!changed) return;
   save.put('mprog', prog);
@@ -1309,7 +1360,7 @@ function spend(n) { if (save.get('bread') < n) { sfx.stumble(); return false; } 
 function buyLevel(k) {
   const lv = save.get('levels')[k] || 0;
   if (lv >= MAX_LEVEL || !spend(levelCost(k))) return;
-  save.set('levels', { ...save.get('levels'), [k]: lv + 1 }); sfx.power(); toast(`${SHOP_NAMES[k]}: ${lv + 1}-ci səviyyə`);
+  save.set('levels', { ...save.get('levels'), [k]: lv + 1 }); sfx.power(); toast(`${SHOP_NAMES[k]}: səviyyə ${lv + 1}`);
 }
 function openBox() { // Nənənin bağlaması: a random gift
   if (!spend(tune.box_cost)) return;
@@ -1327,10 +1378,10 @@ function toast(m) { toastMsg = m; toastT = 2.2; }
 
 // ---- Festivals: Novruz, winter, the Nar festival. By the calendar, or chosen in Tədbirlər -----------------
 const EVENTS = [
-  { id: 'novruz', name: 'Novruz bayramı', when: '15 Mart – 5 Aprel', what: 'tonqallar, səməni, şəkərbura və paxlava; Kosa açılır', from: [3, 15], to: [4, 5] },
-  { id: 'winter', name: 'Qış (Yeni il)', when: '15 Dekabr – 31 Yanvar', what: 'qar yağır, Div qış paltarında', from: [12, 15], to: [1, 31] },
-  { id: 'nar', name: 'Nar bayramı', when: '20 Oktyabr – 10 Noyabr', what: 'Göyçay nar bağları, nar ikiqat çox düşür', from: [10, 20], to: [11, 10] },
-  { id: 'xezer', name: 'Xəzər yayı', when: 'İyun – Avqust', what: 'dənizkənarı: qum qalaları, dondurma, gəmilər, neft buruqları; Cırtdan dənizçi geyimində', from: [6, 1], to: [8, 31] },
+  { id: 'novruz', name: 'Novruz bayramı', when: '15 mart – 5 aprel', what: 'tonqallar, səməni, şəkərbura və paxlava; Kosa açılır', from: [3, 15], to: [4, 5] },
+  { id: 'winter', name: 'Qış (Yeni il)', when: '15 dekabr – 31 yanvar', what: 'qar yağır, Div qış paltarında', from: [12, 15], to: [1, 31] },
+  { id: 'nar', name: 'Nar bayramı', when: '20 oktyabr – 10 noyabr', what: 'Göyçay nar bağları, nar ikiqat çox düşür', from: [10, 20], to: [11, 10] },
+  { id: 'xezer', name: 'Xəzər yayı', when: 'iyun – avqust', what: 'dənizkənarı: qum qalaları, dondurma, gəmilər, neft buruqları; Cırtdan dənizçi geyimində', from: [6, 1], to: [8, 31] },
 ];
 function calendarEvent() { // the festival the date is in, if any (the clock only picks the theme, never the play)
   const d = new Date(), md = (d.getMonth() + 1) * 100 + d.getDate();
@@ -1346,7 +1397,9 @@ function activeEvent() { const e = save.get('event'); return e === 'auto' ? cale
 const WORDS = ['NOVRUZ', 'XALÇA', 'TƏNDİR', 'QALA', 'TAR', 'PAXLAVA', 'ŞƏKƏRBURA', 'NAR', 'BUTA', 'KAMANÇA', 'BALABAN', 'SƏMƏNİ', 'PAPAQ', 'ÇARIQ', 'NAĞARA', 'SİMURQ'];
 function today() { const p = Number(params.get('day')); if (p) return p; const d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000); }
 function dayWord() { // the word being hunted: the day picks where the list starts, each word spelled moves to the next
-  const w = WORDS[(today() + (save.get('wordN') || 0)) % WORDS.length]; return { word: w, got: Math.min(save.get('wordGot'), w.length - 1), done: false };
+  const w = WORDS[(today() + (save.get('wordN') || 0)) % WORDS.length];
+  if (save.get('wordKey') !== w) { save.put('wordKey', w); save.put('wordGot', 0); } // a new word (a new day) starts empty
+  return { word: w, got: Math.min(save.get('wordGot'), w.length - 1), done: false };
 }
 // ---- The weekly hunt (buta stones; the first one won unlocks Məlikməmməd), magic stones, Nənə's daily gift --
 function huntState() {
@@ -1368,8 +1421,9 @@ function dailyGift() { // once a day, on the title: Nənə gives a bundle
   if (save.get('giftDay') === today()) return null;
   save.put('giftDay', today()); const g = gift(); save.flush(); return g;
 }
-function gift() { // a free Nənənin bağlaması; says what was in it
-  const r = rng();
+function giftRng() { let x = (save.get('giftSeed') || 987654) | 0; x = (x + 0x6D2B79F5) | 0; save.put('giftSeed', x); let t = Math.imul(x ^ (x >>> 15), x | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+function gift() { // a free Nənənin bağlaması; says what was in it (its own random stream: never the same first gift)
+  const rng = giftRng; const r = rng();
   if (r < 0.4) { const n = 300 + Math.floor(rng() * 13) * 100; save.put('bread', save.get('bread') + n); return `${n} yağ çörəyi`; }
   if (r < 0.7) { save.put('nar', save.get('nar') + 1); return 'nar'; }
   if (r < 0.9) { save.put('carpets', save.get('carpets') + 1); return 'uçan xalça'; }
@@ -1385,7 +1439,7 @@ function takeLetter() {
   save.put('wordN', (save.get('wordN') || 0) + 1); save.put('wordGot', 0); // straight on to the next word
   state.wordShow = { word: dw.word, got: dw.word.length };
   banner(`${dw.word}! Hədiyyə: ${gifts.join(', ')}`); state.bannerT = 3; sfx.power(); save.flush();
-  events.push({ type: 'word', word: dw.word });
+  pushEvent({ type: 'word', word: dw.word });
 }
 let snow = null, rain = null;
 function themeWorld() { // the street dressed for the festival
@@ -1420,7 +1474,8 @@ function themeWorld() { // the street dressed for the festival
 }
 
 function reset() {
-  seed = Number(params.get('seed')) || CONFIG.seed;
+  const runNo = (save.get('runNo') || 0) + 1; save.put('runNo', runNo);
+  seed = Number(params.get('seed')) || (CONFIG.seed + runNo * 7919); // seeded, but a new street every run
   for (const o of obstacles) worldRoot.remove(o.mesh);
   for (const p of pickups) worldRoot.remove(p.mesh);
   for (const s of scenery) worldRoot.remove(s);
@@ -1464,19 +1519,22 @@ function addObstacle(kind, lane, s0, opts = {}) {
   else if (kind === 'caravan') { mesh = new THREE.Group(); mesh.userData.camels = []; for (let i = 0; i < 3; i++) { const c = makeCamel(); c.position.z = -i * 2.4 + 2.4; mesh.add(c); mesh.userData.camels.push(c); } }
   const len = opts.len || k.len;
   const o = { kind, lane, s0, s1: s0 + len, len, top: k.top, bottom: k.bottom, mesh, hit: false };
+  if (swap[kind] === makeSaltPile || swap[kind] === makeAppleCrates) o.top = 1.0; // taller than baskets
+  if (swap[kind] === makeLoom) { o.len = 0.6; o.s1 = s0 + 0.6; }
+  if (kind === 'phaeton') mesh.position.z -= 1.6; // the horse stands inside the box, not in front of it
   o.prevS0 = s0;
   mesh.position.set(laneX(lane), 0, -(s0 + len / 2));
   worldRoot.add(mesh); obstacles.push(o);
   return o;
 }
 function addPickup(kind, lane, s, y) {
-  const mesh = kind === 'buta' ? makeButaStone() : kind === 'stone' ? makeMagicStone() : kind === 'treat' ? CITY_LOOK[city()].treat[1]() : kind === 'finduq' ? makeFinduq() : kind === 'halva' ? makeHalva() : kind === 'letter' ? makeLetter(dayWord().word[dayWord().got]) : kind === 'sekerbura' ? makeSekerbura() : kind === 'paxlava' ? makePaxlava() : kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? makePole() : makeTendir();
+  const mesh = kind === 'buta' ? makeButaStone() : kind === 'stone' ? makeMagicStone() : kind === 'treat' ? CITY_LOOK[city()].treat[1]() : kind === 'finduq' ? makeFinduq() : kind === 'halva' ? makeHalva() : kind === 'letter' ? makeLetter(dayWord().word[dayWord().got]) : kind === 'sekerbura' ? makeSekerbura() : kind === 'paxlava' ? makePaxlava() : kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? (() => { const m = makePole(); m.scale.setScalar(0.5); return m; })() : makeTendir();
   const p = { kind, lane, x: laneX(lane), s, y, mesh, taken: false, spin: rng() * 6 };
   mesh.position.set(p.x, y, -s); worldRoot.add(mesh); pickups.push(p);
 }
 function breadLine(lane, s, n, y, gap = 2.2) { for (let i = 0; i < n; i++) addPickup('bread', lane, s + i * gap, y + 0.6); }
 function skyBread() { // a winding line of bread high over the street, for the Simurq's flight
-  const n = Math.floor(powerTime('simurq') * state.speed / 3.2);
+  const n = Math.max(3, Math.floor((powerTime('simurq') * state.speed - 18) / 3)); // ends before the bird lands
   for (let i = 0; i < n; i++) {
     const lane = Math.round(1 + Math.sin(i * 0.35) * 1.2);
     addPickup('bread', Math.max(0, Math.min(2, lane)), state.s + 14 + i * 3, tune.simurq_height + 0.6);
@@ -1534,6 +1592,7 @@ function genRow() {
       if (side.length && rng() < tune.caravan_ramp_chance) {
         const l2 = side[rng() * side.length | 0], c0 = s - 10;
         if (!obstacles.some(q => q.lane === l2 && q.s1 > c0 - KIND.ramp.len - 2 && q.s0 < s)) {
+          pickups = pickups.filter(q => { if (q.lane === l2 && q.s > c0 - KIND.ramp.len - 1 && q.s < c0 + 7 && q.y < 2) { worldRoot.remove(q.mesh); return false; } return true; }); // nothing left inside the cart
           addObstacle('ramp', l2, c0 - KIND.ramp.len); addObstacle('cart', l2, c0, { len: 6 });
           breadLine(l2, c0 + 0.8, 3, KIND.cart.top); used.add(l2);
         }
@@ -1564,9 +1623,10 @@ function genRow() {
     const slot = i => s - 4 + i * 2.2, taken = new Set();
     const r = rng();
     let special = null;
-    if (r < tune.nar_chance * (ev === 'nar' ? 2 : 1)) special = 'nar';
+    const narC = tune.nar_chance * (ev === 'nar' ? 2 : 1);
+    if (r < narC) special = 'nar';
     else if (!gen.simurqs && gen.rows >= tune.simurq_first_row) { special = 'simurq'; gen.simurqs = 1; } // every run meets the Simurq early
-    else if (r < tune.nar_chance + tune.power_chance && gen.rows > INTRO.length) { special = rng() < tune.simurq_share ? 'simurq' : ['magnet', 'shoe', 'double', 'pole'][rng() * 4 | 0]; if (special === 'simurq') gen.simurqs = (gen.simurqs || 0) + 1; }
+    else if (r < narC + tune.power_chance && gen.rows > INTRO.length) { special = rng() < tune.simurq_share ? 'simurq' : ['magnet', 'shoe', 'double', 'pole'][rng() * 4 | 0]; if (special === 'simurq') gen.simurqs = (gen.simurqs || 0) + 1; }
     if (special) { const k = Math.min(3, n - 1); addPickup(special, l, slot(k), 1.0); taken.add(k); }
     if (huntState().open && gen.rows > INTRO.length && rng() < tune.hunt_chance) { const k = n - 1; if (!taken.has(k)) { addPickup('buta', l, slot(k), 0.8); taken.add(k); } }
     if (gen.rows > INTRO.length && rng() < tune.stone_chance) { const k = Math.min(2, n - 1); if (!taken.has(k)) { addPickup('stone', l, slot(k), 1.0); taken.add(k); } }
@@ -1598,7 +1658,7 @@ function fillWorld() {
       const ev = activeEvent();
       if (ev === 'novruz' && rng() < 0.5) { const sm = makeSemeni(); sm.position.set(-side * 0.5, 0, (rng() - 0.5) * w); g.add(sm); }
       if (ev === 'nar' && rng() < 0.6) { const tr = makeNarTree(); tr.position.set(-side * 0.6, 0, w / 2); tr.scale.setScalar(0.9); g.add(tr); }
-      if (ev === 'winter') part(G.box, mat('snowCap', '#ffffff'), 5.3, 0.25, w + 0.3, side * 2.5, g.children[0].scale.y + 0.45, 0, g);
+      if (ev === 'winter' && ['baku', 'sheki', 'naxcivan'].includes(city()) && !(activeEvent() === 'xezer' && side < 0)) part(G.box, mat('snowCap', '#ffffff'), 5.3, 0.25, w + 0.3, side * 2.5, g.children[0].scale.y + 0.45, 0, g);
       g.position.set(side * 4.3, 0, -(gen.sceneryS[side] + w / 2));
       worldRoot.add(g); scenery.push(g); g.userData.s1 = gen.sceneryS[side] + w;
       gen.sceneryS[side] += w + (rng() < 0.15 ? 2.5 : 0.05);
@@ -1626,24 +1686,24 @@ function stumble(o) { // a small hit: the Div comes close; a second while he is 
   if (state.stumbleT > 0) return;
   state.divT = tune.div_near_time; state.stumbleT = 0.6; state.flash = 1;
   sfx.stumble(); sfx.div(); banner('Ay Cırtdaaan!');
-  events.push({ type: 'stumble', t: state.t });
+  pushEvent({ type: 'stumble', t: state.t });
 }
 function crash(o) {
   if (state.invuln > 0) { if (o) o.hit = true; return; }
   if (state.carpet > 0) { state.carpet = 0; sfx.shieldPop(); banner('Uçan xalça səni qorudu!'); state.invuln = 1; if (o) { o.hit = true; o.mesh.visible = false; } return; }
   if (o) o.hit = true;
   state.dead = 'crash'; state.deadT = 0; sfx.crash();
-  events.push({ type: 'crash', t: state.t, kind: o ? o.kind : '' });
+  pushEvent({ type: 'crash', t: state.t, kind: o ? o.kind : '' });
   endRun();
 }
 function caught() {
   state.dead = 'caught'; state.deadT = 0; sfx.hamm();
-  events.push({ type: 'caught', t: state.t });
+  pushEvent({ type: 'caught', t: state.t });
   endRun();
 }
+function bankBread() { const add = state.bread - (state.banked || 0); if (add > 0) { save.put('bread', save.get('bread') + add); state.banked = state.bread; } save.flush(); }
 function endRun() {
-  save.flush();
-  save.set('bread', save.get('bread') + state.bread);
+  bankBread(); // only what is not banked yet: a continue never banks the same bread twice
   if (state.score > save.get('best')) { save.set('best', Math.floor(state.score)); state.newBest = true; }
   const d = new Date(); save.set('runs', [...save.get('runs'), { score: Math.floor(state.score), bread: state.bread, char: save.get('char'), city: city(), date: `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}` }].sort((a, b) => b.score - a.score).slice(0, 10));
   state.gained = state.dead === 'caught' ? 'Div səni tutdu!' : 'Bam! Div səni tutdu!';
@@ -1686,7 +1746,7 @@ function updateRun(dt) {
     if (!st.grounded) st.vy = -tune.fast_fall_speed;
     st.slide = tune.slide_time; st.jumpBuf = 0; sfx.slide();
   }
-  if (anyPressed(...CARPET) && st.carpets > 0 && st.carpet <= 0) { st.carpets--; if (st.freeCarpets > 0) st.freeCarpets--; else save.set('carpets', save.get('carpets') - 1); st.carpet = tune.carpet_time; sfx.power(); banner('Uçan xalça!'); }
+  if ((anyPressed(...CARPET) || tapIn(16, H - 70, 104, 52)) && st.carpets > 0 && st.carpet <= 0) { st.carpets--; if (st.freeCarpets > 0) st.freeCarpets--; else save.set('carpets', save.get('carpets') - 1); st.carpet = tune.carpet_time; sfx.power(); banner('Uçan xalça!'); }
   // forward
   st.s += st.speed * dt;
   // sideways toward the lane
@@ -1732,9 +1792,9 @@ function updateRun(dt) {
     }
     const fromFront = !overlaps({ ...o, s0: o.prevS0, s1: o.prevS0 + o.len }, st.x, st.y, h, st.prevS) && Math.abs(st.prevX - laneX(o.lane)) < KIND[o.kind].half + PHALF;
     if (fromFront) { KIND[o.kind].frontal === 'crash' ? crash(o) : stumble(o); }
-    else { // a side bump: back to the lane you came from
+    else if (Math.abs(st.prevX - laneX(st.lane)) > 0.05) { // a side bump during a lane change: back to the lane he came from
       st.lane = st.prevLane; st.x = st.prevX; stumble(o);
-    }
+    } else stumble(o); // landing on it or rising into it: a stumble where he is, never a jump to another lane
     if (st.dead) return;
   }
   for (const o of obstacles) { // caravans walk toward you
@@ -1744,7 +1804,7 @@ function updateRun(dt) {
   // pickups
   for (const p of pickups) {
     if (p.taken) continue;
-    if (p.kind === 'bread' && st.power.magnet > 0) {
+    if (['bread', 'treat', 'finduq', 'halva', 'sekerbura', 'paxlava'].includes(p.kind) && st.power.magnet > 0) {
       const ds = p.s - st.s, dxp = p.x - st.x;
       if (Math.abs(ds) < tune.magnet_radius && Math.abs(dxp) < tune.magnet_radius) {
         const k = Math.min(1, dt * 10); p.s -= ds * k; p.x -= dxp * k; p.y += (st.y + 0.6 - p.y) * k;
@@ -1756,9 +1816,9 @@ function updateRun(dt) {
       else if (p.kind === 'letter') takeLetter();
       else if (p.kind === 'buta') takeButa();
       else if (p.kind === 'stone') { save.put('stones', save.get('stones') + 1); save.flush(); st.countT = 1.5; st.countKind = 'stone'; sfx.nar(); }
-      else if (p.kind === 'treat') { st.bread += tune.treat_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.treat_worth); }
-      else if (p.kind === 'finduq') { st.bread += tune.nut_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.nut_worth); }
-      else if (p.kind === 'halva') { st.bread += tune.halva_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.halva_worth); }
+      else if (p.kind === 'treat') { st.plusT = 0.9; st.plus = tune.treat_worth; st.bread += tune.treat_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.treat_worth); }
+      else if (p.kind === 'finduq') { st.plusT = 0.9; st.plus = tune.nut_worth; st.bread += tune.nut_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.nut_worth); }
+      else if (p.kind === 'halva') { st.plusT = 0.9; st.plus = tune.halva_worth; st.bread += tune.halva_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.halva_worth); }
       else if (p.kind === 'sekerbura' || p.kind === 'paxlava') { st.tokens = (st.tokens || 0) + 1; save.put('tokens', save.get('tokens') + 1); st.tokenT = 1.5; sfx.bread(); }
       else if (p.kind === 'nar') { st.narGot++; save.set('nar', save.get('nar') + 1); sfx.nar(); banner('Nar!'); }
       else {
@@ -1780,10 +1840,10 @@ function updateRun(dt) {
     st.tripT = 1.6; st.tongueT = 1.4; st.divT = 0; banner(k === 1 ? 'Div büdrədi! Hə-hə!' : k === 2.5 ? 'Div yıxıldı, Cırtdan dil çıxardı!' : k === 5 ? 'Div çarığını itirdi!' : 'Div yoruldu, amma əl çəkmir!'); say.hiHi();
   }
   st.tripT = Math.max(0, (st.tripT || 0) - dt); st.tongueT = Math.max(0, (st.tongueT || 0) - dt);
-  st.mult = Math.min(tune.mult_cap, save.get('mmult') + Math.floor(st.s / tune.mult_every));
+  st.mult = save.get('mmult') + Math.min(tune.mult_cap - 1, Math.floor(st.s / tune.mult_every)); // missions always count; distance adds up to mult_cap - 1
   mission('runDist', st.s);
   st.score += st.speed * dt * st.mult * (st.power.double > 0 ? 2 : 1);
-  st.bannerT = Math.max(0, st.bannerT - dt); st.wordT = Math.max(0, (st.wordT || 0) - dt); st.countT = Math.max(0, (st.countT || 0) - dt); st.tokenT = Math.max(0, (st.tokenT || 0) - dt); st.flash = Math.max(0, st.flash - dt * 2);
+  st.bannerT = Math.max(0, st.bannerT - dt); st.wordT = Math.max(0, (st.wordT || 0) - dt); st.countT = Math.max(0, (st.countT || 0) - dt); st.plusT = Math.max(0, (st.plusT || 0) - dt); st.tokenT = Math.max(0, (st.tokenT || 0) - dt); st.flash = Math.max(0, st.flash - dt * 2);
   st.stepT += dt * st.speed / 3.2;
   if (st.grounded && st.slide <= 0 && st.stepT > 1) { st.stepT = 0; sfx.step(); }
   if (Math.floor(st.s / tune.mult_every) !== Math.floor(st.prevS / tune.mult_every)) banner(`Vurğu x${st.mult}!`);
@@ -1849,7 +1909,7 @@ function drawWorld() {
   // pickups spin and bob; taken ones shrink away
   for (const p of pickups) {
     p.mesh.position.set(p.x, p.y + (p.kind === 'bread' ? 0 : Math.sin(animT * 3 + p.spin) * 0.12), -p.s);
-    p.mesh.rotation.y = animT * 3 + p.spin;
+    p.mesh.rotation.y = p.kind === 'letter' ? Math.sin(animT * 2 + p.spin) * 0.35 : animT * 3 + p.spin; // a letter only rocks, so it can be read
     if (p.taken) { const k = Math.max(0, p.mesh.scale.x - 0.15); p.mesh.scale.setScalar(k); p.mesh.position.y += 0.4; }
   }
   if (rain && rain.visible) { rain.position.set(x, 0, -s - 20); const a = rain.geometry.attributes.position.array; for (let i = 1; i < a.length; i += 3) { a[i] -= 0.35; if (a[i] < 0) a[i] += 16; } rain.geometry.attributes.position.needsUpdate = true; }
@@ -1966,6 +2026,7 @@ function drawHud() {
   if (st.wordT > 0 && st.wordShow) { // the word shows for a moment when a letter is taken, then fades away
     ctx.globalAlpha = Math.min(1, st.wordT / 0.5); drawWord(W / 2, H * 0.36, W < 700 ? 30 : 38, st.wordShow); ctx.globalAlpha = 1;
   }
+  if (st.plusT > 0) { ctx.globalAlpha = Math.min(1, st.plusT * 2); outlined(`+${st.plus}`, W - 200, 100 - (0.9 - st.plusT) * 30, 26, '#ffd77a', 'right'); ctx.globalAlpha = 1; }
   if (st.countT > 0) { // buta stones and magic stones: the count shows for a moment
     ctx.globalAlpha = Math.min(1, st.countT / 0.5); const y = W < 700 ? 246 : 234;
     if (st.countKind === 'buta') { ctx.fillStyle = '#1f9e9a'; ctx.beginPath(); ctx.arc(W - 168, y, 14, 0, Math.PI * 2); ctx.fill(); buta(ctx, W - 168, y + 2, 1.1, 0.4, '#f2d16b', '#0d5a58'); outlined(`${huntState().got}/${tune.hunt_target}`, W - 24, y, 26, '#bff0ee', 'right'); }
@@ -2044,8 +2105,8 @@ function buildStory(i) {
   storyScene.background = p.night ? new THREE.Color('#1d2550') : TEX.sky;
   storyHemi.intensity = p.night ? 0.55 : 1.5; storySun.intensity = p.night ? 0.6 : 2.2; storySun.color.set(p.night ? '#9fb4ff' : '#fff1d6');
   const ground = part(G.plane, texMat('cobble', TEX.cobble), 30, 30, 1, 0, 0, 0, g); ground.rotation.x = -Math.PI / 2;
-  const back = makeHouse(1, () => 0.5).g; back.rotation.y = Math.PI / 2; back.position.set(-4, 0, -6.5); g.add(back);
-  const back2 = makeHouse(1, () => 0.3).g; back2.rotation.y = Math.PI / 2; back2.position.set(3.8, 0, -7); g.add(back2);
+  const back = makeHouse(1, () => 0.5, true).g; back.rotation.y = Math.PI / 2; back.position.set(-4, 0, -6.5); g.add(back);
+  const back2 = makeHouse(1, () => 0.3, true).g; back2.rotation.y = Math.PI / 2; back2.position.set(3.8, 0, -7); g.add(back2);
   if (p.night) { part(G.sphere, mat('moon', '#fff6d8', { emissive: '#fff0c0' }), 1.2, 1.2, 1.2, 6, 9, -20, g); }
   const at = (m, x, z, ry = 0, sc = 1) => { m.position.set(x, 0, z); m.rotation.y = ry; m.scale.setScalar(sc); g.add(m); return m; };
   const tendir = () => { const t = makeTendir(); t.scale.setScalar(2.4); return t; };
@@ -2061,7 +2122,7 @@ function buildStory(i) {
     const t = tendir(); t.position.set(1.5, 1.7, 0.5); t.scale.setScalar(2); g.add(t); // the oven under one arm
     for (let k = 0; k < 4; k++) { const b = makeBread(); b.position.set(-1.6 + (k % 2) * 0.4, 1.4 + k * 0.25, 0.7); g.add(b); } // bread in the other
   } else if (p.stage === 'cave') {
-    for (let k = 0; k < 9; k++) { const r = part(new THREE.DodecahedronGeometry(1), mat('rock', '#4a4552', { flatShading: true }), 2.2, 2.6, 2, -6 + k * 1.6, 1.2, -3 - (k % 2), g); r.rotation.y = k; }
+    for (let k = 0; k < 9; k++) { const r = part(G.dodecahedronGeo || (G.dodecahedronGeo = new THREE.DodecahedronGeometry(1)), mat('rock', '#4a4552', { flatShading: true }), 2.2, 2.6, 2, -6 + k * 1.6, 1.2, -3 - (k % 2), g); r.rotation.y = k; }
     const d = at(makeDiv(), -0.6, -0.8, 0.3, 1.0); d.rotation.z = Math.PI / 2 - 0.15; d.position.y = 0.9; // asleep on his side
     const c = at(makeCirtdan(save.get('char')), 1.8, 0.6, Math.PI + 0.9, 1.3); c.userData.legL.rotation.x = 0.7; c.userData.legR.rotation.x = -0.5;
     const sack = part(G.sphere, mat('sack', '#c9a46a'), 0.5, 0.45, 0.4, 2.7, 0.45, 0.5, g);
@@ -2075,6 +2136,7 @@ function buildStory(i) {
   if (STORY[i].voice) say[STORY[i].voice]();
 }
 function wrapText(str, maxW, size, weight = 'normal') {
+  str = tr(str);
   ctx.font = `${weight} ${size}px ${FONT}`;
   const words = str.split(' '), lines = []; let line = '';
   for (const w of words) { const t = line ? line + ' ' + w : w; if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; } else line = t; }
@@ -2101,8 +2163,8 @@ function panelBtn(r, label, hot, color, hint) {
   if (hint && W >= 700) text(hint, r[0] + r[2] - 24, r[1] + r[3] / 2, 18, 'rgba(255,244,220,0.65)', 'right', 'normal');
 }
 function rowRects(n) {
-  const top = 128, h = Math.min(76, (H - top - 20) / n - 8), w = Math.min(W - 32, 860), x = (W - w) / 2;
-  return Array.from({ length: n }, (_, i) => { const y = top + i * (h + 8); return { row: [x, y, w, h], btn: [x + w - 170, y + 10, 158, h - 20] }; });
+  const nw = W < 500, top = nw ? 142 : 128, h = Math.min(76, (H - top - 62) / n - 8), w = Math.min(W - (nw ? 16 : 32), 860), x = (W - w) / 2, bw = nw ? 96 : 158;
+  return Array.from({ length: n }, (_, i) => { const y = top + i * (h + 8); return { row: [x, y, w, h], btn: [x + w - bw - 8, y + 8, bw, h - 16] }; });
 }
 function shopRows() {
   const rows = Object.keys(SHOP_NAMES).map(k => {
@@ -2231,7 +2293,7 @@ function listScene(name, title, getRows, note) {
     update(dt) {
       state.t += dt;
       const rows = getRows(), rects = rowRects(rows.length);
-      if (anyPressed('Escape', 'Backspace') || tapIn(16, 16, 120, 60)) { scene = 'title'; return; }
+      if (anyPressed('Escape', 'Backspace') || tapIn(16, 16, W < 500 ? 60 : 120, 60)) { scene = 'title'; return; }
       if (anyPressed('ArrowDown', 'KeyS')) listSel = (listSel + 1) % rows.length;
       if (anyPressed('ArrowUp', 'KeyW')) listSel = (listSel + rows.length - 1) % rows.length;
       if (anyPressed('Enter', 'Space') && rows[listSel].can) rows[listSel].act();
@@ -2241,10 +2303,12 @@ function listScene(name, title, getRows, note) {
     draw() {
       titleCamera(state.t); clear();
       ctx.fillStyle = 'rgba(40,12,8,0.72)'; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = 'rgba(70,25,15,0.8)'; rrect(16, 16, 120, 60, 14); ctx.fill(); text('← Geri', 76, 46, 24, '#fff4dc');
-      outlined(title, W / 2, 52, W < 700 ? 30 : 42, '#ffd77a');
+      const nw = W < 500; // a phone held upright: a small back button, the title between it and the edge
+      ctx.fillStyle = 'rgba(70,25,15,0.8)'; rrect(16, 16, nw ? 60 : 120, 60, 14); ctx.fill(); text(nw ? '←' : '← Geri', nw ? 46 : 76, 46, nw ? 30 : 24, '#fff4dc');
+      if (nw) { ctx.font = `bold 30px ${FONT}`; const tw = ctx.measureText(title).width, room = W - 100; outlined(title, 84 + room / 2, 46, Math.min(30, Math.floor(30 * room / tw)), '#ffd77a'); }
+      else outlined(title, W / 2, 52, W < 700 ? 30 : 42, '#ffd77a');
       if (W >= 700) topBank(); else { hudIconBread(30, 100, 12); text(`${save.get('bread')}`, 48, 101, 20, '#ffd77a', 'left'); hudIconNar(W - 70, 100, 10); text(`${save.get('nar')}`, W - 54, 101, 20, '#ffb3bd', 'left'); }
-      if (note) text(note(), W / 2, 104, W < 700 ? 17 : 21, '#ffe6b0', 'center', 'normal');
+      if (note) { const ns = W < 700 ? 17 : 21; ctx.font = `normal ${ns}px ${FONT}`; const nt = note(), tw = ctx.measureText(nt).width; text(nt, W / 2, nw ? 124 : 104, Math.max(11, Math.min(ns, Math.floor(ns * (W - 24) / tw))), '#ffe6b0', 'center', 'normal'); }
       const rows = getRows(), rects = rowRects(rows.length), narrow = rects[0].row[2] < 600;
       rows.forEach((r, i) => {
         const [x, y, w, h] = rects[i].row;
@@ -2252,16 +2316,19 @@ function listScene(name, title, getRows, note) {
         if (i === listSel) { ctx.strokeStyle = '#ffd77a'; ctx.lineWidth = 3; rrect(x, y, w, h, 14); ctx.stroke(); }
         ctx.globalAlpha = r.dim ? 0.55 : 1;
         r.icon(x + 34, y + h / 2);
-        const tx = x + 64, room = (r.btn ? w - 170 : w) - 74;
+        const barW = 200, tx = x + 64, room = (r.btn ? w - rects[i].btn[2] - 12 : w) - 74 - (r.prog !== undefined && !narrow ? barW + 40 : 0) - (r.pips !== undefined && !narrow ? 120 : 0);
         fitLeft(r.label, tx, y + h * 0.34, narrow ? 19 : 24, '#fff4dc', room);
         fitLeft(r.sub, tx, y + h * 0.72, narrow ? 14 : 17, '#ffe6b0', room, 'normal');
         if (r.pips !== undefined) for (let k = 0; k < MAX_LEVEL; k++) { ctx.fillStyle = k < r.pips ? '#ffcf4a' : 'rgba(255,244,220,0.25)'; rrect(x + w - 290 + k * 22, y + h / 2 - 7, 16, 14, 4); if (!narrow) ctx.fill(); }
-        if (r.prog !== undefined) { ctx.fillStyle = '#5a2a1a'; rrect(x + w - 230, y + h / 2 - 9, 200, 18, 9); ctx.fill(); ctx.fillStyle = '#ffcf4a'; rrect(x + w - 230, y + h / 2 - 9, Math.max(14, 200 * r.prog), 18, 9); ctx.fill(); }
+        if (r.prog !== undefined) {
+          const [bx, by, bw2, bh] = narrow ? [tx, y + h - 9, w - 64 - 16, 6] : [x + w - barW - 30, y + h / 2 - 9, barW, 18]; // a phone: a thin bar under the text
+          ctx.fillStyle = '#5a2a1a'; rrect(bx, by, bw2, bh, bh / 2); ctx.fill(); ctx.fillStyle = '#ffcf4a'; rrect(bx, by, Math.max(bh, bw2 * r.prog), bh, bh / 2); ctx.fill();
+        }
         if (r.btn) {
           const b = rects[i].btn;
           ctx.fillStyle = r.can ? '#2b7a48' : 'rgba(255,244,220,0.18)'; rrect(...b, 12); ctx.fill();
-          if (r.bread) { hudIconBread(b[0] + 26, b[1] + b[3] / 2, 12); text(r.btn, b[0] + b[2] / 2 + 14, b[1] + b[3] / 2, 22, '#fff4dc'); }
-          else text(r.btn, b[0] + b[2] / 2, b[1] + b[3] / 2, 22, '#fff4dc');
+          if (r.bread) { hudIconBread(b[0] + (narrow ? 16 : 26), b[1] + b[3] / 2, narrow ? 9 : 12); text(r.btn, b[0] + b[2] / 2 + (narrow ? 10 : 14), b[1] + b[3] / 2, narrow ? 17 : 22, '#fff4dc'); }
+          else text(r.btn, b[0] + b[2] / 2, b[1] + b[3] / 2, narrow ? 17 : 22, '#fff4dc');
         }
         ctx.globalAlpha = 1;
       });
@@ -2269,9 +2336,12 @@ function listScene(name, title, getRows, note) {
     },
   };
 }
-function fitLeft(s, x, y, size, c, room, weight = 'bold') {
+function fitLeft(s, x, y, size, c, room, weight = 'bold') { // shrinks to fit; at the smallest size, cut with …
+  s = tr(s);
   ctx.font = `${weight} ${size}px ${FONT}`; const w = ctx.measureText(s).width;
-  if (w > room) size = Math.max(11, Math.floor(size * room / w));
+  if (w > room) size = Math.max(12, Math.floor(size * room / w));
+  ctx.font = `${weight} ${size}px ${FONT}`;
+  if (ctx.measureText(s).width > room) { while (s.length > 2 && ctx.measureText(s + '…').width > room) s = s.slice(0, -1); s += '…'; }
   text(s, x, y, size, c, 'left', weight);
 }
 const scenes = {
@@ -2364,9 +2434,10 @@ const scenes = {
         drawWord(cx, y, 28);
         const ev = EVENTS.find(e => e.id === activeEvent()); outlined(`${CITIES.find(c => c.id === city()).name}${ev ? ' · ' + ev.name : ''}`, cx, y + 38, 22, '#ffcf4a'); }
       if (titleGift.t > 0) { ctx.globalAlpha = Math.min(1, titleGift.t); ctx.fillStyle = 'rgba(40,12,8,0.6)'; ctx.fillRect(0, 0, W, H); const bw = Math.min(W - 30, 620); text('Toxun və ya Enter', W / 2, H / 2 + 62, 18, '#ffe6b0', 'center', 'normal'); ctx.fillStyle = 'rgba(43,122,72,0.92)'; rrect((W - bw) / 2, H / 2 - 40, bw, 80, 18); ctx.fill(); hudIconBox((W - bw) / 2 + 40, H / 2, 20); fitLeft(titleGift.msg, (W - bw) / 2 + 72, H / 2, 24, '#fff4dc', bw - 90); ctx.globalAlpha = 1; }
-      text(`Rekord: ${save.get('best')}`, 24, H - 24, 22, '#fff4dc', 'left');
-      hudIconBread(W - 200, H - 26, 12); text(String(save.get('bread')), W - 182, H - 24, 22, '#ffd77a', 'left');
-      hudIconNar(W - 80, H - 28, 12); text(String(save.get('nar')), W - 62, H - 26, 22, '#fff4dc', 'left');
+      const nb = W < 500; // a phone: smaller and spread so nothing touches
+      text(`Rekord: ${save.get('best')}`, 16, H - 24, nb ? 17 : 22, '#fff4dc', 'left');
+      hudIconBread(W - (nb ? 140 : 200), H - 26, 12); text(String(save.get('bread')), W - (nb ? 124 : 182), H - 24, nb ? 18 : 22, '#ffd77a', 'left');
+      hudIconNar(W - (nb ? 56 : 80), H - 28, 12); text(String(save.get('nar')), W - (nb ? 40 : 62), H - 26, nb ? 18 : 22, '#fff4dc', 'left');
     },
   },
   play: {
@@ -2383,7 +2454,7 @@ const scenes = {
     draw() { drawWorld(); clear(); drawHud(); },
   },
   pause: {
-    update() { if (pressed('KeyP') || pressed('Escape') || taps.length) scene = 'play'; },
+    update() { if (tapIn(...BTN.mute())) { setMuted(!muted); return; } if (pressed('KeyP') || pressed('Escape') || taps.length) scene = 'play'; },
     draw() {
       scenes.play.draw();
       ctx.fillStyle = 'rgba(40,12,8,0.55)'; ctx.fillRect(0, 0, W, H);
@@ -2393,6 +2464,7 @@ const scenes = {
   },
   over: {
     update() {
+      if (sceneT < 0.6) return; // fingers still tapping from the run never spend a nar by accident
       const cost = tune.continue_cost * (1 << state.continues), canCont = save.get('nar') >= cost;
       const b = overButtons();
       if (canCont && (pressed('KeyC') || tapIn(...b.cont))) { continueRun(); scene = 'play'; return; }
@@ -2435,12 +2507,14 @@ function overButtons() {
 }
 
 // ---- Loop: fixed step, frame time clamped ---------------------------------------------
+let lastScene = null;
 function step() {
+  if (scene !== lastScene) { lastTap = -1; sceneT = 0; lastScene = scene; } sceneT += STEP;
   if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
   setMusic(scene === 'play' ? (state.dead ? null : state.power.simurq > 0 ? 'fly' : 'run') : scene === 'figures' || scene === 'over' ? null : 'menu');
   scenes[scene].update(STEP); hit.clear(); taps = [];
 }
-let last, acc = 0, ALPHA = 1; // ALPHA: how far the frame is between the last two steps
+let last, acc = 0, ALPHA = 1, sceneT = 0; // ALPHA: how far the frame is between the last two steps
 function tick() {
   const now = clock.now();
   acc += Math.min(now - last, 0.25); last = now; // a stall never fast-forwards the game
