@@ -21,6 +21,7 @@
 extends Node3D
 
 const TUNING_PATH := "res://src/data/tuning.tres"
+const GLB_CIRTDAN := false ## pilot: draw Cırtdan (no costume) from assets/models/char_cirtdan.glb; dev flag --glb
 const POWER_NAMES := {"magnet": "Nənənin sinisi", "shoe": "Sehrli çarıq", "double": "Qoşa təndir: x2",
 	"pole": "Kəndirbaz çubuğu", "simurq": "Simurq quşu", "fly": "Xalça ilə uçuş", "carpet": "Uçan xalça"}
 
@@ -42,6 +43,7 @@ var camera: Camera3D
 var world: World
 var fx: Fx
 var anim := Animator.new()
+var glb: GlbRunner ## the Blender-built Cırtdan when it is drawn (pilot), else null
 var last_bread := 0 ## the run's bread at the last pickup (a treat adds several at once)
 var pole_fig: Node3D ## the kəndirbaz pole in Cırtdan's hands while the power lasts
 var shake := 0.0 ## seconds of camera shake left (a stumble, a crash)
@@ -181,7 +183,13 @@ func _apply_look() -> void:
 	if runner != null:
 		runner.remove_child(fly_carpet)
 		runner.queue_free()
-	runner = Characters.runner(prog.look())
+	glb = null
+	if (GLB_CIRTDAN or args.has("glb")) and String(save.get_value("char")) == "cirtdan" \
+			and String(save.get_value("costume")) == "none" and GlbRunner.available():
+		glb = GlbRunner.new(sqrt(2.0 * tune.gravity * tune.jump_height))
+		runner = glb.build()
+	else:
+		runner = Characters.runner(prog.look())
 	add_child(runner)
 	runner.add_child(fly_carpet)
 	pole_fig = Props.pickup("pole")
@@ -334,9 +342,13 @@ func _sync(dt: float) -> void:
 	runner.position = Vector3(x, y, -s)
 	runner.visible = sim.invuln <= 0.0 or int(anim_t * 12.0) % 2 == 0
 	var flying := sim.is_flying() or sim.carpet_t > 0.0
-	anim.runner(runner, {"t": anim_t, "dt": dt, "speed": sim.speed, "x": x, "grounded": sim.grounded or not started,
+	var pose := {"t": anim_t, "dt": dt, "speed": sim.speed, "x": x, "grounded": sim.grounded or not started,
 		"vy": sim.vy, "sliding": sim.is_sliding(), "flying": sim.is_flying(), "stumbling": sim.stumble_t > 0.0,
-		"dead": sim.dead, "idle": not started, "escaped": escaped_now})
+		"dead": sim.dead, "idle": not started, "escaped": escaped_now}
+	if glb != null:
+		glb.drive(pose)
+	else:
+		anim.runner(runner, pose)
 	escaped_now = false
 	fly_carpet.visible = sim.carpet_t > 0.0 or sim.power["fly"] > 0.0
 	pole_fig.visible = sim.power["pole"] > 0.0
