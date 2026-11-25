@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1795619281|4923079';
+const CACHE_VERSION = '1795621029|5544302';
 /** @type {string} */
 const CACHE_PREFIX = 'Cırtdan: Köhnə B-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
