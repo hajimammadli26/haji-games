@@ -24,7 +24,13 @@ var _back: Node3D
 var _houses: Array = [] ## [chunk node, far end s]: houses are grouped in chunks, merged once full
 var _chunk: Node3D ## the chunk being filled
 var _chunk_n := 0
-const CHUNK_HOUSES := 8
+const CHUNK_HOUSES := 4
+const NEAR := 80.0 ## houses in full detail up to here; beyond, each is one simple block (art bible §8: < 300 draws)
+const PICKUP_RANGE := 60.0 ## pickups appear from this far (2.7 s ahead at top speed)
+const OBSTACLE_RANGE := 100.0 ## obstacles appear from this far (4.5 s ahead at top speed: time to read them)
+## The flat colour of the far blocks, per city (wall colour; a hedge green or rock for the nature cities).
+const FAR := {"baku": "#d9a95f", "sheki": "#e9dfcc", "naxcivan": "#b5653a", "qebele": "#3f6f3f",
+	"lenkeran": "#4f8a44", "quba": "#5a8a46", "qobustan": "#8a7560"}
 var _house_next := {-1: -20.0, 1: -20.0}
 var _gates: Array = [] ## [node, s]
 var _gate_next := 300.0
@@ -206,6 +212,7 @@ func update(sim: RunSim, s: float, t: float) -> void:
 				Kit.merge_joints(o.node)
 			else: # still things draw as one mesh per material
 				Kit.merge(o.node)
+			_ranges(o.node, 0.0, OBSTACLE_RANGE)
 			add_child(o.node)
 		o.node.visible = not o.cleared
 		o.node.position = Vector3(sim.lane_x(o.lane), 0, -(o.s0 + o.length * 0.5))
@@ -216,6 +223,7 @@ func update(sim: RunSim, s: float, t: float) -> void:
 			if p.kind == "letter" and letter_text.is_valid():
 				text = letter_text.call()
 			p.node = Props.pickup(p.kind, text, city)
+			_ranges(p.node, 0.0, PICKUP_RANGE)
 			add_child(p.node)
 		if p.taken:
 			p.node.scale = p.node.scale * 0.8
@@ -260,6 +268,34 @@ func _animate_obstacle(o: RunSim.Obstacle, t: float) -> void:
 		b.visible = u < 0.95
 
 
+## Sets a visibility range on every mesh under n (0 = no limit on that side).
+func _ranges(n: Node, begin: float, end: float) -> void:
+	for c in n.get_children():
+		_ranges(c, begin, end)
+	if n is GeometryInstance3D:
+		(n as GeometryInstance3D).visibility_range_begin = begin
+		(n as GeometryInstance3D).visibility_range_end = end
+
+
+## One simple block standing in for a house far away: its size, one flat city colour.
+func _far_block(house: Node3D, far_node: Node3D) -> void:
+	var box := AABB()
+	var first := true
+	for c in house.get_children():
+		if c is MeshInstance3D and (c as MeshInstance3D).mesh != null:
+			var b: AABB = (c as MeshInstance3D).transform * (c as MeshInstance3D).mesh.get_aabb()
+			box = b if first else box.merge(b)
+			first = false
+	if first:
+		return
+	var size := box.size
+	size.y = minf(size.y, 10.0)
+	var mi := Kit.part(far_node, Kit.box(size.x, size.y, size.z), Kit.mat(FAR.get(city, "#d9a95f")),
+		house.position + box.position + Vector3(box.size.x, size.y, box.size.z) * 0.5)
+	mi.set_meta("no_ink", true)
+	_ranges(mi, NEAR - 4.0, 0.0)
+
+
 func _stream(s: float) -> void:
 	var ahead := s + tune.view_ahead + 20.0
 	if city in GATE_CITIES:
@@ -282,18 +318,28 @@ func _stream(s: float) -> void:
 			var made: Array = Scenery.house(city, side, _rng)
 			var node: Node3D = made[0]
 			var w: float = made[1]
-			node.position = Vector3(side * 4.3, 0, -(_house_next[side] + w * 0.5))
 			Kit.merge(node)
-			if _chunk == null:
+			if _chunk == null: # a chunk sits where it starts, so distances to it are measured from there
 				_chunk = Node3D.new()
+				_chunk.position = Vector3(0, 0, -_house_next[side])
 				add_child(_chunk)
+				_chunk.add_child(Node3D.new()) # 0: near detail
+				_chunk.add_child(Node3D.new()) # 1: far blocks
 				_houses.append([_chunk, 0.0])
 				_chunk_n = 0
-			_chunk.add_child(node)
+			node.position = Vector3(side * 4.3, 0, -(_house_next[side] + w * 0.5)) - _chunk.position
+			var near_node: Node3D = _chunk.get_child(0)
+			var far_node: Node3D = _chunk.get_child(1)
+			near_node.add_child(node)
+			_far_block(node, far_node)
+			_ranges(node, 0.0, NEAR)
 			_houses[-1][1] = maxf(_houses[-1][1], _house_next[side] + w)
 			_chunk_n += 1
-			if _chunk_n >= CHUNK_HOUSES: # a full chunk becomes one mesh per material
-				Kit.merge(_chunk)
+			if _chunk_n >= CHUNK_HOUSES: # a full chunk: one mesh per material near, one mesh of blocks far
+				Kit.merge(near_node)
+				Kit.merge(far_node)
+				_ranges(near_node, 0.0, NEAR)
+				_ranges(far_node, NEAR - 4.0, 0.0)
 				_chunk = null
 			_house_next[side] += w + (2.5 if _rng.randf() < 0.15 else 0.05)
 	for i in range(_houses.size() - 1, -1, -1):

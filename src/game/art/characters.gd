@@ -10,6 +10,7 @@ class_name Characters
 extends RefCounted
 
 const SKIN := "#f2c08f"
+const PLAYER_RED := "#c8221d" ## the papaq, and a band on every other hat — nothing else in the game layer (art bible §4)
 
 
 ## An ellipsoid piece: radii rx, ry, rz (sizes baked in so outlines stay even).
@@ -172,6 +173,10 @@ static func _hat(h: Node3D, head: Node3D, torso: Node3D, hat: String, c: String,
 			_cyl(h, c, 0.3, 0.04, Vector3(0, 0.32, 0))
 			_egg(h, "#c8322c", 0.07, 0.07, 0.07, Vector3(0, 0.75, 0))
 			_cyl(h, "#1f9e9a", 0.205, 0.05, Vector3(0, 0.38, 0))
+	if hat != "papaq": # every other hat carries a band of Player Red: the runner is always findable (art bible §4)
+		var band: Array = {"bald": [0.3, 0.295], "scarf": [0.36, 0.31], "tall": [0.34, 0.21], "kosa": [0.38, 0.23],
+			"peri": [0.4, 0.3], "crown": [0.39, 0.235], "winter": [0.3, 0.31], "sailor": [0.4, 0.3]}.get(hat, [0.34, 0.3])
+		Kit.part(h, Kit.ring(band[1], 0.03), Kit.mat(PLAYER_RED), Vector3(0, band[0], 0))
 	if look.get("braids", false) and hat != "scarf":
 		for sx in [-0.17, 0.17]:
 			_cyl(head, "#2a160c", 0.05, 0.42, Vector3(sx, -0.05, 0.16))
@@ -202,7 +207,9 @@ static func div() -> Node3D:
 	var head := Kit.joint(body, Vector3(0, 2.0, 0))
 	_egg(head, fur, 0.62, 0.55, 0.55, Vector3(0, 0.1, 0.05), Vector3.ZERO, 14)
 	for sd in [-1.0, 1.0]:
-		_cyl(head, "#f1e6c8", 0.13, 0.5, Vector3(sd * 0.38, 0.62, 0), Vector3(0, 0, -sd * 0.5), 0.0)
+		# short horns with rounded nubs: comic, never sharp (art bible §3)
+		_cyl(head, "#f1e6c8", 0.13, 0.32, Vector3(sd * 0.36, 0.56, 0), Vector3(0, 0, -sd * 0.5), 0.07)
+		_egg(head, "#f1e6c8", 0.075, 0.075, 0.075, Vector3(sd * 0.44, 0.7, 0))
 		_egg(head, fur_d, 0.14, 0.2, 0.08, Vector3(sd * 0.6, 0.2, 0), Vector3(0, 0, -sd * 0.4)) # ears
 	var brows := []
 	var div_eyes := []
@@ -291,8 +298,8 @@ static func camel() -> Node3D:
 	var legs := []
 	for xz in [[-0.22, 0.6], [0.22, 0.6], [-0.22, -0.6], [0.22, -0.6]]:
 		var l := Kit.joint(rig, Vector3(xz[0], 1.2, xz[1]))
-		_cyl(l, hide, 0.07, 1.15, Vector3(0, -0.58, 0))
-		_egg(l, hide_d, 0.1, 0.06, 0.13, Vector3(0, -1.16, 0.03))
+		_cyl(l, hide, 0.07, 1.15, Vector3(0, -0.58, 0)).set_meta("no_ink", true) # thin legs: no outline (one draw saved each)
+		_egg(l, hide_d, 0.1, 0.06, 0.13, Vector3(0, -1.16, 0.03)).set_meta("no_ink", true)
 		legs.append(l)
 	g.set_meta("parts", {"rig": rig, "legs": legs, "head": head})
 	Kit.ink(g)
@@ -317,8 +324,8 @@ static func horse() -> Node3D:
 	var legs := []
 	for xz in [[-0.17, 0.5], [0.17, 0.5], [-0.17, -0.5], [0.17, -0.5]]:
 		var l := Kit.joint(g, Vector3(xz[0], 0.93, xz[1]))
-		_cyl(l, coat, 0.06, 0.9, Vector3(0, -0.45, 0))
-		_cyl(l, mane, 0.07, 0.08, Vector3(0, -0.89, 0))
+		_cyl(l, coat, 0.06, 0.9, Vector3(0, -0.45, 0)).set_meta("no_ink", true)
+		_cyl(l, mane, 0.07, 0.08, Vector3(0, -0.89, 0)).set_meta("no_ink", true)
 		legs.append(l)
 	_box(g, "#b3262a", 0.68, 0.08, 0.1, Vector3(0, 1.35, 0.3))
 	_egg(g, "#d8a53a", 0.05, 0.05, 0.05, Vector3(0.36, 1.35, 0.3))

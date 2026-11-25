@@ -27,10 +27,10 @@ const SCREENS := {
 	"missions": "Tapşırıqlar", "leaders": "Liderlər", "settings": "Ayarlar",
 }
 const GREEN := Color("#2b7a48")
-const RED := Color("#8e1d22")
+const RED := Color("#7e2227") ## Madder
 const BROWN := Color(0.27, 0.1, 0.06, 0.85)
 const GOLD := Color("#ffd77a")
-const GOLD_BTN := Color("#d89a1a")
+const GOLD_BTN := Color("#c89b45") ## Antique Gold: bright gold belongs to bread (art bible §4)
 const CREAM := Color("#fff4dc")
 
 var prog: Progress

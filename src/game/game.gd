@@ -68,6 +68,7 @@ var hud_score: Label
 var hud_bread: Label
 var hud_nar: Label
 var hud_counts: VBoxContainer
+var danger_edge: TextureRect ## Div Olive creeping up the bottom edge while the Div is close (art bible §2, §4)
 var hud_banner: Label
 var banner_t := 0.0
 var word_box: HBoxContainer ## the day's word as tiles, shown for a moment when a letter is taken
@@ -601,6 +602,23 @@ func _build_hud() -> void:
 	hud_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(hud_root)
 	var root := hud_root
+	danger_edge = TextureRect.new()
+	var grad := GradientTexture2D.new()
+	grad.fill_from = Vector2(0.5, 1.0)
+	grad.fill_to = Vector2(0.5, 0.0)
+	var gr := Gradient.new()
+	gr.set_color(0, Color(0.435, 0.541, 0.227, 0.6)) # Div Olive #6f8a3a
+	gr.set_color(1, Color(0.435, 0.541, 0.227, 0.0))
+	grad.gradient = gr
+	danger_edge.texture = grad
+	danger_edge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	danger_edge.stretch_mode = TextureRect.STRETCH_SCALE
+	danger_edge.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	danger_edge.anchor_top = 0.85 # the bottom 15% of the screen
+	danger_edge.offset_top = 0
+	danger_edge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	danger_edge.modulate.a = 0.0
+	root.add_child(danger_edge)
 	hud_score = _label(root, 52, Color("#fff4dc"))
 	hud_score.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
 	hud_score.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -681,7 +699,7 @@ func _build_hud() -> void:
 	over_panel = _panel(root, "")
 	over_text = over_panel.get_child(0)
 	var box: VBoxContainer = over_panel.get_child(1)
-	continue_btn = _button(box, "Nar ilə davam et", Color("#8e1d22"), 38)
+	continue_btn = _button(box, "Nar ilə davam et", Color("#a0173f"), 38) # Nar Crimson: a second chance
 	continue_btn.pressed.connect(_on_continue)
 	var again := _button(box, "Yenidən qaç", Color("#2b7a48"), 44)
 	again.pressed.connect(_start)
@@ -735,6 +753,8 @@ func _panel(root: Control, t: String) -> Control:
 
 func _update_hud() -> void:
 	hud_counts.visible = started
+	var near := 1.0 if started and sim.div_t > 0.0 and sim.dead == "" else 0.0
+	danger_edge.modulate.a = lerpf(danger_edge.modulate.a, near * (0.75 + 0.25 * sin(anim_t * 6.0)), 0.15)
 	for l in [hud_score]:
 		l.visible = started
 	hud_score.text = "%06d" % int(sim.score)

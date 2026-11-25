@@ -266,7 +266,7 @@ static func loom() -> Node3D:
 	for i in 14:
 		_b(g, "#f3ecd8", 0.015, 1.15, 0.015, Vector3(-0.78 + i * 0.12, 2.1, 0))
 	_e(g, "#1d4f9a", 0.15, 0.15, 0.15, Vector3(0.5, 0.15, 0.4))
-	_e(g, "#e8b23a", 0.13, 0.13, 0.13, Vector3(-0.5, 0.13, 0.45))
+	_e(g, "#c89b45", 0.13, 0.13, 0.13, Vector3(-0.5, 0.13, 0.45))
 	Kit.ink(g)
 	Kit.shadow(g, 1.0)
 	return g

@@ -36,9 +36,9 @@ func _all() -> void:
 	await _tex("cobble_grey", 256, 256, _cobble_grey)
 	await _tex("wall", 256, 256, _wall)
 	await _tex("shebeke", 128, 192, _shebeke)
-	await _tex("carpet_red", 256, 384, _carpet.bind(Color("#b3262a"), Color("#1d3f8a"), Color("#e8b23a")))
-	await _tex("carpet_blue", 256, 384, _carpet.bind(Color("#1d4f9a"), Color("#9e1f24"), Color("#f0c24b")))
-	await _tex("carpet_green", 256, 384, _carpet.bind(Color("#2b7a48"), Color("#8e1d22"), Color("#f2d16b")))
+	await _tex("carpet_red", 256, 384, _carpet.bind(Color("#8f2b2b"), Color("#1d3f8a"), Color("#c89b45")))
+	await _tex("carpet_blue", 256, 384, _carpet.bind(Color("#1d4f9a"), Color("#8f2b2b"), Color("#c89b45")))
+	await _tex("carpet_green", 256, 384, _carpet.bind(Color("#2b7a48"), Color("#6b1f2d"), Color("#c89b45")))
 	await _tex("wicker", 128, 64, _wicker)
 	await _tex("awning", 128, 64, _awning)
 	await _tex("bread", 128, 128, _bread)
@@ -405,8 +405,8 @@ func _fur(g: Node2D) -> void: # tufts for the Div
 
 func _ui_panel(g: Node2D) -> void: # a carpet-bordered panel for 9-slice (margins 28)
 	_rrect(g, Rect2(0, 0, 96, 96), 22, Color("#5a1d12"))
-	_rrect(g, Rect2(6, 6, 84, 84), 17, Color("#e8b23a"))
-	_rrect(g, Rect2(10, 10, 76, 76), 14, Color("#8e1d22"))
+	_rrect(g, Rect2(6, 6, 84, 84), 17, Color("#c89b45")) # Antique Gold (art bible §4)
+	_rrect(g, Rect2(10, 10, 76, 76), 14, Color("#7e2227")) # Madder
 	for i in 4:
 		var c: Vector2 = [Vector2(17, 17), Vector2(79, 17), Vector2(17, 79), Vector2(79, 79)][i]
 		_diamond(g, c, 5, 5, Color("#f4e2b8"))
@@ -422,9 +422,9 @@ func _ui_button(g: Node2D) -> void: # a glossy rounded button, white so it can b
 
 func _icon_back(g: Node2D, s: float) -> void: # a red carpet field with a gold and blue border
 	g.draw_rect(Rect2(0, 0, s, s), Color("#1d3f8a"))
-	g.draw_rect(Rect2(s * 0.05, s * 0.05, s * 0.9, s * 0.9), Color("#e8b23a"))
-	g.draw_rect(Rect2(s * 0.08, s * 0.08, s * 0.84, s * 0.84), Color("#b3262a"))
-	_diamond(g, Vector2(s / 2, s / 2), s * 0.34, s * 0.34, Color("#8e1d22"))
+	g.draw_rect(Rect2(s * 0.05, s * 0.05, s * 0.9, s * 0.9), Color("#c89b45"))
+	g.draw_rect(Rect2(s * 0.08, s * 0.08, s * 0.84, s * 0.84), Color("#8f2b2b"))
+	_diamond(g, Vector2(s / 2, s / 2), s * 0.34, s * 0.34, Color("#6b1f2d"))
 	for c in [Vector2(0.18, 0.18), Vector2(0.82, 0.18), Vector2(0.18, 0.82), Vector2(0.82, 0.82)]:
 		_diamond(g, c * s, s * 0.04, s * 0.04, Color("#f4e2b8"))
 

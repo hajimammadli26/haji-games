@@ -249,29 +249,110 @@ static func extrude(points: PackedVector2Array, depth: float, key: String) -> Me
 ## draws in a handful of calls instead of forty. Pieces marked "keep" (animated) and non-mesh nodes stay.
 ## Call on things that never move inside: houses, gates, the horizon, still obstacles.
 static func merge(node: Node3D, deep := true) -> void:
-	var groups := {} ## [material, inked] -> SurfaceTool
-	var mats := {}
+	var groups := {} ## key -> Batch
 	var gone: Array[Node] = []
-	_collect(node, node, Transform3D.IDENTITY, groups, mats, gone, deep)
+	_collect(node, Transform3D.IDENTITY, groups, gone, deep)
 	if gone.size() < 2:
 		return
 	for n in gone:
 		n.get_parent().remove_child(n)
 		n.queue_free()
 	for key in groups:
-		var st: SurfaceTool = groups[key]
-		st.index()
+		var b: Batch = groups[key]
 		var mi := MeshInstance3D.new()
-		mi.mesh = st.commit()
-		mi.material_override = mats[key][0]
-		if mats[key][1]:
+		mi.mesh = b.commit()
+		mi.material_override = b.material
+		if b.inked:
 			mi.material_overlay = ink_mat()
 		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		mi.set_meta("no_ink", true)
 		node.add_child(mi)
 
 
-static func _collect(root: Node3D, n: Node, xf: Transform3D, groups: Dictionary, mats: Dictionary, gone: Array[Node], deep := true) -> void:
+## One merged mesh being built: vertices, normals, uvs, colours and indices from many pieces.
+class Batch:
+	var material: Material
+	var inked := false
+	var tinted := false ## pieces of plain colour: the colour goes into the vertices, one material for all
+	var verts := PackedVector3Array()
+	var norms := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var cols := PackedColorArray()
+	var idx := PackedInt32Array()
+
+	func add(mesh: Mesh, xf: Transform3D, color: Color, own_colors := false) -> void:
+		var nxf := Transform3D(xf.basis.inverse().transposed(), Vector3.ZERO)
+		for s in mesh.get_surface_count():
+			var a := mesh.surface_get_arrays(s)
+			var v: PackedVector3Array = a[Mesh.ARRAY_VERTEX]
+			var base := verts.size()
+			verts.append_array(xf * v)
+			var n: Variant = a[Mesh.ARRAY_NORMAL]
+			norms.append_array(nxf * (n as PackedVector3Array) if n != null else PackedVector3Array())
+			if (n == null):
+				var up := PackedVector3Array()
+				up.resize(v.size())
+				up.fill(Vector3.UP)
+				norms.append_array(up)
+			var uv: Variant = a[Mesh.ARRAY_TEX_UV]
+			if uv != null:
+				uvs.append_array(uv)
+			else:
+				var z := PackedVector2Array()
+				z.resize(v.size())
+				uvs.append_array(z)
+			if own_colors and a[Mesh.ARRAY_COLOR] != null: # an already-merged piece keeps its baked colours
+				cols.append_array(a[Mesh.ARRAY_COLOR])
+			else:
+				var c := PackedColorArray()
+				c.resize(v.size())
+				c.fill(color)
+				cols.append_array(c)
+			var ix: Variant = a[Mesh.ARRAY_INDEX]
+			if ix != null:
+				for i in (ix as PackedInt32Array):
+					idx.append(i + base)
+			else:
+				for i in v.size():
+					idx.append(i + base)
+
+	func commit() -> ArrayMesh:
+		var arrays := []
+		arrays.resize(Mesh.ARRAY_MAX)
+		arrays[Mesh.ARRAY_VERTEX] = verts
+		arrays[Mesh.ARRAY_NORMAL] = norms
+		arrays[Mesh.ARRAY_TEX_UV] = uvs
+		if tinted:
+			arrays[Mesh.ARRAY_COLOR] = cols
+		arrays[Mesh.ARRAY_INDEX] = idx
+		var m := ArrayMesh.new()
+		m.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+		return m
+
+
+static var _tint_mat: StandardMaterial3D
+
+
+## The one toon material for every plain-coloured piece after merging: the colour is in the vertices.
+static func tint_mat() -> StandardMaterial3D:
+	if _tint_mat == null:
+		_tint_mat = _toon()
+		_tint_mat.vertex_color_use_as_albedo = true
+		_tint_mat.vertex_color_is_srgb = true # the colours are the same sRGB values the plain materials had
+		_tint_mat.albedo_color = Color.WHITE
+	return _tint_mat
+
+
+## True for a material that is only a colour (no texture, no glow, not see-through): it can be tinted in.
+static func _plain(m: Material) -> bool:
+	if not m is StandardMaterial3D:
+		return false
+	var s := m as StandardMaterial3D
+	return s.albedo_texture == null and not s.emission_enabled and s.transparency == BaseMaterial3D.TRANSPARENCY_DISABLED \
+		and not s.disable_fog and s.diffuse_mode == BaseMaterial3D.DIFFUSE_TOON
+
+
+static func _collect(n: Node, xf: Transform3D, groups: Dictionary, gone: Array[Node], deep := true) -> void:
 	for c in n.get_children():
 		if not c is Node3D or c.has_meta("keep") or c.has_meta("parts") or c.has_meta("sway") or c.has_meta("scroll") \
 				or c.has_meta("drift") or c is Label3D or c is CPUParticles3D:
@@ -282,18 +363,21 @@ static func _collect(root: Node3D, n: Node, xf: Transform3D, groups: Dictionary,
 		if c is MeshInstance3D and (c as MeshInstance3D).mesh != null and (c as MeshInstance3D).material_override != null:
 			var mi := c as MeshInstance3D
 			var inked := mi.material_overlay != null
-			var key := "%d|%s" % [mi.material_override.get_instance_id(), inked]
+			var was_tinted := mi.material_override == _tint_mat and _tint_mat != null
+			var plain := was_tinted or _plain(mi.material_override)
+			var key := "tint|%s" % inked if plain else "%d|%s" % [mi.material_override.get_instance_id(), inked]
 			if not groups.has(key):
-				var st := SurfaceTool.new()
-				st.begin(Mesh.PRIMITIVE_TRIANGLES)
-				groups[key] = st
-				mats[key] = [mi.material_override, inked]
-			for s in mi.mesh.get_surface_count():
-				(groups[key] as SurfaceTool).append_from(mi.mesh, s, cxf)
+				var b := Batch.new()
+				b.material = tint_mat() if plain else mi.material_override
+				b.inked = inked
+				b.tinted = plain
+				groups[key] = b
+			var col: Color = (mi.material_override as StandardMaterial3D).albedo_color if plain and not was_tinted else Color.WHITE
+			(groups[key] as Batch).add(mi.mesh, cxf, col, was_tinted)
 			if c.get_child_count() == 0:
 				gone.append(c)
 				continue
-		_collect(root, c, cxf, groups, mats, gone)
+		_collect(c, cxf, groups, gone)
 		if c.get_child_count() == 0 and not c in gone and not c is MeshInstance3D:
 			gone.append(c)
 
