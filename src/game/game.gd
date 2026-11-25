@@ -87,6 +87,8 @@ func _ready() -> void:
 		var kv := a.trim_prefix("--").split("=", true, 1)
 		args[kv[0]] = kv[1] if kv.size() > 1 else "1"
 	tune = load(TUNING_PATH)
+	# symbols the default font lacks (arrows, ✓, ●○): on the web there is no system font to fill them in
+	ThemeDB.fallback_font.fallbacks = [load("res://assets/fonts/DejaVuSans.ttf")]
 	if args.has("fresh"):
 		for ext in ["", ".bak", ".tmp"]: # a truly empty save: no backup to fall back on either
 			DirAccess.remove_absolute(ProjectSettings.globalize_path("user://check_save.json" + ext))
