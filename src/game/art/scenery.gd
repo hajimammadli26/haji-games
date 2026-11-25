@@ -12,12 +12,12 @@ extends RefCounted
 
 ## Each city's street look: road texture, its tint, kerb colour, haze.
 const LOOK := {
-	"baku": {"road": "cobble", "tint": "#e3d2b8", "curb": "#b38a55", "fog": "#f3d6a4", "sky": "#3d8fd6"},
-	"sheki": {"road": "cobble", "tint": "#e8e4dc", "curb": "#9e3d22", "fog": "#dfe9d6", "sky": "#4a9ae0"},
+	"baku": {"road": "cobble_grey", "tint": "#ffffff", "curb": "#b38a55", "fog": "#f3d6a4", "sky": "#3d8fd6"},
+	"sheki": {"road": "cobble_grey", "tint": "#f2f2f2", "curb": "#9e3d22", "fog": "#dfe9d6", "sky": "#4a9ae0"},
 	"qebele": {"road": "trail", "tint": "#ffffff", "curb": "#4f7a3a", "fog": "#cfe2d8", "sky": "#5aa8e0"},
-	"naxcivan": {"road": "cobble", "tint": "#f0d4b8", "curb": "#9a4e2a", "fog": "#ead2b8", "sky": "#3d8fd6"},
-	"lenkeran": {"road": "cobble", "tint": "#c9d2d4", "curb": "#5f7a64", "fog": "#c9d6d8", "sky": "#7a9ab0"},
-	"quba": {"road": "cobble", "tint": "#e6e0d6", "curb": "#8a5a2b", "fog": "#dfe8e0", "sky": "#4a9ae0"},
+	"naxcivan": {"road": "cobble_grey", "tint": "#f2e6dc", "curb": "#9a4e2a", "fog": "#ead2b8", "sky": "#3d8fd6"},
+	"lenkeran": {"road": "cobble_grey", "tint": "#dde4e6", "curb": "#5f7a64", "fog": "#c9d6d8", "sky": "#7a9ab0"},
+	"quba": {"road": "cobble_grey", "tint": "#f2f2f2", "curb": "#8a5a2b", "fog": "#dfe8e0", "sky": "#4a9ae0"},
 	"qobustan": {"road": "trail", "tint": "#e0d4bc", "curb": "#a08a64", "fog": "#e8dcc4", "sky": "#4a9ae0"},
 }
 

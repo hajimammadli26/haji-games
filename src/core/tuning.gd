@@ -96,3 +96,7 @@ extends Resource
 @export_group("Sound")
 @export var music_bpm: float = 132.0 ## the run music's eighth-note pulse at the start speed (as made by the audio tool)
 @export var music_bpm_gain: float = 2.5 ## bpm added per m/s of extra speed (the run music plays faster)
+
+@export_group("Device")
+@export var render_height: float = 1100.0 ## pixels tall the 3D is drawn at on big phone screens (the UI stays sharp)
+@export var render_scale_min: float = 0.35 ## the lowest 3D resolution scale ever used

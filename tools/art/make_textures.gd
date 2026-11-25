@@ -33,6 +33,7 @@ func _initialize() -> void:
 
 func _all() -> void:
 	await _tex("cobble", 256, 256, _cobble)
+	await _tex("cobble_grey", 256, 256, _cobble_grey)
 	await _tex("wall", 256, 256, _wall)
 	await _tex("shebeke", 128, 192, _shebeke)
 	await _tex("carpet_red", 256, 384, _carpet.bind(Color("#b3262a"), Color("#1d3f8a"), Color("#e8b23a")))
@@ -154,6 +155,21 @@ func _cobble(g: Node2D) -> void:
 			_rrect(g, Rect2(x + 6, y + 4, 26, 9), 5, Color(1, 1, 1, 0.12))
 			if x < 0: # wrap the half stones so the texture tiles
 				_rrect(g, Rect2(x + 2 + 256, y + 2, 40, 28), 9, Color(v + 30 / 255.0, v + 10 / 255.0, v - 30 / 255.0))
+
+
+func _cobble_grey(g: Node2D) -> void: # grey granite setts with dark joints: the street the owner asked for
+	_seed = 7
+	g.draw_rect(Rect2(0, 0, 256, 256), Color("#4a4c50"))
+	for row in 8:
+		for col in 7:
+			var x := col * 44 + (row % 2) * 22 - 10 - 22
+			var y := row * 32 + 2
+			var v := (118 + int(_r() * 46)) / 255.0
+			var c := Color(v, v + 2 / 255.0, v + 6 / 255.0)
+			for dx in ([0, 256] if x < 0 else [0]): # wrap the half stones so the texture tiles
+				_rrect(g, Rect2(x + 2 + dx, y + 2, 40, 28), 9, c)
+				_rrect(g, Rect2(x + 6 + dx, y + 4, 26, 9), 5, Color(1, 1, 1, 0.10))
+				_rrect(g, Rect2(x + 4 + dx, y + 22, 36, 6), 3, Color(0, 0, 0, 0.10))
 
 
 func _wall(g: Node2D) -> void:

@@ -16,6 +16,7 @@
 ##   --char=ID --costume=ID --city=ID   that throwaway save wears this look
 ##   --lang=CODE      that save's language (az, tr, en, ru); --untranslated prints untranslated texts at the shot
 ##   --nick=N         that throwaway save has online nickname N; --leaderboard=URL uses a test server
+##   --render_scale=F force the 3D resolution scale (0.35-1)
 ##   --story=N        with --shot: show the story at picture N (0-4) and shoot it
 extends Node3D
 
@@ -111,6 +112,8 @@ func _ready() -> void:
 	prog.mission_done.connect(func(_t: String) -> void: _banner("Tapşırıq bitdi!"))
 	snd = Sound.new(save)
 	add_child(snd)
+	_fit_render()
+	get_viewport().size_changed.connect(_fit_render)
 	_build_world()
 	_build_hud()
 	_apply_look()
@@ -132,6 +135,16 @@ func _ready() -> void:
 		_shoot()
 	elif args.has("shot"): # an unattended check starts at once
 		_start()
+
+
+## Phones have very dense screens (an iPhone's is about 1170 x 2530): drawing the 3D at full size makes
+## the game slow. The 3D is drawn at about tune.render_height pixels tall and stretched; the UI stays sharp.
+func _fit_render() -> void:
+	var px := float(maxi(1, DisplayServer.window_get_size().y))
+	var scale := clampf(tune.render_height / px, tune.render_scale_min, 1.0)
+	if args.has("render_scale"): # developer flag, to see a given scale on a desktop
+		scale = float(args["render_scale"])
+	get_viewport().scaling_3d_scale = scale
 
 
 # --- world -------------------------------------------------------------------------------------

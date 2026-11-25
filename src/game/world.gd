@@ -59,7 +59,7 @@ func _ready() -> void:
 	env.fog_enabled = true
 	env.fog_density = 0.0045
 	env.fog_sky_affect = 0.0
-	env.glow_enabled = true
+	env.glow_enabled = not (OS.has_feature("web") or OS.has_feature("mobile")) # costly on phones and in browsers
 	env.glow_intensity = 0.3
 	env.glow_hdr_threshold = 1.2
 	env.adjustment_enabled = true
