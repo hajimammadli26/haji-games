@@ -1,0 +1,18 @@
+; Engine configuration file.
+; Written by /setup-engine (Godot 4.7.2, GDScript, Mobile renderer). The main scene is not set yet:
+; the first Godot scene sets run/main_scene. The web prototype in prototypes/cirtdan/ is the spec.
+
+config_version=5
+
+[application]
+
+config/name="Cırtdan: Köhnə Bakıda Qaçış"
+config/features=PackedStringArray("4.7", "Mobile")
+
+[display]
+
+window/handheld/orientation=1
+
+[rendering]
+
+renderer/rendering_method="mobile"
