@@ -149,6 +149,7 @@ function rrect(x, y, w, h, r) {
 
 // ---- Input: keys by position (event.code), OS key repeat ignored; swipes and taps ---------
 const down = new Set(), hit = new Set();
+const TOUCH = (typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches) || 'ontouchstart' in window; // no key hints on phones
 const pressed = code => hit.has(code); // true for one step after the key goes down
 const anyPressed = (...codes) => codes.some(c => hit.has(c));
 addEventListener('keydown', e => {
@@ -185,7 +186,7 @@ addEventListener('pointerup', e => {
   if (!touch.done) {
     const p = hudPoint(e), now = clock.now();
     taps.push(p);
-    const onButton = p.y < 90 && p.x < 170; // pause and mute
+    const onButton = p.y < 16 + btnSize() + 10 && p.x < 40 + 2 * btnSize(); // pause and mute
     if (onButton) lastTap = -1;
     else if (now - lastTap < 0.32) { hit.add('DoubleTap'); lastTap = -1; } else lastTap = now;
   }
@@ -1171,7 +1172,7 @@ function makeRockArch() { // a rock slab propped across the trail: slide under i
 function makeQobBack() { // the Caspian beyond, mud volcanoes and bare hills
   const g = new THREE.Group();
   hills(g, ['#a08a64', '#b09a72'], 6, 40, null);
-  part(G.plane, mat('sea', '#2c6fd1'), 400, 30, 1, 0, 1, 30, g).rotation.x = -Math.PI / 2;
+  part(G.plane, mat('sea', '#2c6fd1'), 400, 90, 1, 0, 0.3, 0, g).rotation.x = -Math.PI / 2;
   for (let i = 0; i < 4; i++) part(G.cone, mat('mud', '#6e6a62', { flatShading: true }), 10, 7, 10, -40 + i * 26, 3.5, 10, g);
   return fogless(g);
 }
@@ -1374,7 +1375,7 @@ function claimMission(i) { // the reward, then a new mission in its place; every
   const sl = missionSlots().slice(), next = save.get('mnext') || 3; sl[i] = next; save.put('mslots', sl); save.put('mnext', next + 1);
   const prog = save.get('mprog').slice(); prog[i] = 0; save.put('mprog', prog);
   const claims = (save.get('claims') || 0) + 1; save.put('claims', claims);
-  if (claims % 3 === 0) { save.put('mmult', save.get('mmult') + 1); toast(`+${m.reward} çörək! Vurğu x${save.get('mmult')}`); } else toast(`+${m.reward} çörək! Yeni tapşırıq`);
+  if (claims % 3 === 0 && save.get('mmult') < tune.mission_mult_cap) { save.put('mmult', save.get('mmult') + 1); toast(`+${m.reward} çörək! Vurğu x${save.get('mmult')}`); } else toast(`+${m.reward} çörək! Yeni tapşırıq`);
   save.flush(); sfx.power();
 }
 function mission(kind, v) {
@@ -1412,7 +1413,7 @@ function openBox() { // Nənənin bağlaması: a random gift
 }
 const SHOP_NAMES = { magnet: 'Nənənin sinisi', shoe: 'Sehrli çarıq', double: 'Qoşa təndir', pole: 'Kəndirbaz çubuğu', simurq: 'Simurq quşu' };
 const SHOP_WHAT = { magnet: 'çörəkləri özünə çəkir', shoe: 'çox hündür tullanır', double: 'xalı ikiqat edir', pole: 'böyük sıçrayışlar', simurq: 'göydə uçur' };
-let toastMsg = '', toastT = 0;
+let toastMsg = '', toastT = 0, confirmIdx = -1, confirmT = 0, confirmScene = '';
 function toast(m) { toastMsg = m; toastT = 2.2; }
 
 // ---- Festivals: Novruz, winter, the Nar festival. By the calendar, or chosen in Tədbirlər -----------------
@@ -1497,7 +1498,9 @@ function themeWorld() { // the street dressed for the festival
     const n = tune.rain_count, pos = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) { pos[i * 3] = (rng() - 0.5) * 30; pos[i * 3 + 1] = rng() * 16; pos[i * 3 + 2] = -rng() * 60; }
     const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    rain = new THREE.Points(geo, new THREE.PointsMaterial({ color: '#cfe0f0', size: 0.07, transparent: true, opacity: 0.8 })); scene3.add(rain);
+    const lp = new Float32Array(n * 6); for (let i = 0; i < n; i++) { lp[i * 6] = lp[i * 6 + 3] = pos[i * 3]; lp[i * 6 + 1] = pos[i * 3 + 1]; lp[i * 6 + 4] = pos[i * 3 + 1] + 0.5; lp[i * 6 + 2] = lp[i * 6 + 5] = pos[i * 3 + 2]; }
+    const lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(lp, 3));
+    rain = new THREE.LineSegments(lg, new THREE.LineBasicMaterial({ color: '#cfe0f0', transparent: true, opacity: 0.6 })); rain.userData.base = lp.slice(); scene3.add(rain); // streaks, not dots
   }
   if (rain) rain.visible = !!(look && look.rain && ev !== 'winter');
   if (snow) snow.visible = ev === 'winter';
@@ -1848,7 +1851,8 @@ function updateRun(dt) {
   // pickups
   for (const p of pickups) {
     if (p.taken) continue;
-    if (['bread', 'treat', 'finduq', 'halva', 'sekerbura', 'paxlava'].includes(p.kind) && st.power.magnet > 0) {
+    const flyPull = (st.power.simurq > 0 || st.power.fly > 0) && p.y > 3; // in the air, the sky bread comes to him
+    if (['bread', 'treat', 'finduq', 'halva', 'sekerbura', 'paxlava'].includes(p.kind) && (st.power.magnet > 0 || flyPull)) {
       const ds = p.s - st.s, dxp = p.x - st.x;
       if (Math.abs(ds) < tune.magnet_radius && Math.abs(dxp) < tune.magnet_radius) {
         const k = Math.min(1, dt * 10); p.s -= ds * k; p.x -= dxp * k; p.y += (st.y + 0.6 - p.y) * k;
@@ -1890,7 +1894,7 @@ function updateRun(dt) {
   st.bannerT = Math.max(0, st.bannerT - dt); st.wordT = Math.max(0, (st.wordT || 0) - dt); st.countT = Math.max(0, (st.countT || 0) - dt); st.plusT = Math.max(0, (st.plusT || 0) - dt); st.tokenT = Math.max(0, (st.tokenT || 0) - dt); st.flash = Math.max(0, st.flash - dt * 2);
   st.stepT += dt * st.speed / 3.2;
   if (st.grounded && st.slide <= 0 && st.stepT > 1) { st.stepT = 0; sfx.step(); }
-  if (Math.floor(st.s / tune.mult_every) !== Math.floor(st.prevS / tune.mult_every)) banner(`Vurğu x${st.mult}!`);
+  if (st.mult > (st.lastMult || 1)) banner(`Vurğu x${st.mult}!`); st.lastMult = st.mult;
   fillWorld();
 }
 
@@ -1934,7 +1938,7 @@ function drawWorld() {
   pole3.visible = st.power.pole > 0; if (pole3.visible) pole3.rotation.z = Math.sin(animT * 4) * 0.2;
   simurq3.visible = st.power.simurq > 0 && !st.dead;
   if (simurq3.visible) { // Cırtdan hangs from its talons
-    simurq3.position.set(x, y + 1.9, -s); const fl = Math.sin(animT * 9) * 0.5;
+    simurq3.position.set(x, y + 1.6, -s); const fl = Math.sin(animT * 9) * 0.5;
     simurq3.userData.wings.forEach((w, i) => (w.rotation.z = i ? -fl : fl));
   }
   if (st.carpet > 0) fly3.rotation.z = Math.sin(animT * 6) * 0.05;
@@ -1945,7 +1949,9 @@ function drawWorld() {
   let gap = st.divGap;
   if (st.tripT > 0) gap = tune.div_near_gap + (1.6 - st.tripT) * 5; // he pops up close, trips and tumbles away
   if (st.dead) gap = Math.max(0.6, tune.div_near_gap - st.deadT * 3);
-  div3.position.set(x * 0.6 + (st.dead ? 0 : -0.9), 0, -(s - gap)); div3.rotation.y = Math.PI; // runs toward -z, his back to the camera
+  const intro = st.introT > 0 && st.divT <= 0; // the opening chase: further back and off to the side, so the street is clear
+  if (intro) gap = Math.max(gap, 4.5);
+  div3.position.set(x * 0.6 + (st.dead ? 0 : intro ? -1.9 : -0.9), 0, -(s - gap)); div3.rotation.y = Math.PI; // runs toward -z, his back to the camera
   div3.visible = gap < tune.div_far_gap - 1;
   poseDiv(div3, animT, st.speed);
   div3.rotation.x = st.tripT > 0 ? -Math.min(1.3, (1.6 - st.tripT) * 2.5) : 0;
@@ -1956,7 +1962,7 @@ function drawWorld() {
     p.mesh.rotation.y = p.kind === 'letter' ? Math.sin(animT * 2 + p.spin) * 0.35 : animT * 3 + p.spin; // a letter only rocks, so it can be read
     if (p.taken) { const k = Math.max(0, p.mesh.scale.x - 0.15); p.mesh.scale.setScalar(k); p.mesh.position.y += 0.4; }
   }
-  if (rain && rain.visible) { rain.position.set(x, 0, -s - 20); const a = rain.geometry.attributes.position.array; for (let i = 1; i < a.length; i += 3) { a[i] -= 0.35; if (a[i] < 0) a[i] += 16; } rain.geometry.attributes.position.needsUpdate = true; }
+  if (rain && rain.visible) { rain.position.set(x, 0, -s - 20); const a = rain.geometry.attributes.position.array, b0 = rain.userData.base; for (let i = 1; i < a.length; i += 6) { const yv = ((b0[i] - animT * 18) % 16 + 16) % 16; a[i] = yv; a[i + 3] = yv + 0.5; } rain.geometry.attributes.position.needsUpdate = true; } // falls by the clock, not by frames
   if (snow && snow.visible) { snow.position.set(x, 0, -s - 20); snow.geometry.attributes.position.array.forEach((v, i, a) => { if (i % 3 === 1) { a[i] = v - 0.04; if (a[i] < 0) a[i] += 16; } }); snow.geometry.attributes.position.needsUpdate = true; }
   for (const o of obstacles) {
     if (o.mesh.userData.bubble) o.mesh.userData.bubble.scale.setScalar(0.1 + 0.14 * Math.abs(Math.sin(animT * 3 + o.s0)));
@@ -1974,8 +1980,8 @@ function drawWorld() {
   // camera: fixed behind and above
   const shake = st.flash > 0 ? Math.sin(animT * 60) * 0.08 * st.flash : 0;
   const tall = camera.aspect < 1, follow = tall ? 0.85 : 0.55; // a phone held upright: higher, looking down past the Div
-  camera.position.set(x * follow + shake, (tall ? 4.9 : 3.7) + y * 0.6, -s + (tall ? 5.6 : 6.2));
-  camera.lookAt(x * (tall ? 0.75 : 0.3), (tall ? 0.6 : 1.0) + y * 0.55, -s - (tall ? 5 : 7));
+  camera.position.set(x * follow + shake, (tall ? 4.3 : 3.7) + y * 0.6, -s + (tall ? 4.9 : 6.2));
+  camera.lookAt(x * (tall ? 0.75 : 0.3), (tall ? 0.9 : 1.0) + y * 0.55, -s - (tall ? 8 : 7));
   sun.position.set(-6 + x, 14, -s + 4); sun.target.position.set(x, 0, -s - 6);
   renderer.render(scene3, camera);
 }
@@ -2024,7 +2030,8 @@ function hudButton(x, y, w, h, kind) {
     else { ctx.beginPath(); ctx.arc(x + w * 0.58, y + h * 0.5, h * 0.18, -0.9, 0.9); ctx.stroke(); }
   }
 }
-const BTN = { pause: () => [16, 16, 64, 64], mute: () => [92, 16, 64, 64] };
+const btnSize = () => Math.max(64, Math.round(46 / HUD_SCALE)); // at least about 46 screen px for small fingers
+const BTN = { pause: () => [16, 16, btnSize(), btnSize()], mute: () => [28 + btnSize(), 16, btnSize(), btnSize()] };
 function drawWord(cx, y, sz, show) { // the word as wooden tiles, the found letters bright
   const dw = show || dayWord(), n = dw.word.length, gap = sz + 4, x0 = cx - (n - 1) * gap / 2;
   for (let i = 0; i < n; i++) {
@@ -2048,9 +2055,9 @@ function drawHud() {
     ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
   }
   hudButton(...BTN.pause(), 'pause'); hudButton(...BTN.mute(), 'mute');
-  outlined(`x${st.mult * (st.power.double > 0 ? 2 : 1)}`, W < 700 ? 22 : 172, W < 700 ? 112 : 48, 40, st.power.double > 0 ? '#ffcf4a' : '#fff4dc', 'left');
+  outlined(`x${st.mult * (st.power.double > 0 ? 2 : 1)}`, W < 700 ? 22 : 44 + 2 * btnSize(), W < 700 ? 40 + btnSize() : 16 + btnSize() / 2, 40, st.power.double > 0 ? '#ffcf4a' : '#fff4dc', 'left');
   // score, bread and nar, top right
-  outlined(String(Math.floor(st.score)).padStart(6, '0'), W - 24, 44, 44, '#fff4dc', 'right');
+  outlined(String(Math.floor(st.score)).padStart(6, '0'), W - 24, 44, W < 500 ? 30 : 44, '#fff4dc', 'right');
   hudIconBread(W - 170, 100, 18); outlined(String(st.bread), W - 24, 100, 34, '#ffd77a', 'right');
   hudIconNar(W - 170, 148, 15); outlined(String(save.get('nar')), W - 24, 148, 30, '#ffb3bd', 'right');
   // active power-ups with their time left, top left under the buttons
@@ -2087,9 +2094,10 @@ function drawHud() {
     hudIconCarpet(b[0] + 34, b[1] + b[3] / 2, 20); text(`Uçuş! x${save.get('boosts')}`, b[0] + b[2] / 2 + 18, b[1] + b[3] / 2, 24, '#fff4dc'); ctx.globalAlpha = 1;
   }
   if (st.bannerT > 0) outlined(st.banner, W / 2, H * 0.26, 46, '#ffd77a');
-  if (st.t < 5 && !st.dead) { // the first seconds: how to move, by doing
+  const boostShows = !st.boostUsed && st.t < tune.boost_window && save.get('boosts') > 0;
+  if (st.t < 5 && !st.dead && !boostShows) { // the first seconds: how to move, by doing (not over the boost button)
     const k = Math.min(1, (5 - st.t) / 1.5);
-    ctx.globalAlpha = k; outlined(W < 700 ? 'Sürüşdür: ← → ↑ ↓' : '← → zolaq   ↑ tullan   ↓ sürüş', W / 2, H - 130, 28, '#fff4dc'); ctx.globalAlpha = 1;
+    ctx.globalAlpha = k; outlined(W < 700 || TOUCH ? 'Sürüşdür: ← → ↑ ↓' : '← → zolaq   ↑ tullan   ↓ sürüş', W / 2, H - 130, 28, '#fff4dc'); ctx.globalAlpha = 1;
   }
 }
 
@@ -2210,7 +2218,7 @@ function panelBtn(r, label, hot, color, hint) {
   ctx.fillStyle = color; rrect(...r, 16); ctx.fill();
   if (hot) { ctx.strokeStyle = '#ffd77a'; ctx.lineWidth = 4; rrect(...r, 16); ctx.stroke(); }
   text(label, r[0] + r[2] / 2, r[1] + r[3] / 2, Math.min(30, r[3] * 0.45), '#fff4dc');
-  if (hint && W >= 700) text(hint, r[0] + r[2] - 24, r[1] + r[3] / 2, 18, 'rgba(255,244,220,0.65)', 'right', 'normal');
+  if (hint && W >= 700 && !TOUCH) text(hint, r[0] + r[2] - 24, r[1] + r[3] / 2, 18, 'rgba(255,244,220,0.65)', 'right', 'normal');
 }
 function rowRects(n) {
   const nw = W < 500, top = nw ? 142 : 128, h = Math.min(76, (H - top - 62) / n - 8), w = Math.min(W - (nw ? 16 : 32), 860), x = (W - w) / 2, bw = nw ? 96 : 158;
@@ -2219,12 +2227,12 @@ function rowRects(n) {
 function shopRows() {
   const rows = Object.keys(SHOP_NAMES).map(k => {
     const lv = save.get('levels')[k] || 0, max = lv >= MAX_LEVEL;
-    return { icon: (x, y) => hudIconPower(k, x, y, 20), label: SHOP_NAMES[k], sub: `${SHOP_WHAT[k]} · ${powerTime(k).toFixed(1)} s · ${lv}/${MAX_LEVEL}`,
+    return { icon: (x, y) => hudIconPower(k, x, y, 20), label: SHOP_NAMES[k], sub: W < 500 ? `${lv}/${MAX_LEVEL} · ${powerTime(k).toFixed(1)} s · ${SHOP_WHAT[k]}` : `${SHOP_WHAT[k]} · ${powerTime(k).toFixed(1)} s · ${lv}/${MAX_LEVEL}`,
       pips: lv, btn: max ? 'MAKS' : `${levelCost(k)}`, bread: !max, can: !max && save.get('bread') >= levelCost(k), act: () => buyLevel(k) };
   });
-  rows.push({ icon: (x, y) => hudIconCarpet(x, y, 20), label: 'Uçan xalça', sub: `bir toqquşmadan qoruyur · səndə: ${save.get('carpets')}`,
+  rows.push({ icon: (x, y) => hudIconCarpet(x, y, 20), label: 'Uçan xalça', sub: W < 500 ? `səndə: ${save.get('carpets')} · bir toqquşmadan qoruyur` : `bir toqquşmadan qoruyur · səndə: ${save.get('carpets')}`,
     btn: `${tune.carpet_cost}`, bread: true, can: save.get('bread') >= tune.carpet_cost, act: () => { if (spend(tune.carpet_cost)) { save.set('carpets', save.get('carpets') + 1); toast('Uçan xalça alındı!'); } } });
-  rows.push({ icon: (x, y) => hudIconCarpet(x, y, 20), label: 'Xalça ilə uçuş', sub: `startda bir toxun: xalça səni uçurub qabağa aparır · səndə: ${save.get('boosts')}`,
+  rows.push({ icon: (x, y) => hudIconCarpet(x, y, 20), label: 'Xalça ilə uçuş', sub: W < 500 ? `səndə: ${save.get('boosts')} · startda bir toxun` : `startda bir toxun: xalça səni uçurub qabağa aparır · səndə: ${save.get('boosts')}`,
     btn: `${tune.boost_cost}`, bread: true, can: save.get('bread') >= tune.boost_cost, act: () => { if (spend(tune.boost_cost)) { save.set('boosts', save.get('boosts') + 1); toast('Xalça ilə uçuş alındı!'); } } });
   rows.push({ icon: (x, y) => hudIconBox(x, y, 20), label: 'Nənənin bağlaması', sub: 'içində təsadüfi hədiyyə: çörək, nar, xalça',
     btn: `${tune.box_cost}`, bread: true, can: save.get('bread') >= tune.box_cost, act: openBox });
@@ -2317,7 +2325,7 @@ function missionRows() {
   const h = huntState();
   return [...currentMissions().map((m, i) => { const done = m.prog >= m.target;
     return { icon: (x, y) => hudIconCheck(x, y, 18, done), label: m.txt(m.target),
-      sub: done ? 'Bitdi! Bas və mükafatı al' : `${Math.floor(m.prog)} / ${m.target}${m.run ? ' (bir qaçışda)' : ''} · mükafat: ${m.reward}`,
+      sub: done ? 'Bitdi! Bas və mükafatı al' : m.run ? `${Math.floor(m.prog)} / ${m.target} · bir qaçışda · mükafat: ${m.reward}` : `${Math.floor(m.prog)} / ${m.target} · mükafat: ${m.reward}`,
       prog: done ? undefined : m.prog / m.target, btn: done ? `+${m.reward}` : null, bread: done, can: done, act: () => claimMission(i) }; }),
     { icon: (x, y) => { ctx.fillStyle = '#1f9e9a'; ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill(); buta(ctx, x, y + 2, 1.1, 0.4, '#f2d16b', '#0d5a58'); },
       label: 'Həftəlik ov: buta daşlarını tap', sub: h.open ? `${Math.min(h.got, h.need)} / ${h.need} · mükafat: ${save.get('chars').includes('melik') ? '3 bağlama və 1000 çörək' : 'Məlikməmməd'}` : 'Bu həftə bitdi! Gələn həftə yenisi', prog: h.open ? Math.min(1, h.got / h.need) : 1, btn: null }];
@@ -2338,6 +2346,7 @@ function hudIconHead(c, x, y, r) { // a little portrait of each character
   else if (c.hat === 'peri') { ctx.fillStyle = '#e8c27a'; ctx.beginPath(); ctx.arc(x, y - r * 0.1, r * 0.95, Math.PI, 0); ctx.fill(); ctx.fillRect(x - r * 0.95, y - r * 0.1, r * 0.3, r * 1.1); ctx.fillRect(x + r * 0.65, y - r * 0.1, r * 0.3, r * 1.1); ctx.fillStyle = '#f2a6c8'; for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.arc(x + i * r * 0.35, y - r * 0.9, r * 0.13, 0, Math.PI * 2); ctx.fill(); } }
   else if (c.hat === 'winter') { ctx.fillStyle = '#efe6cf'; ctx.beginPath(); ctx.arc(x, y - r * 0.2, r * 0.9, Math.PI, 0); ctx.fill(); ctx.fillRect(x - r * 0.95, y - r * 0.2, r * 0.3, r * 0.6); ctx.fillRect(x + r * 0.65, y - r * 0.2, r * 0.3, r * 0.6); }
   else if (c.hat === 'sailor') { ctx.fillStyle = '#ffffff'; ctx.fillRect(x - r * 0.75, y - r * 1.0, r * 1.5, r * 0.45); ctx.fillStyle = '#1d4f9a'; ctx.fillRect(x - r * 0.75, y - r * 0.6, r * 1.5, r * 0.15); }
+  else if (c.hat === 'kosa') { ctx.fillStyle = '#3b2414'; ctx.beginPath(); ctx.moveTo(x - r * 0.6, y - r * 0.45); ctx.lineTo(x, y - r * 1.5); ctx.lineTo(x + r * 0.6, y - r * 0.45); ctx.fill(); ctx.fillStyle = '#efe6cf'; ctx.beginPath(); ctx.ellipse(x, y + r * 0.55, r * 0.45, r * 0.3, 0, 0, Math.PI * 2); ctx.fill(); }
   else if (c.hat === 'bald') { ctx.fillStyle = '#ffe7c4'; ctx.beginPath(); ctx.ellipse(x - r * 0.25, y - r * 0.4, r * 0.2, r * 0.1, -0.4, 0, Math.PI * 2); ctx.fill(); }
   else { ctx.fillStyle = '#5a4a3a'; ctx.font = `bold ${r}px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('?', x, y - r * 0.9); }
 }
@@ -2357,9 +2366,13 @@ function listScene(name, title, getRows, note) {
       if (anyPressed('Escape', 'Backspace') || tapIn(16, 16, W < 500 ? 60 : 120, 60)) { scene = 'title'; return; }
       if (anyPressed('ArrowDown', 'KeyS')) listSel = (listSel + 1) % rows.length;
       if (anyPressed('ArrowUp', 'KeyW')) listSel = (listSel + rows.length - 1) % rows.length;
-      if (anyPressed('Enter', 'Space') && rows[listSel].can) rows[listSel].act();
-      rows.forEach((r, i) => { if (r.btn && tapIn(...rects[i].btn)) { listSel = i; if (r.can) r.act(); } });
-      toastT = Math.max(0, toastT - dt);
+      const tryAct = i => { // spending bread asks twice: a child never buys by one stray tap
+        const r = rows[i]; if (!r.can) return;
+        if (r.bread && !(confirmIdx === i && confirmT > 0 && confirmScene === name)) { confirmIdx = i; confirmT = 3; confirmScene = name; sfx.lane(); return; }
+        confirmIdx = -1; confirmT = 0; r.act();
+      };
+      if (anyPressed('Enter', 'Space')) tryAct(listSel);
+      rows.forEach((r, i) => { if (r.btn && tapIn(...rects[i].btn)) { listSel = i; tryAct(i); } });
     },
     draw() {
       titleCamera(state.t); clear();
@@ -2369,7 +2382,7 @@ function listScene(name, title, getRows, note) {
       if (nw) { ctx.font = `bold 30px ${FONT}`; const tw = ctx.measureText(title).width, room = W - 100; outlined(title, 84 + room / 2, 46, Math.min(30, Math.floor(30 * room / tw)), '#ffd77a'); }
       else outlined(title, W / 2, 52, W < 700 ? 30 : 42, '#ffd77a');
       if (W >= 700) topBank(); else { hudIconBread(30, 100, 12); text(`${save.get('bread')}`, 48, 101, 20, '#ffd77a', 'left'); hudIconNar(W - 70, 100, 10); text(`${save.get('nar')}`, W - 54, 101, 20, '#ffb3bd', 'left'); }
-      if (note) { const ns = W < 700 ? 17 : 21; ctx.font = `normal ${ns}px ${FONT}`; const nt = note(), tw = ctx.measureText(nt).width; text(nt, W / 2, nw ? 124 : 104, Math.max(11, Math.min(ns, Math.floor(ns * (W - 24) / tw))), '#ffe6b0', 'center', 'normal'); }
+      if (note) fitCenter(note(), W / 2, nw ? 124 : 104, W < 700 ? 17 : 21, '#ffe6b0', W - 24, 'normal');
       const rows = getRows(), rects = rowRects(rows.length), narrow = rects[0].row[2] < 600;
       rows.forEach((r, i) => {
         const [x, y, w, h] = rects[i].row;
@@ -2382,23 +2395,31 @@ function listScene(name, title, getRows, note) {
         fitLeft(r.sub, tx, y + h * 0.72, narrow ? 14 : 17, '#ffe6b0', room, 'normal');
         if (r.pips !== undefined) for (let k = 0; k < MAX_LEVEL; k++) { // level marks: beside the button, or under the text on a phone
           ctx.fillStyle = k < r.pips ? '#ffcf4a' : 'rgba(255,244,220,0.25)';
-          if (narrow) rrect(tx + k * 20, y + h - 11, 15, 7, 3); else rrect(x + w - 290 + k * 22, y + h / 2 - 7, 16, 14, 4); ctx.fill();
+          if (narrow) continue; rrect(x + w - 290 + k * 22, y + h / 2 - 7, 16, 14, 4); ctx.fill(); // on a phone the sub-line starts with 2/5 instead
         }
         if (r.prog !== undefined) {
           const [bx, by, bw2, bh] = narrow ? [tx, y + h - 9, w - 64 - 16, 6] : [x + w - barW - 30, y + h / 2 - 9, barW, 18]; // a phone: a thin bar under the text
-          ctx.fillStyle = '#5a2a1a'; rrect(bx, by, bw2, bh, bh / 2); ctx.fill(); ctx.fillStyle = '#ffcf4a'; rrect(bx, by, Math.max(bh, bw2 * r.prog), bh, bh / 2); ctx.fill();
+          ctx.fillStyle = '#5a2a1a'; rrect(bx, by, bw2, bh, bh / 2); ctx.fill(); if (r.prog > 0) { ctx.fillStyle = '#ffcf4a'; rrect(bx, by, Math.max(bh, bw2 * r.prog), bh, bh / 2); ctx.fill(); }
         }
         if (r.btn) {
           const b = rects[i].btn;
           ctx.fillStyle = r.can ? '#2b7a48' : 'rgba(255,244,220,0.18)'; rrect(...b, 12); ctx.fill();
-          if (r.bread) { hudIconBread(b[0] + (narrow ? 16 : 26), b[1] + b[3] / 2, narrow ? 9 : 12); text(r.btn, b[0] + b[2] / 2 + (narrow ? 10 : 14), b[1] + b[3] / 2, narrow ? 17 : 22, '#fff4dc'); }
-          else text(r.btn, b[0] + b[2] / 2, b[1] + b[3] / 2, narrow ? 17 : 22, '#fff4dc');
+          const asking = confirmIdx === i && confirmT > 0 && confirmScene === name;
+          if (asking) { ctx.fillStyle = '#c8822c'; rrect(...b, 12); ctx.fill(); fitCenter('Təsdiq?', b[0] + b[2] / 2, b[1] + b[3] / 2, narrow ? 17 : 22, '#fff4dc', b[2] - 10); }
+          else if (r.bread) { hudIconBread(b[0] + (narrow ? 16 : 26), b[1] + b[3] / 2, narrow ? 9 : 12); fitCenter(r.btn, b[0] + b[2] / 2 + (narrow ? 10 : 14), b[1] + b[3] / 2, narrow ? 17 : 22, '#fff4dc', b[2] - (narrow ? 34 : 50)); }
+          else fitCenter(r.btn, b[0] + b[2] / 2, b[1] + b[3] / 2, narrow ? 17 : 22, '#fff4dc', b[2] - 10);
         }
         ctx.globalAlpha = 1;
       });
       if (toastT > 0) outlined(toastMsg, W / 2, H - 34, 28, '#ffd77a');
     },
   };
+}
+function fitCenter(s, x, y, size, c, room, weight = 'bold') { // centred text that shrinks, then cuts with …, to fit its room
+  s = tr(s); ctx.font = `${weight} ${size}px ${FONT}`; let w = ctx.measureText(s).width;
+  if (w > room) { size = Math.max(10, Math.floor(size * room / w)); ctx.font = `${weight} ${size}px ${FONT}`; w = ctx.measureText(s).width; }
+  if (w > room) { while (s.length > 2 && ctx.measureText(s + '…').width > room) s = s.slice(0, -1); s += '…'; }
+  ctx.fillStyle = c; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, x, y);
 }
 function fitLeft(s, x, y, size, c, room, weight = 'bold') { // shrinks to fit; at the smallest size, cut with …
   s = tr(s);
@@ -2431,8 +2452,8 @@ const scenes = {
       ctx.fillStyle = 'rgba(60,20,12,0.82)'; rrect(bx, by, bw, bh, 18); ctx.fill();
       ctx.strokeStyle = '#d8a53a'; ctx.lineWidth = 3; rrect(bx + 6, by + 6, bw - 12, bh - 12, 14); ctx.stroke();
       lines.forEach((l, i) => text(l, bx + 24, by + 30 + i * (size + 10), size, '#fff4dc', 'left', 'normal'));
-      text(`${storyI + 1} / ${STORY.length}   Toxun və ya Enter: davam`, bx + bw - 24, by + bh - 24, 17, '#ffd77a', 'right', 'normal');
-      ctx.fillStyle = 'rgba(70,25,15,0.8)'; rrect(W - 150, 16, 134, 56, 14); ctx.fill(); text('Keç  Esc', W - 83, 44, 22, '#fff4dc');
+      fitCenter(TOUCH ? `${storyI + 1} / ${STORY.length}   Toxun: davam` : `${storyI + 1} / ${STORY.length}   Toxun və ya Enter: davam`, bx + bw / 2, by + bh - 24, 17, '#ffd77a', bw - 48, 'normal');
+      ctx.fillStyle = 'rgba(70,25,15,0.8)'; rrect(W - 150, 16, 134, 56, 14); ctx.fill(); fitCenter(TOUCH ? 'Keç' : 'Keç  Esc', W - 83, 44, 22, '#fff4dc', 120);
     },
   },
   shop: listScene('shop', 'Nənənin dükanı', shopRows, () => 'Güclənmələr hər səviyyədə daha uzun çəkir'),
@@ -2497,7 +2518,7 @@ const scenes = {
         outlined('Söz ovu: hərfləri yolda yığ', cx, y - 34, 20, '#ffe6b0');
         drawWord(cx, y, 28);
         const ev = EVENTS.find(e => e.id === activeEvent()); outlined(`${CITIES.find(c => c.id === city()).name}${ev ? ' · ' + ev.name : ''}`, cx, y + 38, 22, '#ffcf4a'); }
-      if (titleGift.t > 0) { ctx.globalAlpha = Math.min(1, titleGift.t); ctx.fillStyle = 'rgba(40,12,8,0.6)'; ctx.fillRect(0, 0, W, H); const bw = Math.min(W - 30, 620), gl = wrapText(titleGift.msg, bw - 100, 22, 'bold'); text('Toxun və ya Enter', W / 2, H / 2 + 30 + gl.length * 16, 18, '#ffe6b0', 'center', 'normal'); const gh = 50 + gl.length * 28; ctx.fillStyle = 'rgba(43,122,72,0.92)'; rrect((W - bw) / 2, H / 2 - gh / 2, bw, gh, 18); ctx.fill(); hudIconBox((W - bw) / 2 + 40, H / 2, 20); gl.forEach((l, k) => text(l, (W - bw) / 2 + 72, H / 2 - (gl.length - 1) * 14 + k * 28, 22, '#fff4dc', 'left')); ctx.globalAlpha = 1; }
+      if (titleGift.t > 0) { ctx.globalAlpha = Math.min(1, titleGift.t); ctx.fillStyle = 'rgba(40,12,8,0.6)'; ctx.fillRect(0, 0, W, H); const bw = Math.min(W - 30, 620), gl = wrapText(titleGift.msg, bw - 100, 22, 'bold');  const gh = 70 + gl.length * 28; ctx.fillStyle = 'rgba(43,122,72,0.92)'; rrect((W - bw) / 2, H / 2 - gh / 2, bw, gh, 18); ctx.fill(); hudIconBox((W - bw) / 2 + 40, H / 2, 20); gl.forEach((l, k) => text(l, (W - bw) / 2 + 72, H / 2 - (gl.length - 1) * 14 + k * 28 - 10, 22, '#fff4dc', 'left')); fitCenter(TOUCH ? 'Toxun' : 'Toxun və ya Enter', W / 2, H / 2 + gh / 2 - 16, 16, '#ffe6b0', bw - 40, 'normal'); ctx.globalAlpha = 1; }
       const nb = W < 500; // a phone: smaller and spread so nothing touches
       text(`Rekord: ${save.get('best')}`, 16, H - 24, nb ? 17 : 22, '#fff4dc', 'left');
       hudIconBread(W - (nb ? 140 : 200), H - 26, 12); text(String(save.get('bread')), W - (nb ? 124 : 182), H - 24, nb ? 18 : 22, '#ffd77a', 'left');
@@ -2518,12 +2539,20 @@ const scenes = {
     draw() { drawWorld(); clear(); drawHud(); },
   },
   pause: {
-    update() { if (tapIn(...BTN.mute())) { setMuted(!muted); return; } if (pressed('KeyP') || pressed('Escape') || taps.length) scene = 'play'; },
+    update() {
+      const pb = pauseButtons();
+      if (tapIn(...BTN.mute())) { setMuted(!muted); return; }
+      if (pressed('KeyQ') || tapIn(...pb.menu)) { bankBread(); reset(); scene = 'title'; return; } // leave the run: its bread is kept
+      if (pressed('KeyP') || pressed('Escape') || pressed('Enter') || tapIn(...pb.go)) scene = 'play';
+    },
     draw() {
-      scenes.play.draw();
+      drawWorld(); clear(); hudButton(...BTN.mute(), 'mute'); // only the mute button stays usable here
       ctx.fillStyle = 'rgba(40,12,8,0.55)'; ctx.fillRect(0, 0, W, H);
-      outlined('Fasilə', W / 2, 150, 64, '#ffd77a'); outlined('Toxun və ya P: davam', W / 2, 220, 30, '#fff4dc');
-      CONTROLS.forEach((c, i) => outlined(c, W / 2, 320 + i * 44, 24, '#ffe6b0'));
+      outlined('Fasilə', W / 2, 130, 64, '#ffd77a');
+      const pb = pauseButtons();
+      ctx.fillStyle = '#2b7a48'; rrect(...pb.go, 18); ctx.fill(); fitCenter(TOUCH ? 'Davam' : 'Davam  P', pb.go[0] + pb.go[2] / 2, pb.go[1] + pb.go[3] / 2, 28, '#fff4dc', pb.go[2] - 20);
+      ctx.fillStyle = 'rgba(80,30,18,0.9)'; rrect(...pb.menu, 18); ctx.fill(); fitCenter(TOUCH ? 'Menyu' : 'Menyu  Q', pb.menu[0] + pb.menu[2] / 2, pb.menu[1] + pb.menu[3] / 2, 24, '#fff4dc', pb.menu[2] - 20);
+      CONTROLS.slice(0, 4).forEach((c, i) => fitCenter(c, W / 2, 400 + i * 40, 22, '#ffe6b0', W - 30));
     },
   },
   over: {
@@ -2536,7 +2565,7 @@ const scenes = {
       if (pressed('Escape') || tapIn(...b.menu)) { reset(); scene = 'title'; }
     },
     draw() {
-      scenes.play.draw();
+      drawWorld(); clear(); // the world without the run's HUD: nothing under the panel
       const st = state, cost = tune.continue_cost * (1 << st.continues), canCont = save.get('nar') >= cost, b = overButtons();
       ctx.fillStyle = 'rgba(40,12,8,0.5)'; ctx.fillRect(0, 0, W, H);
       outlined(st.gained || 'Div səni tutdu!', W / 2, 110, 64, '#ffd77a');
@@ -2549,13 +2578,13 @@ const scenes = {
       ctx.globalAlpha = canCont ? 1 : 0.45;
       ctx.fillStyle = '#8e1d22'; rrect(...b.cont, 18); ctx.fill();
       hudIconNar(b.cont[0] + 40, b.cont[1] + b.cont[3] / 2, 16);
-      text(`Nar ilə davam et (${cost})  C`, b.cont[0] + b.cont[2] / 2 + 18, b.cont[1] + b.cont[3] / 2, 26, '#fff4dc');
+      fitCenter(TOUCH ? `Nar ilə davam et (${cost})` : `Nar ilə davam et (${cost})  C`, b.cont[0] + b.cont[2] / 2 + 22, b.cont[1] + b.cont[3] / 2, 26, '#fff4dc', b.cont[2] - 84);
       ctx.globalAlpha = 1;
       ctx.fillStyle = '#2b7a48'; rrect(...b.again, 18); ctx.fill();
-      text('Yenidən qaç  Enter', b.again[0] + b.again[2] / 2, b.again[1] + b.again[3] / 2, 28, '#fff4dc');
+      fitCenter(TOUCH ? 'Yenidən qaç' : 'Yenidən qaç  Enter', b.again[0] + b.again[2] / 2, b.again[1] + b.again[3] / 2, 28, '#fff4dc', b.again[2] - 20);
       if (!canCont) text('Nar yoxdur: yolda nar tap', W / 2, b.cont[1] - 18, 20, '#ffe6b0');
       ctx.fillStyle = 'rgba(80,30,18,0.85)'; rrect(...b.menu, 14); ctx.fill();
-      text('Menyu  Esc', b.menu[0] + b.menu[2] / 2, b.menu[1] + b.menu[3] / 2, 22, '#fff4dc');
+      fitCenter(TOUCH ? 'Menyu' : 'Menyu  Esc', b.menu[0] + b.menu[2] / 2, b.menu[1] + b.menu[3] / 2, 22, '#fff4dc', b.menu[2] - 16);
       const md = currentMissions().filter(m => m.prog >= m.target).length;
       text(`Tapşırıqlar: ${md}/3 · vurğu x${save.get('mmult')}`, W / 2, b.menu[1] + b.menu[3] + 24, 20, '#ffe6b0', 'center', 'normal');
     },
@@ -2565,6 +2594,7 @@ const scenes = {
     draw() { scenes.over.draw(); },
   },
 };
+function pauseButtons() { const bw = Math.min(W - 40, 400), bx = (W - bw) / 2; return { go: [bx, 190, bw, 76], menu: [bx + bw * 0.15, 284, bw * 0.7, 62] }; }
 function overButtons() {
   const bw = Math.min(W - 40, 440), bx = (W - bw) / 2;
   return { cont: [bx, 410, bw, 66], again: [bx, 490, bw, 66], menu: [bx + bw * 0.2, 570, bw * 0.6, 50] };
@@ -2576,7 +2606,7 @@ function step() {
   if (scene !== lastScene) { lastTap = -1; sceneT = 0; lastScene = scene; } sceneT += STEP;
   if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
   setMusic(scene === 'play' ? (state.dead ? null : state.power.simurq > 0 || state.power.fly > 0 ? 'fly' : 'run') : scene === 'figures' || scene === 'over' ? null : 'menu');
-  scenes[scene].update(STEP); hit.clear(); taps = [];
+  scenes[scene].update(STEP); hit.clear(); taps = []; toastT = Math.max(0, toastT - STEP); confirmT = Math.max(0, confirmT - STEP);
 }
 let last, acc = 0, ALPHA = 1, sceneT = 0; // ALPHA: how far the frame is between the last two steps
 function tick() {

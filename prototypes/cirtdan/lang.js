@@ -23,6 +23,21 @@ window.LANG = {
   langs: ['az', 'tr', 'en', 'ru'],
   names: { az: 'Azərbaycan', tr: 'Türkçe', en: 'English', ru: 'Русский' },
   t: {
+    // added with the playtest fixes: touch versions without key hints, the pause buttons, purchase confirm
+    'Təsdiq?': { tr: 'Onayla?', en: 'Sure?', ru: 'Точно?' },
+    'Davam': { tr: 'Devam', en: 'Resume', ru: 'Дальше' },
+    'Davam  P': { tr: 'Devam  P', en: 'Resume  P', ru: 'Дальше  P' },
+    'Menyu': { tr: 'Menü', en: 'Menu', ru: 'Меню' },
+    'Menyu  Q': { tr: 'Menü  Q', en: 'Menu  Q', ru: 'Меню  Q' },
+    'Yenidən qaç': { tr: 'Tekrar koş', en: 'Run again', ru: 'Ещё раз' },
+    'Keç': { tr: 'Geç', en: 'Skip', ru: 'Пропустить' },
+    'Toxun': { tr: 'Dokun', en: 'Tap', ru: 'Коснись' },
+    'Nar ilə davam et ({n})': { tr: 'Narla devam et ({n})', en: 'Continue ({n})', ru: 'Продолжить ({n})' },
+    '{page} / {pages}   Toxun: davam': { tr: '{page} / {pages}   Dokun: devam', en: '{page} / {pages}   Tap: next', ru: '{page} / {pages}   Коснись: дальше' },
+    '{got} / {need} · bir qaçışda · mükafat: {prize}': { tr: '{got} / {need} · tek koşuda · ödül: {prize}', en: '{got} / {need} · in one run · prize: {prize}', ru: '{got} / {need} · за один забег · награда: {prize}' },
+    'səndə: {n} · bir toqquşmadan qoruyur': { tr: 'sende: {n} · bir çarpmadan korur', en: 'you have: {n} · saves you from one crash', ru: 'у тебя: {n} · спасает от одного удара' },
+    'səndə: {n} · startda bir toxun': { tr: 'sende: {n} · başlangıçta bir dokun', en: 'you have: {n} · one tap at the start', ru: 'у тебя: {n} · одно касание на старте' },
+    '{lv}/{max} · {n} s · {what}': { tr: '{lv}/{max} · {n} sn · {what}', en: '{lv}/{max} · {n} s · {what}', ru: '{lv}/{max} · {n} с · {what}' },
     // ---- Title, page title, controls ------------------------------------------------------
     'Cırtdan: Köhnə Bakıda Qaçış': { tr: 'Cırtdan: Eski Bakü\'de Kaçış', en: 'Jirtdan: Run Through Old Baku', ru: 'Джыртдан: Побег по старому Баку' },
     'Cırtdan': { tr: 'Cırtdan', en: 'Jirtdan', ru: 'Джыртдан' },

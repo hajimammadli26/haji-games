@@ -88,6 +88,7 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] Cities and locked characters bought with bread (the game's gold)
 - [x] Missions: tap a finished one to take its bread; a new one takes its place; every third raises the multiplier
 - [x] Xalça ilə uçuş: a start boost bought in Nənənin dükanı; one tap at the start and the carpet flies Cırtdan ahead over a line of bread
+- [x] Buying asks twice (Təsdiq?) so a child never spends bread by one stray tap; pause has Davam and Menyu
 - [x] Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good
 
 ## Your systems

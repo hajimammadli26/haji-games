@@ -49,7 +49,7 @@ window.CONFIG = {
   power_chance: { value: 0.1, min: 0, max: 0.4, step: 0.01 },// chance per row of a power-up
   power_time: { value: 10, min: 3, max: 30, step: 1 },        // s a power-up lasts (level 1 of 5 in Nənənin dükanı, later)
   simurq_time: { value: 8, min: 3, max: 20, step: 0.5 },     // s the Simurq carries Cırtdan over the street
-  simurq_height: { value: 7, min: 4, max: 12, step: 0.5 },    // m he flies at, above every obstacle
+  simurq_height: { value: 4.8, min: 3.5, max: 5.5, step: 0.1 }, // m he flies at: above every obstacle, under the city gate's arch (8 m, 7.3 m over side lanes)
   simurq_share: { value: 0.3, min: 0, max: 1, step: 0.01 },   // share of power-ups that are a Simurq
   simurq_first_row: { value: 14, min: 6, max: 60, step: 1 }, // the row by which every run has met one Simurq feather
   pole_height: { value: 4.2, min: 2, max: 8, step: 0.1 },     // m apex of each kəndirbaz hop
@@ -113,6 +113,7 @@ window.CONFIG = {
 
   // --- Score -----------------------------------------------------------------------------
   mult_every: { value: 500, min: 100, max: 2000, step: 50 },  // m per +1 multiplier (stand-in for missions)
+  mission_mult_cap: { value: 10, min: 1, max: 30, step: 1 }, // the most missions can raise the base multiplier to
   mult_cap: { value: 10, min: 1, max: 30, step: 1 },
   continue_cost: { value: 1, min: 1, max: 5, step: 1 },       // nar for the first continue in a run; doubles each time
 };
