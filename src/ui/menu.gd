@@ -32,6 +32,8 @@ const BROWN := Color(0.27, 0.1, 0.06, 0.85)
 const GOLD := Color("#ffd77a")
 const GOLD_BTN := Color("#c89b45") ## Antique Gold: bright gold belongs to bread (art bible §4)
 const CREAM := Color("#fff4dc")
+const TURQUOISE := Color("#19b3a6") ## primary action (art bible §4: Power-up Turquoise)
+const INK := Color("#2a1e24") ## outlines (art bible §4)
 
 var prog: Progress
 var online: Online ## the online board (set by the game; may have no server address yet)
@@ -53,6 +55,7 @@ var _wallet_n: Array = [] ## the bread and nar numbers
 var _toast: Label
 var _home_info: Label
 var _hint: Label
+var _shade: ColorRect ## dims the street behind the list screens; lighter on home so Cırtdan shows
 
 
 func _init(progress: Progress) -> void:
@@ -65,6 +68,7 @@ func _ready() -> void:
 	shade.color = Color(0.16, 0.05, 0.03, 0.55)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(shade)
+	_shade = shade
 	_build_home()
 	_build_list()
 	_wallet = MarginContainer.new()
@@ -107,6 +111,7 @@ func open(which: String) -> void:
 	if _home == null:
 		return
 	_home.visible = which == "home"
+	_shade.color.a = 0.15 if which == "home" else 0.55
 	_list.visible = which != "home"
 	_scroll.scroll_vertical = 0
 	_refresh()
@@ -121,51 +126,149 @@ func toast(t: String, secs: float = 2.2) -> void:
 
 # --- building --------------------------------------------------------------------------------------
 
+## Home (art bible §7): a carpet-framed title plate at the top, the shop buttons in two side columns so
+## Cırtdan (the 3D character at the screen centre) stays visible between them, the big turquoise Oyna
+## button at the bottom with the controls hint on a dark plate under it. Ayarlar sits in the top-left
+## corner, where the list screens put their back button.
 func _build_home() -> void:
 	_home = VBoxContainer.new()
 	_home.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_home.offset_top = 110
-	_home.offset_bottom = -40
-	_home.alignment = BoxContainer.ALIGNMENT_CENTER
-	_home.add_theme_constant_override("separation", 14)
+	_home.offset_left = 24
+	_home.offset_right = -24
+	_home.offset_top = 124
+	_home.offset_bottom = -24
+	_home.add_theme_constant_override("separation", 16)
+	_home.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_home)
+	# the title plate
+	var plate := PanelContainer.new()
+	plate.add_theme_stylebox_override("panel", UiKit.carpet(22))
+	plate.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	plate.custom_minimum_size = Vector2(600, 0)
+	_home.add_child(plate)
+	var tv := VBoxContainer.new()
+	tv.add_theme_constant_override("separation", 0)
+	plate.add_child(tv)
+	var head := HBoxContainer.new()
+	head.alignment = BoxContainer.ALIGNMENT_CENTER
+	head.add_theme_constant_override("separation", 10)
+	tv.add_child(head)
 	var logo := TextureRect.new()
 	logo.texture = Kit.texture("logo_buta")
 	logo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	logo.custom_minimum_size = Vector2(0, 110)
-	_home.add_child(logo)
-	var t := UiKit.label(_home, 84, GOLD)
+	logo.custom_minimum_size = Vector2(76, 76)
+	head.add_child(logo)
+	var t := UiKit.label(head, 80, GOLD)
 	t.text = "Cırtdan"
-	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var t2 := UiKit.label(_home, 40, CREAM)
+	var t2 := UiKit.label(tv, 34, CREAM)
 	t2.text = "Köhnə Bakıda Qaçış"
 	t2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_home_info = UiKit.label(_home, 28, CREAM)
+	var rule := ColorRect.new() # a thin Antique Gold line between the name and the player's numbers
+	rule.color = Color(GOLD_BTN, 0.7)
+	rule.custom_minimum_size = Vector2(0, 3)
+	tv.add_child(rule)
+	_home_info = UiKit.label(tv, 26, CREAM)
 	_home_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_home_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var go := UiKit.button(_home, "Oyna!", GREEN, 56)
-	go.custom_minimum_size = Vector2(420, 0)
+	# the shop buttons, left and right of Cırtdan
+	var mid := HBoxContainer.new()
+	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_home.add_child(mid)
+	var keys := ["shop", "costumes", "chars", "cities", "missions", "leaders"]
+	for side in 2:
+		var col := VBoxContainer.new()
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		col.add_theme_constant_override("separation", 18)
+		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		mid.add_child(col)
+		for i in 3:
+			var k: String = keys[side * 3 + i]
+			var b := _home_btn(col, SCREENS[k], 26)
+			b.custom_minimum_size = Vector2(196, 104)
+			b.pressed.connect(open.bind(k))
+		if side == 0:
+			var gap := Control.new() # Cırtdan stands here
+			gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			mid.add_child(gap)
+	# Oyna: the one primary action (Turquoise with an Antique Gold rim, art bible §4)
+	var go := UiKit.button(_home, "Oyna!", TURQUOISE, 64)
+	var sb := _flat(TURQUOISE, GOLD_BTN, 6, 66)
+	sb.content_margin_top = 18
+	sb.content_margin_bottom = 22
+	for st in ["normal", "hover", "focus"]:
+		go.add_theme_stylebox_override(st, sb)
+	var pr := sb.duplicate() as StyleBoxFlat
+	pr.bg_color = TURQUOISE.darkened(0.2)
+	pr.shadow_offset = Vector2(0, 2)
+	go.add_theme_stylebox_override("pressed", pr)
+	go.add_theme_color_override("font_color", Color.WHITE)
+	go.add_theme_color_override("font_pressed_color", Color.WHITE)
+	go.add_theme_color_override("font_hover_color", Color.WHITE)
+	go.add_theme_color_override("font_outline_color", INK)
+	go.add_theme_constant_override("outline_size", 14)
+	go.custom_minimum_size = Vector2(460, 136)
 	go.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	go.pressed.connect(func() -> void: play.emit())
-	var grid := GridContainer.new()
-	grid.columns = 2
-	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	grid.add_theme_constant_override("h_separation", 14)
-	grid.add_theme_constant_override("v_separation", 14)
-	_home.add_child(grid)
-	for k in ["shop", "costumes", "chars", "cities", "missions", "leaders"]:
-		var b := UiKit.button(grid, SCREENS[k], BROWN, 28)
-		b.custom_minimum_size = Vector2(300, 84)
-		b.pressed.connect(open.bind(k))
-	var st := UiKit.button(_home, SCREENS["settings"], BROWN, 28)
-	st.custom_minimum_size = Vector2(300, 72)
-	st.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	st.pressed.connect(open.bind("settings"))
-	var hint := UiKit.label(_home, 24, CREAM)
+	# the controls hint, on a dark plate so it reads over the street
+	var hp := PanelContainer.new()
+	var hsb := UiKit.box(Color(INK, 0.78), 18, 12)
+	hsb.border_color = Color(GOLD_BTN, 0.6)
+	hsb.set_border_width_all(2)
+	hp.add_theme_stylebox_override("panel", hsb)
+	hp.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_home.add_child(hp)
+	var hint := UiKit.label(hp, 26, CREAM)
 	hint.set_meta("lines", ["Sürüşdür: ← → zolaq, ↑ tullan, ↓ sürüş", "İki dəfə toxun: uçan xalça"])
 	_hint = hint
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	hint.custom_minimum_size = Vector2(600, 0)
+	# Ayarlar, top left
+	var st := _home_btn(self, SCREENS["settings"], 26)
+	st.custom_minimum_size = Vector2(180, 96)
+	st.position = Vector2(24, 16)
+	_home.visibility_changed.connect(func() -> void: st.visible = _home.visible)
+	st.pressed.connect(open.bind("settings"))
+
+
+## A secondary home button: a plain Madder plate with a thin Antique Gold line (art bible §7), cream text.
+func _home_btn(parent: Control, t: String, size: int) -> Button:
+	var b := UiKit.button(parent, t, RED, size)
+	var sb := _flat(Color(RED, 0.94), GOLD_BTN, 3, 22)
+	for st in ["normal", "hover", "focus"]:
+		b.add_theme_stylebox_override(st, sb)
+	var pr := sb.duplicate() as StyleBoxFlat
+	pr.bg_color = RED.darkened(0.25)
+	pr.shadow_offset = Vector2(0, 1)
+	b.add_theme_stylebox_override("pressed", pr)
+	b.add_theme_color_override("font_color", CREAM)
+	b.add_theme_color_override("font_pressed_color", CREAM)
+	b.add_theme_color_override("font_hover_color", CREAM)
+	b.add_theme_color_override("font_outline_color", INK)
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	return b
+
+
+## A flat rounded box with a rim and a soft Ink drop shadow.
+func _flat(bg: Color, rim: Color, rim_w: int, radius: int) -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = bg
+	sb.border_color = rim
+	sb.set_border_width_all(rim_w)
+	sb.set_corner_radius_all(radius)
+	sb.shadow_color = Color(INK, 0.55)
+	sb.shadow_size = 2
+	sb.shadow_offset = Vector2(0, 5)
+	sb.content_margin_left = 16
+	sb.content_margin_right = 16
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 12
+	sb.anti_aliasing = true
+	return sb
 
 
 func _build_list() -> void:
