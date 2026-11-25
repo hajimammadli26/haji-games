@@ -214,7 +214,7 @@ static func lathe(points: PackedVector2Array, segs := 16) -> Mesh:
 				var q := points[j + 1]
 				var v := [Vector3(cos(a0) * p.x, p.y, sin(a0) * p.x), Vector3(cos(a1) * p.x, p.y, sin(a1) * p.x),
 					Vector3(cos(a1) * q.x, q.y, sin(a1) * q.x), Vector3(cos(a0) * q.x, q.y, sin(a0) * q.x)]
-				for k in [0, 2, 1, 0, 3, 2]:
+				for k in [0, 1, 2, 0, 2, 3]: # clockwise seen from outside: Godot's front face, so it faces out
 					st.set_uv(Vector2(float(i) / segs, float(j) / (points.size() - 1)))
 					st.add_vertex(v[k])
 		st.generate_normals()
