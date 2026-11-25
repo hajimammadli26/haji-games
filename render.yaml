@@ -1,0 +1,19 @@
+# Render Blueprint: the browser build of Cırtdan as a free static site.
+# On render.com: New + > Blueprint > pick this repository; Render reads this file from the "site" branch.
+services:
+  - type: web
+    name: cirtdan
+    runtime: static
+    branch: site
+    buildCommand: echo "prebuilt by Godot (see README)"
+    staticPublishPath: .
+    headers:
+      - path: /*.wasm
+        name: Content-Type
+        value: application/wasm
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      - path: /index.service.worker.js
+        name: Cache-Control
+        value: no-cache
