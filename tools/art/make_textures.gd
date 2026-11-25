@@ -72,6 +72,14 @@ func _all() -> void:
 		g.draw_polyline(PackedVector2Array([Vector2(32, 4), Vector2(52, 30), Vector2(32, 60), Vector2(12, 30), Vector2(32, 4)]), Color("#5a2a8a"), 3.0))
 	await _tex("logo_buta", 256, 256, func(g: Node2D) -> void:
 		_buta(g, Vector2(128, 140), 9.0, 0.35, Color("#f2b632"), Color("#8e1d22")))
+	# the app icon: a red carpet with a golden buta (full square; Android's adaptive icon in two layers)
+	await _tex("app_icon", 512, 512, func(g: Node2D) -> void:
+		_icon_back(g, 512.0)
+		_buta(g, Vector2(250, 282), 11.5, 0.35, Color("#f2b632"), Color("#5a1d12")))
+	await _tex("app_icon_bg", 432, 432, func(g: Node2D) -> void:
+		_icon_back(g, 432.0))
+	await _tex("app_icon_fg", 432, 432, func(g: Node2D) -> void: # inside the 66% safe circle
+		_buta(g, Vector2(216, 236), 9.5, 0.35, Color("#f2b632"), Color("#5a1d12")))
 
 
 ## Renders one texture: draw(canvas) on a w×h transparent canvas, saved as OUT/name.png.
@@ -394,6 +402,15 @@ func _ui_button(g: Node2D) -> void: # a glossy rounded button, white so it can b
 	_rrect(g, Rect2(0, 0, 64, 60), 18, Color(0.82, 0.82, 0.82))
 	_rrect(g, Rect2(2, 2, 60, 54), 16, Color(1, 1, 1))
 	_rrect(g, Rect2(6, 4, 52, 20), 10, Color(1, 1, 1, 0.55))
+
+
+func _icon_back(g: Node2D, s: float) -> void: # a red carpet field with a gold and blue border
+	g.draw_rect(Rect2(0, 0, s, s), Color("#1d3f8a"))
+	g.draw_rect(Rect2(s * 0.05, s * 0.05, s * 0.9, s * 0.9), Color("#e8b23a"))
+	g.draw_rect(Rect2(s * 0.08, s * 0.08, s * 0.84, s * 0.84), Color("#b3262a"))
+	_diamond(g, Vector2(s / 2, s / 2), s * 0.34, s * 0.34, Color("#8e1d22"))
+	for c in [Vector2(0.18, 0.18), Vector2(0.82, 0.18), Vector2(0.18, 0.82), Vector2(0.82, 0.82)]:
+		_diamond(g, c * s, s * 0.04, s * 0.04, Color("#f4e2b8"))
 
 
 func _icon_bread(g: Node2D, c: Vector2, r: float) -> void:

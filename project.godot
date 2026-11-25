@@ -5,6 +5,8 @@ config_version=5
 
 [application]
 
+config/icon="res://assets/textures/app_icon.png"
+
 config/name="Cırtdan: Köhnə Bakıda Qaçış"
 run/main_scene="res://src/game/game.tscn"
 config/features=PackedStringArray("4.7", "Mobile")
@@ -28,6 +30,8 @@ pointing/emulate_touch_from_mouse=true
 common/physics_ticks_per_second=60
 
 [rendering]
+
+textures/vram_compression/import_etc2_astc=true
 
 renderer/rendering_method="mobile"
 
