@@ -8,6 +8,9 @@ extends Resource
 @export var speed_start: float = 10.0 ## m/s at the start of a run
 @export var speed_max: float = 22.0 ## m/s cap
 @export var speed_ramp: float = 0.08 ## m/s gained per second of running
+## After speed_max the run keeps speeding up, slower, for grown-up players (owner, 2026-11-25).
+@export var speed_late_ramp: float = 0.03 ## m/s gained per second once past speed_max
+@export var speed_late_max: float = 28.0 ## m/s the absolute cap (reached about 200 s after speed_max)
 @export var lane_width: float = 2.2 ## m between lane centres
 @export var lane_change_speed: float = 16.0 ## m/s sideways when switching lanes
 
@@ -30,6 +33,8 @@ extends Resource
 @export var row_gap_start: float = 1.6 ## s between obstacle rows at the start
 @export var row_gap_end: float = 0.85 ## s between rows at full difficulty
 @export var ramp_time: float = 150.0 ## s from easy to full difficulty
+@export var late_ramp_time: float = 180.0 ## s after ramp_time for rows to tighten from row_gap_end to row_gap_late
+@export var row_gap_late: float = 0.7 ## s between rows at the end of the grown-up phase
 @export var double_block_after: float = 45.0 ## s before two lanes are blocked at once
 @export var caravan_after: float = 38.0 ## s before the first camel caravan
 @export var caravan_speed: float = 6.0 ## m/s a caravan walks toward you (it stops once Cırtdan climbs on)

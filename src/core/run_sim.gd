@@ -245,7 +245,11 @@ func lane_x(l: int) -> float:
 
 ## The running speed t seconds into a run.
 func speed_at(t: float) -> float:
-	return minf(tune.speed_max, tune.speed_start + tune.speed_ramp * t)
+	var v := tune.speed_start + tune.speed_ramp * t
+	if v <= tune.speed_max:
+		return v
+	var t_max := (tune.speed_max - tune.speed_start) / tune.speed_ramp # when the children's phase ends
+	return minf(tune.speed_late_max, tune.speed_max + tune.speed_late_ramp * (t - t_max))
 
 
 ## True while Cırtdan is sliding.

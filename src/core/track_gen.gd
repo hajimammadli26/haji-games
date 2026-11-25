@@ -40,6 +40,14 @@ func fill() -> void:
 		_row()
 
 
+## Seconds between obstacle rows at run time t: row_gap_start → row_gap_end over ramp_time (children),
+## then on to row_gap_late over late_ramp_time (grown-ups).
+static func row_gap_at(tune: Tuning, t: float) -> float:
+	if t <= tune.ramp_time:
+		return lerpf(tune.row_gap_start, tune.row_gap_end, t / tune.ramp_time)
+	return lerpf(tune.row_gap_end, tune.row_gap_late, minf(1.0, (t - tune.ramp_time) / tune.late_ramp_time))
+
+
 func _difficulty(t: float) -> float:
 	return minf(1.0, t / sim.tune.ramp_time)
 
@@ -120,7 +128,7 @@ func _row() -> void:
 			_bread_arc(lane, s + ob.length * 0.5)
 		end = maxf(end, ob.s1())
 	# bread in a free lane, stopping before the next row
-	var gap_dist := v * (tune.row_gap_start + (tune.row_gap_end - tune.row_gap_start) * d)
+	var gap_dist := v * row_gap_at(tune, t)
 	var free_l: Array[int] = []
 	for l in 3:
 		if not used.has(l) and reserved[l] <= s:

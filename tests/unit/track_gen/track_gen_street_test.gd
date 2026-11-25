@@ -73,3 +73,12 @@ func test_side_cart_keeps_buta_stones() -> void:
 			if p.kind == "buta":
 				have += 1
 		assert_int(have).override_failure_message("seed %d" % sd).is_equal(int(sim.made.get("buta", 0)))
+
+
+# After the children's ramp the rows keep getting closer, down to row_gap_late (owner, 2026-11-25).
+func test_row_gap_keeps_shrinking_for_grown_ups() -> void:
+	var tune: Tuning = load("res://src/data/tuning.tres")
+	assert_float(TrackGen.row_gap_at(tune, 0.0)).is_equal_approx(tune.row_gap_start, 0.001)
+	assert_float(TrackGen.row_gap_at(tune, tune.ramp_time)).is_equal_approx(tune.row_gap_end, 0.001)
+	assert_float(TrackGen.row_gap_at(tune, tune.ramp_time + tune.late_ramp_time * 0.5)).is_less(tune.row_gap_end)
+	assert_float(TrackGen.row_gap_at(tune, 100000.0)).is_equal_approx(tune.row_gap_late, 0.001)

@@ -135,3 +135,20 @@ func test_caravan_stops_when_ridden() -> void:
 	_run(0.1)
 	assert_str(sim.on_roof).is_equal("caravan")
 	assert_bool(c.moving).is_false()
+
+
+# The run eases in for children, then keeps speeding up for grown-ups (owner, 2026-11-25).
+func test_speed_children_phase_unchanged() -> void:
+	assert_float(sim.speed_at(0.0)).is_equal_approx(tune.speed_start, 0.001)
+	assert_float(sim.speed_at(60.0)).is_equal_approx(tune.speed_start + tune.speed_ramp * 60.0, 0.001)
+	assert_float(sim.speed_at(150.0)).is_less_equal(tune.speed_max + 0.001)
+
+
+func test_speed_keeps_rising_after_the_children_phase() -> void:
+	var t_max := (tune.speed_max - tune.speed_start) / tune.speed_ramp
+	assert_float(sim.speed_at(t_max + 60.0)).is_greater(tune.speed_max)
+	assert_float(sim.speed_at(t_max + 60.0)).is_greater(sim.speed_at(t_max + 30.0))
+
+
+func test_speed_never_passes_the_late_cap() -> void:
+	assert_float(sim.speed_at(100000.0)).is_equal_approx(tune.speed_late_max, 0.001)
