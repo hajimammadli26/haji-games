@@ -19,6 +19,8 @@ After play: "Senedde olan her sheyi duzelt sonram men oynadiqca gelub sene belli
 
 After play: "Demek  bu versoyada qaliriq oyun mexanizmlerini oynu tam hazir veziyyete getirenden sonram godota keçirik animasiya dizayn personajlar üçün onuda edenden sonram oynu esl mobil oyna çevirib qoyuruq app store ve goog storeye okey?"
 
+After play: "Tedbirleri yigisdir umumen / Geyim ayri mağazaya çıxar geyim dükani / Şeherleri açmaq qizilnan olsun / Personajlarda kilidlileride qizil qoy / Tapşırıq sehifesinde tapşırıq bitibse üstünə basaq qizili versin yerinə təzə tapşırıq gelsin / Ses musiqi mende islemir telfonnan girirem atdiqin linke gelmir / Nenemin dukaninda alinada nese eger leveli qalxirsa meselem nenemin sinisin onu ele ele qabaqinda bidene işare artsinli görsün ne qeder qalib tamamlamaqa / Dukana jetpack - əvəzləyən nəsə əlavə et baslayanda nese uçan xalça var oda olsun ama oyun baslayanda bor defe basim ona uçub aparsin qabaqa qizillaro yiqa bilsin oda qizilnan olsun / Birde oyunda bidene körpü var altindan keçende orda nese yan divarda sehflik var izah edenmirem ama duzeldersen ."
+
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
 **Genre:** endless runner, 3 lanes, seen from behind
@@ -80,6 +82,10 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] Liderlər: your best 10 runs and your league (Bürünc, Gümüş, Qızıl, Div liqası); Ayarlar: language, sound, music, festivals, costumes, the story
 - [x] Xəzər yayı: a seaside run (sand, umbrellas, the sea, old ships, oil derricks; sandcastles to jump, ice-cream kiosks to swerve), Cırtdan in his sailor suit
 - [x] Languages: Azərbaycan, Türkçe, English, Русский, chosen in Ayarlar (translations by the localization-lead agent, in lang.js)
+- [x] Geyim dükanı: costumes in their own shop on the menu
+- [x] Cities and locked characters bought with bread (the game's gold)
+- [x] Missions: tap a finished one to take its bread; a new one takes its place; every third raises the multiplier
+- [x] Xalça ilə uçuş: a start boost bought in Nənənin dükanı; one tap at the start and the carpet flies Cırtdan ahead over a line of bread
 - [x] Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good
 
 ## Your systems
@@ -96,8 +102,8 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Weekly hunt, daily gifts · in the slice
 - Local leaderboard and leagues · in the slice
 - Online leaderboard · later (needs a server)
-- Festival events (Novruz, winter, nar bayramı) · in the slice
-- Xəzər yayı seaside run · in the slice
+- Festival events · removed *(you said)*
+- Xəzər yayı seaside run · removed with the festivals *(you said)*
 - Azerbaijan tour: Şəki, Qəbələ, Naxçıvan, Lənkəran, Quba, Qobustan · in the slice
 - Intro story · in the slice
 - Comic moments at milestones · in the slice
@@ -107,6 +113,7 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Sürət yerində (the speed is right) *(you said)* · pins: speed_start 10, speed_max 22, speed_ramp 0.08
 
 ## Avoid
+- Festivals: "Tədbirləri yığışdır ümumən" *(you said)*
 - The word's letters on screen all the time: show them only when a letter is taken, then let them fade *(you said)*
 - Rushing: "telesme" *(you said)*
 - Subway Surfers' name, art, characters and UI (it is a genre reference in the GDD, never copied)

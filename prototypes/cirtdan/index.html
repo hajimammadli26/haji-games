@@ -62,7 +62,7 @@ const pushEvent = e => { events.push(e); if (events.length > 200) events.splice(
 const save = (() => {
   let d = { best: 0, nar: null, bread: 0, carpets: 0, levels: {}, chars: ['cirtdan'], char: 'cirtdan',
     mset: 0, mprog: [0, 0, 0], mmult: 1, sets: 0, city: 'baku', wordDay: -1, wordGot: 0, wordStreak: 0, wordDone: -1, event: 'auto', tokens: 0,
-    costume: 'none', costumes: [], stones: 0, huntWeek: -1, huntGot: 0, huntDone: -1, giftDay: -1, runs: [], music: true, lang: 'az' };
+    costume: 'none', costumes: [], stones: 0, huntWeek: -1, huntGot: 0, huntDone: -1, giftDay: -1, runs: [], music: true, lang: 'az', cities: ['baku'], boosts: 0, claims: 0 };
   try { Object.assign(d, JSON.parse(localStorage.getItem('cirtdan-save') || '{}')); } catch (e) {}
   if (d.nar === null) d.nar = tune.start_nar;
   if (!Array.isArray(d.mprog)) d.mprog = [0, 0, 0]; while (d.mprog.length < 3) d.mprog.push(0); d.mprog = d.mprog.map(v => Number(v) || 0); // old or short saves
@@ -209,7 +209,15 @@ function startAudio() {
     } catch (e) { return; }
   }
   if (audio.ac.state === 'suspended') audio.ac.resume();
+  if (!audio.unlocked) { // iOS and Android only open sound inside a touch: play one silent sample now
+    try { const b = audio.ac.createBuffer(1, 1, 22050), src = audio.ac.createBufferSource(); src.buffer = b; src.connect(audio.ac.destination); src.start(0); audio.unlocked = true; } catch (e) {}
+    try { // a looping silent <audio> puts iPhone's sound in 'playback' mode, so the ring/silent switch does not mute the game
+      const a = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA='); a.loop = true; a.setAttribute('playsinline', ''); a.volume = 0.01; a.play().catch(() => {});
+    } catch (e) {}
+  }
 }
+['touchend', 'click'].forEach(ev => addEventListener(ev, () => startAudio(), { passive: true }));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && audio && audio.ac.state === 'suspended') audio.ac.resume(); });
 function setMuted(m) { muted = m; if (audio) audio.out.gain.value = m ? 0 : tune.volume; if (music.gain) music.gain.gain.value = tune.music_volume; }
 addEventListener('tune', () => setMuted(muted)); // the tweak panel (an add-on), when added, moved a value: the volume follows
 function tone(freq, dur, type = 'square', vol = 0.3, slideTo = 0, delay = 0) {
@@ -498,11 +506,11 @@ function blobShadow(parent, r) { const s = part(G.shadow, shadowMat, r, r, 1, 0,
 const CHARS = [ // the GDD's roster; locked ones need events the game does not have yet
   { id: 'cirtdan', name: 'Cırtdan', desc: 'Əsas qəhrəman', hat: 'papaq', hatColor: '#c8221d', vest: '#1f4f8f', trim: '#f1c34a', pants: '#4b3221', shirt: '#f3ecd8' },
   { id: 'tiqtiq', name: 'Tıq-Tıq xanım', desc: 'Cəld və şən qız', cost: 'tiqtiq_cost', hat: 'scarf', hatColor: '#d6362f', vest: '#2b7a48', trim: '#f2d16b', pants: '#7a2c3e', shirt: '#fbe7c6', braids: true },
-  { id: 'kecel', name: 'Keçəl', desc: 'Zarafatcıl və bic oğlan', sets: 'kecel_sets', hat: 'bald', vest: '#7a2c3e', trim: '#f1c34a', pants: '#2a2a3a', shirt: '#e9e2cf' },
+  { id: 'kecel', name: 'Keçəl', desc: 'Zarafatcıl və bic oğlan', sets: 'kecel_sets', price: 'kecel_cost', hat: 'bald', vest: '#7a2c3e', trim: '#f1c34a', pants: '#2a2a3a', shirt: '#e9e2cf' },
   { id: 'kendirbaz', name: 'Kəndirbaz', desc: 'İp üstündə oynayan cəld oğlan', cost: 'kendirbaz_cost', hat: 'tall', hatColor: '#f3ecd8', vest: '#c8322c', trim: '#1f9e9a', pants: '#1d4f9a', shirt: '#f2b632' },
-  { id: 'melik', name: 'Məlikməmməd', desc: 'Cəsur şahzadə, qılınclı', hunt: true, hat: 'crown', hatColor: '#d8a53a', vest: '#1d3f8a', trim: '#f2d16b', pants: '#2a2a3a', shirt: '#f3ecd8' },
-  { id: 'peri', name: 'Pəri qız', desc: 'Sehrli qanadlı qız', stones: 'peri_stones', hat: 'peri', hatColor: '#f2a6c8', vest: '#8ec9e8', trim: '#ffffff', pants: '#b48ad8', shirt: '#f7f0ff' },
-  { id: 'kosa', name: 'Kosa', desc: 'Novruz bayramının obrazı', tokens: 'kosa_tokens', hat: 'kosa', hatColor: '#3b2414', vest: '#8a6a44', trim: '#f2d16b', pants: '#5a3a22', shirt: '#c9a46a' },
+  { id: 'melik', name: 'Məlikməmməd', desc: 'Cəsur şahzadə, qılınclı', hunt: true, price: 'melik_cost', hat: 'crown', hatColor: '#d8a53a', vest: '#1d3f8a', trim: '#f2d16b', pants: '#2a2a3a', shirt: '#f3ecd8' },
+  { id: 'peri', name: 'Pəri qız', desc: 'Sehrli qanadlı qız', stones: 'peri_stones', price: 'peri_cost', hat: 'peri', hatColor: '#f2a6c8', vest: '#8ec9e8', trim: '#ffffff', pants: '#b48ad8', shirt: '#f7f0ff' },
+  { id: 'kosa', name: 'Kosa', desc: 'Novruz bayramının obrazı', price: 'kosa_cost', hat: 'kosa', hatColor: '#3b2414', vest: '#8a6a44', trim: '#f2d16b', pants: '#5a3a22', shirt: '#c9a46a' },
 ];
 const charDef = id => CHARS.find(c => c.id === id) || CHARS[0];
 const COSTUMES = [ // Cırtdan's costumes (GDD: Novruz, Qış, Dənizçi); a festival dresses him in its own when he wears his usual
@@ -742,15 +750,19 @@ function makeStall() { // bazaar çadırı: striped awning, table of fruit and c
   blobShadow(g, 1.1);
   return g;
 }
-function makeGate() { // qala darvazası: a stone arch over all three lanes (a short tunnel)
-  const g = new THREE.Group(), wall = texMat('wallM', TEX.wall), dark = mat('gateDark', '#6b4a2c');
-  [-4.3, 4.3].forEach(x => part(G.box, wall, 1.6, 7, 6, x, 3.5, 0, g));
-  part(G.box, wall, 10.2, 2.4, 6, 0, 6.6, 0, g);
-  const arch = part(G.arch || (G.arch = new THREE.CylinderGeometry(3.55, 3.55, 6, 24, 1, true, Math.PI / 2, Math.PI)), mat('archIn', '#a77b45', { side: THREE.BackSide }), 1, 1, 1, 0, 4.2, 0, g);
-  arch.rotation.x = Math.PI / 2; arch.rotation.y = Math.PI / 2;
-  for (let i = 0; i < 7; i++) part(G.box, mat('merlon', '#c4934f'), 0.9, 0.8, 1.0, -4.2 + i * 1.4, 8.2, 2.5, g); // battlements
-  part(G.box, dark, 1.0, 1.6, 0.1, -4.3, 3.6, 3.02, g); // a dark loophole each side
-  part(G.box, dark, 1.0, 1.6, 0.1, 4.3, 3.6, 3.02, g);
+function makeGate() { // qala darvazası: one stone wall with a round-topped passage over all three lanes
+  const g = new THREE.Group(), dark = mat('gateDark', '#6b4a2c');
+  if (!G.gateArch) { // the outline as one shape: two piers and the arch, the opening cut along a half circle
+    const sh = new THREE.Shape();
+    sh.moveTo(-5.4, 0); sh.lineTo(-5.4, 8.4); sh.lineTo(5.4, 8.4); sh.lineTo(5.4, 0); sh.lineTo(3.7, 0); sh.lineTo(3.7, 4.3);
+    sh.absarc(0, 4.3, 3.7, 0, Math.PI, false); sh.lineTo(-3.7, 0); sh.closePath();
+    G.gateArch = new THREE.ExtrudeGeometry(sh, { depth: 6, bevelEnabled: false, curveSegments: 20 }); G.gateArch.translate(0, 0, -3);
+  }
+  if (!M.gateStone) { const t = TEX.wall.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(0.28, 0.28); t.needsUpdate = true; M.gateStone = new THREE.MeshLambertMaterial({ map: t }); }
+  part(G.gateArch, M.gateStone, 1, 1, 1, 0, 0, 0, g);
+  for (let i = 0; i < 8; i++) part(G.box, mat('merlon', '#c4934f'), 0.9, 0.8, 1.0, -4.9 + i * 1.4, 8.8, 2.5, g); // battlements
+  part(G.box, dark, 0.8, 1.4, 0.1, -4.55, 5.6, 3.02, g); // a dark loophole each side
+  part(G.box, dark, 0.8, 1.4, 0.1, 4.55, 5.6, 3.02, g);
   return g;
 }
 function makeBread() { // yağ çörəyi: a puffed golden round with a scored top, never a flat disc
@@ -966,7 +978,7 @@ const CITIES = [
   { id: 'quba', name: 'Quba', what: 'alma bağları, xalça dəzgahları, Şahdağ' },
   { id: 'qobustan', name: 'Qobustan', what: 'qayaüstü təsvirlər, palçıq vulkanları, Xəzər' },
 ];
-const city = () => { const c = CITIES.find(x => x.id === save.get('city') && !x.soon); return c ? c.id : 'baku'; };
+const city = () => { const c = CITIES.find(x => x.id === save.get('city') && !x.soon && (x.id === 'baku' || (save.get('cities') || []).includes(x.id))); return c ? c.id : 'baku'; };
 // ---- The rest of the tour: Naxçıvan, Lənkəran, Quba, Qobustan ------------------------------------------
 TEX.brick = canvasTex(256, 256, (g, w, h) => { // Naxçıvan: terracotta brick with turquoise girih bands
   g.fillStyle = '#b8643a'; g.fillRect(0, 0, w, h);
@@ -1324,13 +1336,28 @@ const MISSIONS = [
   { k: 'powers', t: 3, txt: n => `${n} güclənmə topla` },
   { k: 'bread', t: 400, txt: n => `Cəmi ${n} yağ çörəyi topla` },
 ];
+function missionSlots() { // three slots, each holding the number of a mission in the endless list
+  let sl = save.get('mslots');
+  if (!Array.isArray(sl) || sl.length !== 3) { const b = (save.get('mset') || 0) * 3; sl = [b, b + 1, b + 2]; save.put('mslots', sl); save.put('mnext', b + 3); }
+  return sl;
+}
 function currentMissions() {
-  const set = save.get('mset'), prog = save.get('mprog');
-  return [0, 1, 2].map(i => {
-    const m = MISSIONS[(set * 3 + i) % MISSIONS.length];
-    const target = Math.round(m.t * (1 + set * tune.mission_scale));
-    return { ...m, target, prog: Math.min(target, prog[i] || 0) };
+  const prog = save.get('mprog');
+  return missionSlots().map((idx, i) => {
+    const m = MISSIONS[idx % MISSIONS.length], level = Math.floor(idx / 3);
+    const target = Math.round(m.t * (1 + level * tune.mission_scale));
+    const reward = Math.round(tune.mission_reward * (1 + level * 0.5) / 10) * 10;
+    return { ...m, target, reward, prog: Math.min(target, prog[i] || 0) };
   });
+}
+function claimMission(i) { // the reward, then a new mission in its place; every third claim raises the multiplier
+  const m = currentMissions()[i]; if (m.prog < m.target) return;
+  save.put('bread', save.get('bread') + m.reward);
+  const sl = missionSlots().slice(), next = save.get('mnext') || 3; sl[i] = next; save.put('mslots', sl); save.put('mnext', next + 1);
+  const prog = save.get('mprog').slice(); prog[i] = 0; save.put('mprog', prog);
+  const claims = (save.get('claims') || 0) + 1; save.put('claims', claims);
+  if (claims % 3 === 0) { save.put('mmult', save.get('mmult') + 1); toast(`+${m.reward} çörək! Vurğu x${save.get('mmult')}`); } else toast(`+${m.reward} çörək! Yeni tapşırıq`);
+  save.flush(); sfx.power();
 }
 function mission(kind, v) {
   const ms = currentMissions(), prog = save.get('mprog').slice();
@@ -1340,21 +1367,15 @@ function mission(kind, v) {
     const cur = prog[i] || 0, nv = Math.min(m.target, m.run ? Math.max(cur, v) : cur + v);
     if (nv === cur) return;
     prog[i] = nv; changed = true;
-    if (nv >= m.target) { done = true; banner('Tapşırıq bitdi!'); sfx.nar(); pushEvent({ type: 'mission', what: m.k }); }
+    if (nv >= m.target) { done = true; banner('Tapşırıq bitdi! Mükafatı Tapşırıqlarda al'); sfx.nar(); pushEvent({ type: 'mission', what: m.k }); }
   });
   if (!changed) return;
   save.put('mprog', prog);
-  if (done) {
-    if (ms.every((m, i) => prog[i] >= m.target)) { // the set is done: +1 multiplier for good
-      save.put('mmult', save.get('mmult') + 1); save.put('mset', save.get('mset') + 1); save.put('sets', save.get('sets') + 1);
-      save.put('mprog', [0, 0, 0]); banner(`Üç tapşırıq bitdi! Vurğu x${save.get('mmult')}`); sfx.power();
-    }
-    save.flush();
-  }
+  if (done) save.flush();
 }
 // ---- Nənənin dükanı: power-up levels, carpets to keep, a gift bundle -----------------------------
 const MAX_LEVEL = 5;
-function powerTime(k) { return (k === 'simurq' ? tune.simurq_time : tune.power_time) + (save.get('levels')[k] || 0) * tune.upgrade_step; }
+function powerTime(k) { if (k === 'fly') return tune.boost_time; return (k === 'simurq' ? tune.simurq_time : tune.power_time) + (save.get('levels')[k] || 0) * tune.upgrade_step; }
 function levelCost(k) { return tune.upgrade_cost * (1 << (save.get('levels')[k] || 0)); }
 function spend(n) { if (save.get('bread') < n) { sfx.stumble(); return false; } save.set('bread', save.get('bread') - n); sfx.bread(); return true; }
 function buyLevel(k) {
@@ -1392,7 +1413,7 @@ function calendarEvent() { // the festival the date is in, if any (the clock onl
   }
   return null;
 }
-function activeEvent() { const e = save.get('event'); return e === 'auto' ? calendarEvent() : e === 'none' ? null : e; }
+function activeEvent() { return null; } // festivals are switched off (you said: 'Tədbirləri yığışdır'); the code stays for later
 // ---- The day's word: its letters lie in the street, in order; spell it for Nənə's bundle -----------
 const WORDS = ['NOVRUZ', 'XALÇA', 'TƏNDİR', 'QALA', 'TAR', 'PAXLAVA', 'ŞƏKƏRBURA', 'NAR', 'BUTA', 'KAMANÇA', 'BALABAN', 'SƏMƏNİ', 'PAPAQ', 'ÇARIQ', 'NAĞARA', 'SİMURQ'];
 function today() { const p = Number(params.get('day')); if (p) return p; const d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000); }
@@ -1487,7 +1508,7 @@ function reset() {
     lane: 1, prevLane: 1, x: 0, prevX: 0, y: 0, prevY: 0, vy: 0, grounded: true, groundY: 0,
     slide: 0, airT: 0, jumpBuf: 0, onRoof: false,
     divT: 0, divGap: tune.div_near_gap, introT: tune.div_intro_time, stumbleT: 0,
-    power: { magnet: 0, shoe: 0, double: 0, pole: 0, simurq: 0 }, carpet: 0, carpets: tune.carpets_per_run + save.get('carpets'), freeCarpets: tune.carpets_per_run,
+    power: { magnet: 0, shoe: 0, double: 0, pole: 0, simurq: 0, fly: 0 }, boostUsed: false, carpet: 0, carpets: tune.carpets_per_run + save.get('carpets'), freeCarpets: tune.carpets_per_run,
     mult: 1, dead: null, deadT: 0, continues: 0, invuln: 0, stepT: 0, flash: 0, best: save.get('best'),
     banner: '', bannerT: 0, newBest: false,
   };
@@ -1533,8 +1554,8 @@ function addPickup(kind, lane, s, y) {
   mesh.position.set(p.x, y, -s); worldRoot.add(mesh); pickups.push(p);
 }
 function breadLine(lane, s, n, y, gap = 2.2) { for (let i = 0; i < n; i++) addPickup('bread', lane, s + i * gap, y + 0.6); }
-function skyBread() { // a winding line of bread high over the street, for the Simurq's flight
-  const n = Math.max(3, Math.floor((powerTime('simurq') * state.speed - 18) / 3)); // ends before the bird lands
+function skyBread(time) { // a winding line of bread high over the street, for the Simurq's flight
+  const n = Math.max(3, Math.floor(((time || powerTime('simurq')) * state.speed - 18) / 3)); // ends before he lands
   for (let i = 0; i < n; i++) {
     const lane = Math.round(1 + Math.sin(i * 0.35) * 1.2);
     addPickup('bread', Math.max(0, Math.min(2, lane)), state.s + 14 + i * 3, tune.simurq_height + 0.6);
@@ -1652,8 +1673,14 @@ function genRow() {
 function fillWorld() {
   const ahead = state.s + tune.view_ahead;
   while (gen.s < ahead) genRow();
+  while (gen.nextGate < ahead + 30) { // a city gate now and then: a short dark tunnel over the street (placed before the houses)
+    const g = makeGate(); g.position.set(0, 0, -gen.nextGate); g.userData.s1 = gen.nextGate + 3;
+    worldRoot.add(g); gates.push(g); (gen.gateS || (gen.gateS = [])).push(gen.nextGate); gen.nextGate += 380 + rng() * 200;
+  }
   for (const side of [-1, 1]) { // houses along both sides of the street
     while (gen.sceneryS[side] < ahead + 20) {
+      const gs = (gen.gateS || []).find(q => gen.sceneryS[side] < q + 4 && gen.sceneryS[side] + 9 > q - 4);
+      if (gs !== undefined) { gen.sceneryS[side] = gs + 4; continue; } // leave the gate's walls clear: balconies and carpets never poke through them
       const { g, w } = makeHouse(side, rng);
       const ev = activeEvent();
       if (ev === 'novruz' && rng() < 0.5) { const sm = makeSemeni(); sm.position.set(-side * 0.5, 0, (rng() - 0.5) * w); g.add(sm); }
@@ -1663,10 +1690,6 @@ function fillWorld() {
       worldRoot.add(g); scenery.push(g); g.userData.s1 = gen.sceneryS[side] + w;
       gen.sceneryS[side] += w + (rng() < 0.15 ? 2.5 : 0.05);
     }
-  }
-  while (gen.nextGate < ahead) { // a city gate now and then: a short dark tunnel over the street
-    const g = makeGate(); g.position.set(0, 0, -gen.nextGate); g.userData.s1 = gen.nextGate + 3;
-    worldRoot.add(g); gates.push(g); gen.nextGate += 380 + rng() * 200;
   }
   // forget what is behind the runner
   const behind = state.s - 25;
@@ -1759,10 +1782,13 @@ function updateRun(dt) {
     st.vy = Math.sqrt(2 * tune.gravity * h); st.grounded = false; st.jumpBuf = 0; st.slide = 0; st.airT = 1; sfx.jump();
   }
   st.jumpBuf = Math.max(0, st.jumpBuf - dt);
-  const flying = st.power.simurq > 0;
+  if (!st.boostUsed && st.t < tune.boost_window && save.get('boosts') > 0 && (pressed('KeyB') || tapIn(...boostBtn()))) { // the start boost
+    st.boostUsed = true; save.set('boosts', save.get('boosts') - 1); st.power.fly = tune.boost_time; skyBread(tune.boost_time); sfx.power(); banner('Xalça ilə uçuş!');
+  }
+  const flying = st.power.simurq > 0 || st.power.fly > 0;
   if (flying) { // the Simurq lifts him high and holds him there; the street passes below
     st.y += (tune.simurq_height - st.y) * Math.min(1, dt * 2.5); st.vy = 0; st.grounded = false; st.slide = 0;
-    if (st.power.simurq <= dt) { st.invuln = Math.max(st.invuln, 1.6); banner('Simurq səni yerə qoydu'); } // a safe landing
+    if (Math.max(st.power.simurq, st.power.fly) <= dt) { st.invuln = Math.max(st.invuln, 1.6); banner('Simurq səni yerə qoydu'); } // a safe landing
   } else { st.vy -= tune.gravity * dt; st.y += st.vy * dt; }
   const sup = supportAt(st.x, st.prevY, st.s);
   if (flying) { /* in the air with the Simurq */ }
@@ -1886,7 +1912,7 @@ function drawWorld() {
   player3.position.set(x, y, -s);
   player3.visible = true;
   poseRunner(player3, a, animT);
-  fly3.visible = st.carpet > 0;
+  fly3.visible = st.carpet > 0 || st.power.fly > 0; // the shield carpet, or the start boost's carpet under him
   pole3.visible = st.power.pole > 0; if (pole3.visible) pole3.rotation.z = Math.sin(animT * 4) * 0.2;
   simurq3.visible = st.power.simurq > 0 && !st.dead;
   if (simurq3.visible) { // Cırtdan hangs from its talons
@@ -1993,6 +2019,7 @@ function drawSweet(x, y, r) { // a şəkərbura, for the Novruz count
   ctx.fillStyle = '#e8c27a'; ctx.beginPath(); ctx.arc(x, y + r * 0.3, r, Math.PI, 0); ctx.closePath(); ctx.fill();
   ctx.strokeStyle = '#b8803a'; ctx.lineWidth = 2; for (let i = 1; i < 5; i++) { const a = Math.PI + i / 5 * Math.PI; ctx.beginPath(); ctx.moveTo(x + Math.cos(a) * r * 0.5, y + r * 0.3 + Math.sin(a) * r * 0.5); ctx.lineTo(x + Math.cos(a) * r, y + r * 0.3 + Math.sin(a) * r); ctx.stroke(); }
 }
+function boostBtn() { return [W / 2 - 110, H - 150, 220, 64]; }
 function drawHud() {
   const st = state;
   // the Div is close: the edges glow red
@@ -2014,7 +2041,7 @@ function drawHud() {
   if (st.carpet > 0) bars.push(['carpet', st.carpet / tune.carpet_time]);
   for (const [k, f] of bars) {
     ctx.fillStyle = 'rgba(70,25,15,0.55)'; rrect(16, py - 24, 200, 48, 12); ctx.fill();
-    k === 'carpet' ? hudIconCarpet(44, py, 18) : hudIconPower(k, 44, py, 18);
+    k === 'carpet' || k === 'fly' ? hudIconCarpet(44, py, 18) : hudIconPower(k, 44, py, 18);
     ctx.fillStyle = '#5a2a1a'; rrect(76, py - 8, 126, 16, 8); ctx.fill();
     ctx.fillStyle = '#ffcf4a'; rrect(76, py - 8, Math.max(8, 126 * f), 16, 8); ctx.fill();
     py += 58;
@@ -2035,6 +2062,11 @@ function drawHud() {
   }
   if (st.tokenT > 0) { // Novruz sweets: the count shows for a moment when one is taken
     ctx.globalAlpha = Math.min(1, st.tokenT / 0.5); const y = W < 700 ? 208 : 196; drawSweet(W - 168, y, 14); outlined(String(save.get('tokens')), W - 24, y, 28, '#ffe6b0', 'right'); ctx.globalAlpha = 1;
+  }
+  if (!st.boostUsed && st.t < tune.boost_window && save.get('boosts') > 0 && !st.dead) { // the start boost button
+    const b = boostBtn(), k = Math.min(1, (tune.boost_window - st.t) / 1);
+    ctx.globalAlpha = k; ctx.fillStyle = 'rgba(43,122,72,0.9)'; rrect(...b, 18); ctx.fill(); ctx.strokeStyle = '#ffd77a'; ctx.lineWidth = 3; rrect(...b, 18); ctx.stroke();
+    hudIconCarpet(b[0] + 34, b[1] + b[3] / 2, 20); text(`Uçuş! x${save.get('boosts')}`, b[0] + b[2] / 2 + 18, b[1] + b[3] / 2, 24, '#fff4dc'); ctx.globalAlpha = 1;
   }
   if (st.bannerT > 0) outlined(st.banner, W / 2, H * 0.26, 46, '#ffd77a');
   if (st.t < 5 && !st.dead) { // the first seconds: how to move, by doing
@@ -2146,15 +2178,15 @@ function endStory() { save.set('story', true); const f = storyThen; storyThen = 
 
 // ---- Menus: the title's buttons and the list screens (shop, characters, missions) ----------------------
 const play = () => { reset(); scene = 'play'; sfx.div(); };
-const MENU = [['Oyna', 'Enter', () => (save.get('story') ? play() : startStory(play))], ['Nənənin dükanı', '1', () => openList('shop')],
-  ['Personajlar', '2', () => openList('chars')], ['Tapşırıqlar', '3', () => openList('missions')], ['Şəhərlər', '4', () => openList('cities')], ['Liderlər', '5', () => openList('leaders')], ['Ayarlar', '6', () => openList('settings')]];
+const MENU = [['Oyna', 'Enter', () => (save.get('story') ? play() : startStory(play))], ['Nənənin dükanı', '1', () => openList('shop')], ['Geyim dükanı', '2', () => openList('costumes')],
+  ['Personajlar', '3', () => openList('chars')], ['Tapşırıqlar', '4', () => openList('missions')], ['Şəhərlər', '5', () => openList('cities')], ['Liderlər', '6', () => openList('leaders')], ['Ayarlar', '7', () => openList('settings')]];
 let menuSel = 0, listSel = 0;
 const titleGift = { done: false, msg: '', t: 0 };
 function openList(name) { listSel = 0; scene = name; }
 function menuRects() {
   const wide = W >= 900, bw = wide ? Math.min(460, W * 0.38) : Math.min(W - 40, 420), bx = wide ? W - bw - 50 : (W - bw) / 2;
-  const by = wide ? 226 : H - 412, step = wide ? 62 : 54;
-  return MENU.map((_, i) => [bx, by + i * step, bw, wide ? 52 : 46]);
+  const by = wide ? 222 : H - 436, step = wide ? 56 : 50;
+  return MENU.map((_, i) => [bx, by + i * step, bw, wide ? 48 : 44]);
 }
 function panelBtn(r, label, hot, color, hint) {
   ctx.fillStyle = color; rrect(...r, 16); ctx.fill();
@@ -2169,11 +2201,13 @@ function rowRects(n) {
 function shopRows() {
   const rows = Object.keys(SHOP_NAMES).map(k => {
     const lv = save.get('levels')[k] || 0, max = lv >= MAX_LEVEL;
-    return { icon: (x, y) => hudIconPower(k, x, y, 20), label: SHOP_NAMES[k], sub: `${SHOP_WHAT[k]} · ${powerTime(k).toFixed(1)} s`,
+    return { icon: (x, y) => hudIconPower(k, x, y, 20), label: SHOP_NAMES[k], sub: `${SHOP_WHAT[k]} · ${powerTime(k).toFixed(1)} s · ${lv}/${MAX_LEVEL}`,
       pips: lv, btn: max ? 'MAKS' : `${levelCost(k)}`, bread: !max, can: !max && save.get('bread') >= levelCost(k), act: () => buyLevel(k) };
   });
   rows.push({ icon: (x, y) => hudIconCarpet(x, y, 20), label: 'Uçan xalça', sub: `bir toqquşmadan qoruyur · səndə: ${save.get('carpets')}`,
     btn: `${tune.carpet_cost}`, bread: true, can: save.get('bread') >= tune.carpet_cost, act: () => { if (spend(tune.carpet_cost)) { save.set('carpets', save.get('carpets') + 1); toast('Uçan xalça alındı!'); } } });
+  rows.push({ icon: (x, y) => hudIconCarpet(x, y, 20), label: 'Xalça ilə uçuş', sub: `startda bir toxun: xalça səni uçurub qabağa aparır · səndə: ${save.get('boosts')}`,
+    btn: `${tune.boost_cost}`, bread: true, can: save.get('bread') >= tune.boost_cost, act: () => { if (spend(tune.boost_cost)) { save.set('boosts', save.get('boosts') + 1); toast('Xalça ilə uçuş alındı!'); } } });
   rows.push({ icon: (x, y) => hudIconBox(x, y, 20), label: 'Nənənin bağlaması', sub: 'içində təsadüfi hədiyyə: çörək, nar, xalça',
     btn: `${tune.box_cost}`, bread: true, can: save.get('bread') >= tune.box_cost, act: openBox });
   return rows;
@@ -2190,9 +2224,14 @@ function charRows() {
       if (have >= need) { btn = 'Aç'; can = true; act = () => { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); }; } else btn = 'Kilidli'; }
     else if (c.tokens) { const need = tune[c.tokens], have = save.get('tokens'); sub = `${c.desc} · şəkərbura və paxlava: ${Math.min(have, need)}/${need} (Novruzda)`;
       if (have >= need) { btn = 'Aç'; can = true; act = () => { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); }; } else btn = 'Kilidli'; }
+    else if (c.price && !c.hunt && !c.stones && !c.sets) { btn = 'Kilidli'; }
     else if (c.cost) { btn = `${tune[c.cost]}`; bread = true; can = save.get('bread') >= tune[c.cost]; act = () => { if (spend(tune[c.cost])) { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); } }; }
-    else { const need = tune[c.sets], have = save.get('sets'); sub = `${c.desc} · ${have}/${need} tapşırıq dəsti`;
+    else if (c.sets) { const need = tune[c.sets], have = Math.floor((save.get('claims') || 0) / 3); sub = `${c.desc} · pulsuz: ${Math.min(have, need) * 3}/${need * 3} tapşırıq`;
       if (have >= need) { btn = 'Aç'; can = true; act = () => { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); }; } else btn = 'Kilidli'; }
+    if (!owned && btn === 'Kilidli' && c.price) { // no free way yet: buy with bread
+      const cost = tune[c.price]; btn = `${cost}`; bread = true; can = save.get('bread') >= cost;
+      act = () => { if (spend(cost)) { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); } };
+    }
     return { icon: (x, y) => hudIconHead(c, x, y, 20), label: c.name, sub, btn, bread, can, act, dim: !!c.soon };
   });
 }
@@ -2201,7 +2240,7 @@ function costumeRows() {
     const own = k.id === 'none' || save.get('costumes').includes(k.id), sel = (save.get('costume') || 'none') === k.id;
     let btn = sel ? 'Geyinib' : own ? 'Geyin' : `${tune.costume_cost}`, can = !sel && (own || save.get('bread') >= tune.costume_cost);
     const act = () => { if (!own) { if (!spend(tune.costume_cost)) return; save.set('costumes', [...save.get('costumes'), k.id]); } save.set('costume', k.id); setRunner(save.get('char')); toast(`Cırtdan: ${k.name}`); };
-    return { icon: (x, y) => hudIconHead({ ...CHARS[0], ...k.look }, x, y, 20), label: k.name, sub: k.id === 'none' ? 'qırmızı papaq, naxışlı jilet (bayramda bayram geyimi)' : 'Cırtdan üçün', btn, bread: !own, can, act };
+    return { icon: (x, y) => hudIconHead({ ...CHARS[0], ...k.look }, x, y, 20), label: k.name, sub: k.id === 'none' ? 'qırmızı papaq, naxışlı jilet' : 'Cırtdan üçün', btn, bread: !own, can, act };
   });
 }
 function leaderRows() {
@@ -2218,15 +2257,17 @@ function settingsRows() {
       act: () => { const ls = L.langs; save.set('lang', ls[(ls.indexOf(lang) + 1) % ls.length]); } },
     { icon: (x, y) => hudIconCheck(x, y, 16, !muted), label: 'Səslər', sub: muted ? 'söndürülüb' : 'açıq', btn: muted ? 'Aç' : 'Söndür', can: true, act: () => setMuted(!muted) },
     { icon: (x, y) => hudIconCheck(x, y, 16, save.get('music') !== false), label: 'Musiqi', sub: save.get('music') !== false ? 'açıq' : 'söndürülüb', btn: save.get('music') !== false ? 'Söndür' : 'Aç', can: true, act: () => save.set('music', save.get('music') === false) },
-    { icon: (x, y) => eventIcon('novruz', x, y, 16), label: 'Tədbirlər', sub: 'Novruz, Qış, Nar bayramı, Xəzər yayı', btn: 'Aç', can: true, act: () => openList('events') },
-    { icon: (x, y) => hudIconCarpet(x, y, 16), label: 'Geyimlər', sub: 'Cırtdanın Novruz, Qış və Dənizçi geyimləri', btn: 'Aç', can: true, act: () => openList('costumes') },
     { icon: (x, y) => hudIconBox(x, y, 16), label: 'Nağıl', sub: 'Cırtdanın hekayəsinə yenidən bax', btn: 'Bax', can: true, act: () => startStory(null) },
   ];
 }
 function cityRows() {
-  return CITIES.map(c => ({ icon: (x, y) => cityIcon(c.id, x, y, 18), label: c.name, sub: c.soon ? `${c.what} · tezliklə` : c.what, dim: !!c.soon,
-    btn: c.soon ? 'Tezliklə' : city() === c.id ? 'Seçilib' : 'Seç', can: !c.soon && city() !== c.id,
-    act: () => { save.set('city', c.id); reset(); toast(`${c.name}! Div səni orada da tapacaq`); } }));
+  return CITIES.map(c => {
+    const own = c.id === 'baku' || save.get('cities').includes(c.id), cost = CONFIG['city_' + c.id] ? tune['city_' + c.id] : 0, sel = city() === c.id;
+    const go = () => { save.set('city', c.id); reset(); toast(`${c.name}! Div səni orada da tapacaq`); };
+    return { icon: (x, y) => cityIcon(c.id, x, y, 18), label: c.name, sub: c.what,
+      btn: sel ? 'Seçilib' : own ? 'Seç' : `${cost}`, bread: !own, can: !sel && (own || save.get('bread') >= cost),
+      act: () => { if (!own) { if (!spend(cost)) return; save.set('cities', [...save.get('cities'), c.id]); } go(); } };
+  });
 }
 function cityIcon(id, x, y, r) {
   if (id === 'baku') { ctx.fillStyle = '#c9a06a'; ctx.fillRect(x - r * 0.45, y - r, r * 0.9, r * 1.9); ctx.fillRect(x - r * 0.9, y - r * 0.2, r * 0.5, r * 1.1); }
@@ -2256,8 +2297,10 @@ function eventIcon(id, x, y, r) {
 }
 function missionRows() {
   const h = huntState();
-  return [...currentMissions().map(m => ({ icon: (x, y) => hudIconCheck(x, y, 18, m.prog >= m.target), label: m.txt(m.target),
-    sub: m.prog >= m.target ? 'Bitdi!' : `${Math.floor(m.prog)} / ${m.target}${m.run ? ' (bir qaçışda)' : ''}`, prog: m.prog / m.target, btn: null })),
+  return [...currentMissions().map((m, i) => { const done = m.prog >= m.target;
+    return { icon: (x, y) => hudIconCheck(x, y, 18, done), label: m.txt(m.target),
+      sub: done ? 'Bitdi! Bas və mükafatı al' : `${Math.floor(m.prog)} / ${m.target}${m.run ? ' (bir qaçışda)' : ''} · mükafat: ${m.reward}`,
+      prog: done ? undefined : m.prog / m.target, btn: done ? `+${m.reward}` : null, bread: done, can: done, act: () => claimMission(i) }; }),
     { icon: (x, y) => { ctx.fillStyle = '#1f9e9a'; ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill(); buta(ctx, x, y + 2, 1.1, 0.4, '#f2d16b', '#0d5a58'); },
       label: 'Həftəlik ov: buta daşlarını tap', sub: h.open ? `${Math.min(h.got, h.need)} / ${h.need} · mükafat: ${save.get('chars').includes('melik') ? '3 bağlama və 1000 çörək' : 'Məlikməmməd'}` : 'Bu həftə bitdi! Gələn həftə yenisi', prog: h.open ? Math.min(1, h.got / h.need) : 1, btn: null }];
 }
@@ -2319,7 +2362,10 @@ function listScene(name, title, getRows, note) {
         const barW = 200, tx = x + 64, room = (r.btn ? w - rects[i].btn[2] - 12 : w) - 74 - (r.prog !== undefined && !narrow ? barW + 40 : 0) - (r.pips !== undefined && !narrow ? 120 : 0);
         fitLeft(r.label, tx, y + h * 0.34, narrow ? 19 : 24, '#fff4dc', room);
         fitLeft(r.sub, tx, y + h * 0.72, narrow ? 14 : 17, '#ffe6b0', room, 'normal');
-        if (r.pips !== undefined) for (let k = 0; k < MAX_LEVEL; k++) { ctx.fillStyle = k < r.pips ? '#ffcf4a' : 'rgba(255,244,220,0.25)'; rrect(x + w - 290 + k * 22, y + h / 2 - 7, 16, 14, 4); if (!narrow) ctx.fill(); }
+        if (r.pips !== undefined) for (let k = 0; k < MAX_LEVEL; k++) { // level marks: beside the button, or under the text on a phone
+          ctx.fillStyle = k < r.pips ? '#ffcf4a' : 'rgba(255,244,220,0.25)';
+          if (narrow) rrect(tx + k * 20, y + h - 11, 15, 7, 3); else rrect(x + w - 290 + k * 22, y + h / 2 - 7, 16, 14, 4); ctx.fill();
+        }
         if (r.prog !== undefined) {
           const [bx, by, bw2, bh] = narrow ? [tx, y + h - 9, w - 64 - 16, 6] : [x + w - barW - 30, y + h / 2 - 9, barW, 18]; // a phone: a thin bar under the text
           ctx.fillStyle = '#5a2a1a'; rrect(bx, by, bw2, bh, bh / 2); ctx.fill(); ctx.fillStyle = '#ffcf4a'; rrect(bx, by, Math.max(bh, bw2 * r.prog), bh, bh / 2); ctx.fill();
@@ -2375,10 +2421,10 @@ const scenes = {
   chars: listScene('chars', 'Personajlar', charRows, () => `İndi qaçan: ${charDef(save.get('char')).name}`),
   cities: listScene('cities', 'Şəhərlər', cityRows, () => 'Azərbaycan turu: Div səni hər şəhərdə qovur'),
   events: listScene('events', 'Tədbirlər', eventRows, () => 'Bayram küçələri bəzəyir; təqvimə görə özü açılır'),
-  costumes: listScene('costumes', 'Geyimlər', costumeRows, () => 'Bayramlarda Cırtdan özü bayram geyimini geyinir'),
+  costumes: listScene('costumes', 'Geyim dükanı', costumeRows, () => 'Cırtdan üçün geyimlər'),
   leaders: listScene('leaders', 'Liderlər', leaderRows, () => `${league()} · Rekord: ${save.get('best')} · onlayn reytinq server tələb edir (sonra)`),
   settings: listScene('settings', 'Ayarlar', settingsRows, null),
-  missions: listScene('missions', 'Tapşırıqlar', missionRows, () => `Xal vurğusu x${save.get('mmult')}: üç tapşırığı bitir, +1 qazan`),
+  missions: listScene('missions', 'Tapşırıqlar', missionRows, () => `Bitən tapşırığa bas, çörəyi al · hər 3 tapşırıq: vurğu +1 (indi x${save.get('mmult')})`),
   figures: {
     update(dt) { state.t += dt; },
     draw() {
@@ -2410,7 +2456,7 @@ const scenes = {
       if (anyPressed('ArrowUp', 'KeyW')) menuSel = (menuSel + MENU.length - 1) % MENU.length;
       if (pressed('Space')) { MENU[0][2](); return; }
       if (pressed('Enter')) { MENU[menuSel][2](); return; }
-      for (const [code, i] of [['Digit1', 1], ['Digit2', 2], ['Digit3', 3], ['Digit4', 4], ['Digit5', 5], ['Digit6', 6]]) if (pressed(code)) { MENU[i][2](); return; }
+      for (const [code, i] of [['Digit1', 1], ['Digit2', 2], ['Digit3', 3], ['Digit4', 4], ['Digit5', 5], ['Digit6', 6], ['Digit7', 7]]) if (pressed(code)) { MENU[i][2](); return; }
       for (let i = 0; i < MENU.length; i++) if (tapIn(...rects[i])) { MENU[i][2](); return; }
     },
     draw() {
@@ -2428,12 +2474,12 @@ const scenes = {
         ctx.globalAlpha = 1;
       });
 
-      { const wide = W >= 900, y = wide ? 290 : H - 466; // the day's word and the festival, under the title (beside the menu when wide)
+      { const wide = W >= 900, y = wide ? 290 : H - 500; // the day's word and the festival, under the title (beside the menu when wide)
         const cx = wide ? W * 0.24 : W / 2;
         outlined('Söz ovu: hərfləri yolda yığ', cx, y - 34, 20, '#ffe6b0');
         drawWord(cx, y, 28);
         const ev = EVENTS.find(e => e.id === activeEvent()); outlined(`${CITIES.find(c => c.id === city()).name}${ev ? ' · ' + ev.name : ''}`, cx, y + 38, 22, '#ffcf4a'); }
-      if (titleGift.t > 0) { ctx.globalAlpha = Math.min(1, titleGift.t); ctx.fillStyle = 'rgba(40,12,8,0.6)'; ctx.fillRect(0, 0, W, H); const bw = Math.min(W - 30, 620); text('Toxun və ya Enter', W / 2, H / 2 + 62, 18, '#ffe6b0', 'center', 'normal'); ctx.fillStyle = 'rgba(43,122,72,0.92)'; rrect((W - bw) / 2, H / 2 - 40, bw, 80, 18); ctx.fill(); hudIconBox((W - bw) / 2 + 40, H / 2, 20); fitLeft(titleGift.msg, (W - bw) / 2 + 72, H / 2, 24, '#fff4dc', bw - 90); ctx.globalAlpha = 1; }
+      if (titleGift.t > 0) { ctx.globalAlpha = Math.min(1, titleGift.t); ctx.fillStyle = 'rgba(40,12,8,0.6)'; ctx.fillRect(0, 0, W, H); const bw = Math.min(W - 30, 620), gl = wrapText(titleGift.msg, bw - 100, 22, 'bold'); text('Toxun və ya Enter', W / 2, H / 2 + 30 + gl.length * 16, 18, '#ffe6b0', 'center', 'normal'); const gh = 50 + gl.length * 28; ctx.fillStyle = 'rgba(43,122,72,0.92)'; rrect((W - bw) / 2, H / 2 - gh / 2, bw, gh, 18); ctx.fill(); hudIconBox((W - bw) / 2 + 40, H / 2, 20); gl.forEach((l, k) => text(l, (W - bw) / 2 + 72, H / 2 - (gl.length - 1) * 14 + k * 28, 22, '#fff4dc', 'left')); ctx.globalAlpha = 1; }
       const nb = W < 500; // a phone: smaller and spread so nothing touches
       text(`Rekord: ${save.get('best')}`, 16, H - 24, nb ? 17 : 22, '#fff4dc', 'left');
       hudIconBread(W - (nb ? 140 : 200), H - 26, 12); text(String(save.get('bread')), W - (nb ? 124 : 182), H - 24, nb ? 18 : 22, '#ffd77a', 'left');
@@ -2511,7 +2557,7 @@ let lastScene = null;
 function step() {
   if (scene !== lastScene) { lastTap = -1; sceneT = 0; lastScene = scene; } sceneT += STEP;
   if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
-  setMusic(scene === 'play' ? (state.dead ? null : state.power.simurq > 0 ? 'fly' : 'run') : scene === 'figures' || scene === 'over' ? null : 'menu');
+  setMusic(scene === 'play' ? (state.dead ? null : state.power.simurq > 0 || state.power.fly > 0 ? 'fly' : 'run') : scene === 'figures' || scene === 'over' ? null : 'menu');
   scenes[scene].update(STEP); hit.clear(); taps = [];
 }
 let last, acc = 0, ALPHA = 1, sceneT = 0; // ALPHA: how far the frame is between the last two steps

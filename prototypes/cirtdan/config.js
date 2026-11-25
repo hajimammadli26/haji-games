@@ -95,6 +95,22 @@ window.CONFIG = {
   league_gold: { value: 15000, min: 100, max: 200000, step: 500 },   // for the Gold league
   league_div: { value: 40000, min: 100, max: 500000, step: 1000 },   // for the Div league
 
+  // --- Prices in bread (the game's gold) -------------------------------------------------
+  city_sheki: { value: 2000, min: 0, max: 50000, step: 100 },
+  city_qebele: { value: 3000, min: 0, max: 50000, step: 100 },
+  city_naxcivan: { value: 4000, min: 0, max: 50000, step: 100 },
+  city_lenkeran: { value: 5000, min: 0, max: 50000, step: 100 },
+  city_quba: { value: 6000, min: 0, max: 50000, step: 100 },
+  city_qobustan: { value: 8000, min: 0, max: 50000, step: 100 },
+  kecel_cost: { value: 3000, min: 0, max: 50000, step: 100 },   // or free after enough missions
+  kosa_cost: { value: 8000, min: 0, max: 50000, step: 100 },
+  peri_cost: { value: 12000, min: 0, max: 50000, step: 100 },   // or free with magic stones
+  melik_cost: { value: 15000, min: 0, max: 50000, step: 100 },  // or free by winning the weekly hunt
+  mission_reward: { value: 150, min: 10, max: 5000, step: 10 }, // bread for claiming a finished mission (grows with each new one)
+  boost_cost: { value: 600, min: 0, max: 20000, step: 50 },     // bread for one 'Xalça ilə uçuş' start boost
+  boost_time: { value: 7, min: 2, max: 20, step: 0.5 },         // s the start boost carries Cırtdan through the air
+  boost_window: { value: 6, min: 1, max: 20, step: 0.5 },       // s at a run's start when the boost button shows
+
   // --- Score -----------------------------------------------------------------------------
   mult_every: { value: 500, min: 100, max: 2000, step: 50 },  // m per +1 multiplier (stand-in for missions)
   mult_cap: { value: 10, min: 1, max: 30, step: 1 },
