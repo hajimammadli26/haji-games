@@ -1,9 +1,9 @@
 # Art Bible: Cırtdan: Köhnə Bakıda Qaçış
 
-> **Status**: Draft
+> **Status**: Approved (all 9 sections, by the owner, 2026-11-25)
 > **Owned By**: art-director
 > **Last Updated**: 2026-11-25
-> **Art Director Sign-Off (AD-ART-BIBLE)**: [Not yet reviewed]
+> **Art Director Sign-Off (AD-ART-BIBLE)**: SKIPPED 2026-11-25 — solo mode
 
 `/art-bible` writes these nine sections in this order and replaces each
 section's `[To be designed]` line as that section is approved. A section still
@@ -321,6 +321,41 @@ measured (draws per frame, per city) before it ships.
 
 ## 9. Reference Direction
 
-[To be designed] — 3–5 references (games, films, art styles or artists). For
-each: the specific element to take from it, and what to avoid so the result
-does not read as a copy.
+**How to use:** a part is checked against the one reference that owns its job; a part that looks like a copy of
+any reference fails, however good it looks. Each reference does a different job.
+
+- **R1. Azerbaijani animated films** (the Azerbaijanfilm animation tradition; the owner's reference) — *characters and surfaces*.
+  - Take: flat, softly brushed backgrounds in a limited warm palette (the gouache feel behind Section 6); characters
+    from a few big shapes with snappy, theatrical poses; villains played for laughs — pompous, greedy, outwitted
+    (the Div's grin, "Hamm!", snoring); a storyteller's hand-made framing for the five story pictures.
+  - Avoid: a flat 2D look (we are toon-shaded 3D); faded-film colour, grain or filters; reproducing any film's
+    characters, costumes or scenes, including any existing Cırtdan cartoon (title, year, studio **to verify**; study only).
+  - Owner to send 3–5 frames; until then this reference stays general.
+- **R2. The Tabriz miniature school** (Sultan Muhammad, e.g. "The Court of Gayumars", Shahnama of Shah Tahmasp;
+  spelling **to verify**) — *composition*.
+  - Take: a high horizon and distance as stacked bands of flat colour (far backdrops, the flight view, the story
+    pictures); small jewel accents (lapis, turquoise, madder) in the carpet layer only, never Player Red or Bread Gold;
+    ornamental page borders for the story (big frames only, Section 7).
+  - Avoid: miniature flatness in the run (lanes need real 3D perspective); all-over detail and tiny figures (phones,
+    the draw-call budget); courtly or religious imagery; copying any painting.
+- **R3. Qarabağ carpet weaving** — *ornament and the UI frame*.
+  - Take: the grammar — a central medallion (göl) on a field, a main border with thin guard stripes, corner pieces —
+    for UI frames, the game-over card and story captions; the natural-dye palette (madder, indigo, walnut, cream),
+    the source of Madder; the buta as the signature motif.
+  - Avoid: pattern behind text, list rows or lane surfaces; photo-scanned carpets; synthetic bright reds (Player Red
+    is reserved); motifs of other weaving traditions. Carpet-type names **to verify** with a museum source before citing.
+- **R4. İçərişəhər (Baku Old City) architecture** — *massing and street shape*.
+  - Take: flat-roofed cubic sandstone houses, cantilevered wooden eyvans, şəbəkə windows; narrow streets two to three
+    storeys high with a slot of Caspian sky; qala walls and gates; Qız Qalası's cylinder and buttress as the one
+    skyline silhouette. Use the same method in every city: its own real massing (Section 6 test).
+  - Avoid: modern Baku, souvenir kitsch, "Arabian Nights" domes; realistic decay, grime or photo texture; fine
+    architectural detail at run distance (far houses are simple blocks, Section 8).
+- **R5. The 3D lane-runner genre** — *timing and lane width only*.
+  - Take, measured from play: camera height and tilt, lane spacing against character width, how far ahead an
+    obstacle must read at each speed, the speed ramp, lane-change and jump read time.
+  - Avoid everything visual: no art, characters, UI layout, logos, colour schemes or teen-graffiti style from any
+    runner; per the brief, no title from the genre is named here. The look comes only from R1–R4.
+
+*(az: R1 — Azərbaycan cizgi filmləri: boyanmış fonlar, iri formalı komik personajlar; R2 — Təbriz miniatürü: qat-qat
+üfüq və səhifə çərçivəsi (yalnız fon və nağıl); R3 — Qarabağ xalçası: göl, haşiyə, buta, təbii boyalar (ekran
+çərçivələri); R4 — İçərişəhər: daş evlər, eyvanlar, Qız Qalası silueti; R5 — qaçış janrı: yalnız ölçülər, rəsm yox.)*
