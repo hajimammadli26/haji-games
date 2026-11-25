@@ -85,6 +85,16 @@ window.CONFIG = {
   treat_worth: { value: 3, min: 1, max: 20, step: 1 },        // bread each of those treats is worth
   rain_count: { value: 700, min: 0, max: 3000, step: 50 },    // raindrops around the camera in Lənkəran
 
+  costume_cost: { value: 1500, min: 0, max: 20000, step: 100 }, // bread for each of Cırtdan's costumes
+  hunt_target: { value: 40, min: 5, max: 300, step: 5 },      // buta stones to find in a week's hunt
+  hunt_chance: { value: 0.12, min: 0, max: 1, step: 0.01 },   // chance per row of a buta stone
+  stone_chance: { value: 0.03, min: 0, max: 0.5, step: 0.01 },// chance per row of a magic stone (sehrli daş)
+  peri_stones: { value: 25, min: 1, max: 200, step: 1 },      // magic stones to unlock Pəri qız
+  milestones: { value: 1000, min: 200, max: 5000, step: 100 },// m between the Div's comic trips (1x, 2.5x, 5x, 10x this)
+  league_silver: { value: 5000, min: 100, max: 100000, step: 500 },  // best score for the Silver league
+  league_gold: { value: 15000, min: 100, max: 200000, step: 500 },   // for the Gold league
+  league_div: { value: 40000, min: 100, max: 500000, step: 1000 },   // for the Div league
+
   // --- Score -----------------------------------------------------------------------------
   mult_every: { value: 500, min: 100, max: 2000, step: 50 },  // m per +1 multiplier (stand-in for missions)
   mult_cap: { value: 10, min: 1, max: 30, step: 1 },

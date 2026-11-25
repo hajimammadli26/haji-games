@@ -15,6 +15,7 @@ After play: "Sürüt yerinde simurt tapa bilçirem oyunda gelmirem rastima . Dev
 After play: "Davam" (no play notes; the build went on to Qəbələ)
 After play: "Şəhərlərin hamisini birdən aç və davam ele  birde nağara sözün yiqmisam  qalib sehifede onu ele eleki her defe yiqa bilim"
 After play: "Oyunda bug var yagli corekden basqa nese ekranda var ve oyunda gelir oni yigirsan . Sonram herf yiqmaq ekranda gorunmesin daimi herfi gpturdukce görsensin ve itsin oynanamaqa mane olur oyundaki buglari aradan qaldir hamisini . ( google play ve app store saxla en axira hele isimiz çoxdu oyun tam duzelden sonraç keçeçeyik dizaym merhelesin personojıarin yerlerin ayri ayri duzeldecik her sheyi animasiyalar elave edeceyik ) telesme)"
+After play: "Senedde olan her sheyi duzelt sonram men oynadiqca gelub sene belli bir yerini duzeldeceç birde men qoşdumqum agentlerden istifade edirsen?"
 
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
@@ -71,6 +72,11 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - [x] Şəki, the first city of the Azerbaijan tour: whitewashed stone houses with red tiled roofs and deep wooden eyvans, the Xan sarayı and green mountains on the horizon, Şəki halvası worth 5 bread; chosen in Şəhərlər
 - [x] Qəbələ: a forest trail of packed earth and leaves, pines and autumn oaks, log huts, green mountains with a waterfall; stumps to jump, fallen trunks to slide under, mossy boulders to swerve round, fındıq worth 3 bread
 - [x] The whole Azerbaijan tour open: Naxçıvan (brick houses with turquoise bands, Möminə xatın türbəsi, İlandağ, salt crystals), Lənkəran (tea rows, rain, lighthouse, naringi), Quba (apple orchards, carpet looms, snowy Şahdağ, apples), Qobustan (carved rocks, mud volcanoes, the Caspian); each with its own obstacle looks and treat
+- [x] Costumes for Cırtdan (Novruz, Qış, Dənizçi; 1 500 bread each); a festival dresses him in its own
+- [x] Məlikməmməd (crown, cape, sword; won by the weekly hunt of 40 buta stones) and Pəri qız (wings, flower crown; 25 magic stones)
+- [x] Nənə's daily gift on the title; the Div's comic trips at 1 000, 2 500, 5 000 and 10 000 m with Cırtdan sticking his tongue out
+- [x] Liderlər: your best 10 runs and your league (Bürünc, Gümüş, Qızıl, Div liqası); Ayarlar: language, sound, music, festivals, costumes, the story
+- [x] Xəzər yayı: a seaside run (sand, umbrellas, the sea, old ships, oil derricks; sandcastles to jump, ice-cream kiosks to swerve), Cırtdan in his sailor suit
 - [x] Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good
 
 ## Your systems
@@ -80,17 +86,18 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 - Score multiplier from missions · in the slice
 - Nənənin dükanı (shop and upgrades) · in the slice
 - Unlockable characters · in the slice
-- Costumes, and characters that need events or magic stones (Məlikməmməd, Pəri qız) · later
+- Costumes, Məlikməmməd and Pəri qız · in the slice
 - Kosa, unlocked with Novruz sweets · in the slice
 - Missions · in the slice
 - Word hunt, repeatable · in the slice
-- Weekly hunt, daily gifts · later
-- Leaderboards and leagues · later
+- Weekly hunt, daily gifts · in the slice
+- Local leaderboard and leagues · in the slice
+- Online leaderboard · later (needs a server)
 - Festival events (Novruz, winter, nar bayramı) · in the slice
-- Xəzər yayı (needs a seaside level) · later
+- Xəzər yayı seaside run · in the slice
 - Azerbaijan tour: Şəki, Qəbələ, Naxçıvan, Lənkəran, Quba, Qobustan · in the slice
 - Intro story · in the slice
-- Comic scenes at milestones · later
+- Comic moments at milestones · in the slice
 - Music and voice lines · in the slice
 
 ## Keep

@@ -1,50 +1,81 @@
-time	2026-11-24 22:56:03
-keep	lines	0	pinned	0
-briefword	3D	unlisted
-checklist	L1	unlisted	-	Look: bright, cartoon 3D, low-poly with rounded chunky shapes; golden sandstone walls with şəbəkə lattice windows and wooden balconies, red-and-blue carpets with buta patterns, blue Caspian sky, Qız Qalası standing on the horizon. Cırtdan is tiny with a red papaq, patterned vest and a patched bread sack; the Div is big, furry, horned, round-bellied, with a club, comic not scary. Warm late-afternoon light. Every figure drawn, no emoji, no plain circles.	
-checklist	L2	unlisted	-	References: the GDD's own pages (characters, place, power-ups); the genre's 3D lane runners for timing and lane width only.	
-checklist	L3	unlisted	-	View: 3D · Camera: fixed behind and above the runner, looking down the street.	
-checklist	F1	unlisted	-	3 stone-street lanes, auto-run that speeds up, swipe and key controls	
-checklist	F2	unlisted	-	Jump and slide, with obstacles that each ask for one move: baskets and jugs (jump), carpet on ropes (slide), bazaar stalls (lane change), parked phaetons (lane change or ramp onto the roof), oncoming camel caravan, city-gate tunnel	
-checklist	F3	unlisted	-	The Div chasing behind: a side bump brings him close, a second one catches you	
-checklist	F4	unlisted	-	Yağ çörəyi in lines and arcs; rare nar	
-checklist	F5	unlisted	-	Power-ups: grandma's tray (magnet), magic çarıq (super jump), flying carpet (one-hit shield, double tap) (thin stand-in)	
-checklist	F6	unlisted	-	Score = distance × multiplier; best score kept between visits	
-checklist	F7	unlisted	-	Old-Baku scenery: sandstone houses, balconies, carpets, Qız Qalası on the skyline	
-checklist	F8	unlisted	-	Title, pause, mute, game over with continue-with-nar and restart	
-checklist	S1	unlisted	-	Div chasing behind · in the slice	
-checklist	S2	unlisted	-	Power-ups (Simurq, sehrli çarıq, nənənin sinisi, qoşa təndir, uçan xalça, kəndirbaz çubuğu) · thin stand-in *(guessed)*	
-checklist	S3	unlisted	-	Nar to continue after a crash · thin stand-in *(guessed)*	
-checklist	S4	unlisted	-	Score multiplier from missions · thin stand-in *(guessed)*	
-checklist	M1	unlisted	-	The title shows Cırtdan, grandma's line and the controls.	
-checklist	M2	unlisted	-	Enter or a tap: the Div bursts out behind and the run starts slow on an empty street with a row of bread to collect.	
-checklist	M3	unlisted	-	The first obstacles come one at a time with a beat to read each: a pile of baskets to jump, a carpet on a rope to slide under, a parked phaeton to swerve round.	
-checklist	M4	unlisted	-	By 40 seconds a ramp leads onto phaeton roofs with bread along them, and the first camel caravan walks toward you in one lane.	
-checklist	M5	unlisted	-	A side bump makes the Div loom up and the edges glow red; he drops back after a few seconds: the hook pays off.	
-checklist	C1	unlisted	-	The street is safe for the first 8 seconds; the first real trouble, two lanes blocked at once, comes at about 45 seconds.	
-checklist	C2	unlisted	-	Speed rises steadily to a cap around 2.5 minutes.	
-checklist	C3	unlisted	-	A head-on hit with a phaeton or caravan, or two side bumps close together, ends the run; a nar can be spent once per run to continue.	
-checklist	C4	unlisted	-	Later chunks mix moving caravans with roof routes and tunnels.	
+time	2026-11-25 00:29:58
+keep	lines	1	pinned	1
+keep	1	same	speed_start	10	10
+keep	1	same	speed_max	22	22
+keep	1	same	speed_ramp	0.08	0.08
+briefword	3D	shown	evidence/play.png
+checklist	L1	pass	evidence/play.png	Look: bright, cartoon 3D, low-poly with rounded chunky shapes; golden sandstone walls with şəbəkə lattice windows and wooden balconies, red-and-blue carpets with buta patterns, blue Caspian sky, Qız Qalası standing on the horizon. Cırtdan is tiny with a red papaq, patterned vest and a patched bread sack; the Div is big, furry, horned, round-bellied, with a club, comic not scary. Warm late-afternoon light. Every figure drawn, no emoji, no plain circles.	sandstone walls, şəbəkə windows, balconies, red/blue/green carpets with buta, blue sky; figures in figures.png; no Caspian sea in view (walled street)
+checklist	L2	pass	index.html:643	References: the GDD's own pages (characters, place, power-ups); the genre's 3D lane runners for timing and lane width only.	obstacle set and power-ups follow the GDD pages; lane width and timing from the genre's values in config.js
+checklist	L3	pass	evidence/play.png	View: 3D · Camera: fixed behind and above the runner, looking down the street.	3D, fixed camera behind and above looking down the street
+checklist	F1	pass	evidence/play-portrait.png	3 stone-street lanes, auto-run that speeds up, swipe and key controls	3 lanes with grooves; speed ramps (index.html:683); swipes and keys (index.html:141)
+checklist	F2	pass	evidence/figures.png	Jump and slide, with obstacles that each ask for one move: baskets and jugs (jump), carpet on ropes (slide), bazaar stalls (lane change), parked phaetons (lane change), hay carts (lane change or plank ramp onto the roof), oncoming camel caravan, city-gate tunnel	baskets/jugs, carpet on ropes, stall, phaeton, hay cart with plank ramp, camel caravan, city gate all drawn and used (index.html:643)
+checklist	F3	pass	evidence/play-portrait2.png	The Div chasing behind: a side bump brings him close, a second one catches you	stumble brings the Div close with red edges; a second stumble while close is caught (index.html:806)
+checklist	F4	pass	evidence/play.png	Yağ çörəyi in lines and arcs; rare nar	bread lines and arcs over baskets (index.html:707); nar pickup (index.html:774)
+checklist	F5	pass	index.html:922	Power-ups: grandma's tray (magnet), magic çarıq (super jump), qoşa təndir (x2), Simurq (flies high over the street for 8 s, bread in the sky), kəndirbaz çubuğu (big hops, bounces off obstacle tops), flying carpet (one-hit shield, double tap) (thin stand-in: upgrades later)	tray magnet, çarıq super jump, qoşa təndir x2, flying carpet on double tap (index.html:141); thin stand-in
+checklist	F6	pass	index.html:932	Score = distance × multiplier; best score kept between visits	score += speed x multiplier; best saved to localStorage (index.html:831)
+checklist	F7	pass	evidence/over.png	Old-Baku scenery: sandstone houses, balconies, carpets, Qız Qalası on the skyline	houses with balconies and carpets, city gate; Qız Qalası on the horizon (index.html:586)
+checklist	F8	pass	evidence/over.png	Title, pause, mute, game over with continue-with-nar and restart	title (title.png), pause and mute buttons, game over with continue-with-nar and restart
+checklist	F9	unlisted	-	A menu on the title: Oyna, Nənənin dükanı, Personajlar, Tapşırıqlar	
+checklist	F10	unlisted	-	Nənənin dükanı: 5 levels per power-up (longer each level), flying carpets to keep, Nənənin bağlaması (a random gift)	
+checklist	F11	unlisted	-	Characters: Cırtdan, Tıq-Tıq xanım (5 000 bread), Keçəl (3 mission sets), Kəndirbaz (10 000 bread); Məlikməmməd, Pəri qız, Kosa shown locked until their events	
+checklist	F12	unlisted	-	Music: a 6/8 dance in the Şur mode, synthesised tar, balaban and nağara over a modern kick; calm in the menu, faster with speed, epic with the Simurq	
+checklist	F13	unlisted	-	Voices: the Div's "Ay Cırtdaaan!" and "Hamm!", "Yenə sənsən?!", Cırtdan's giggle, sung by a small formant synth	
+checklist	F14	unlisted	-	The opening story in five staged pictures, from the GDD's intro (first Oyna, and Nağıl in the menu)	
+checklist	F15	unlisted	-	Word hunt: a word (NOVRUZ, XALÇA, TƏNDİR, NAĞARA...) lies in the street letter by letter, in order; spelling it gives Nənənin bağlaması and the next word starts at once, as many as you like; the day's first word keeps a streak of days (up to 3 bundles)	
+checklist	F16	unlisted	-	Festivals by the calendar or chosen in Tədbirlər: Novruz (bonfires to jump, səməni, şəkərbura and paxlava that unlock Kosa), Qış (snow, the Div in a scarf and hat), Nar bayramı (pomegranate trees, twice the nar); Xəzər yayı shown as coming	
+checklist	F17	unlisted	-	The Simurq feather in every run by about the 14th row, and power-ups more often (the Simurq was too rare to meet)	
+checklist	F18	unlisted	-	Run along the camels' backs; a hay cart with a ramp often waits in the next lane to jump across from; a head-on hit with the caravan still ends the run	
+checklist	F19	unlisted	-	Şəki, the first city of the Azerbaijan tour: whitewashed stone houses with red tiled roofs and deep wooden eyvans, the Xan sarayı and green mountains on the horizon, Şəki halvası worth 5 bread; chosen in Şəhərlər	
+checklist	F20	unlisted	-	Qəbələ: a forest trail of packed earth and leaves, pines and autumn oaks, log huts, green mountains with a waterfall; stumps to jump, fallen trunks to slide under, mossy boulders to swerve round, fındıq worth 3 bread	
+checklist	F21	unlisted	-	The whole Azerbaijan tour open: Naxçıvan (brick houses with turquoise bands, Möminə xatın türbəsi, İlandağ, salt crystals), Lənkəran (tea rows, rain, lighthouse, naringi), Quba (apple orchards, carpet looms, snowy Şahdağ, apples), Qobustan (carved rocks, mud volcanoes, the Caspian); each with its own obstacle looks and treat	
+checklist	F22	unlisted	-	Missions: three at a time from the GDD's list; finishing all three raises the base multiplier by one for good	
+checklist	S1	pass	evidence/play-portrait.png	Div chasing behind · in the slice	the Div runs behind at the start and after stumbles
+checklist	S2	pass	index.html:922	Power-ups (Simurq, sehrli çarıq, nənənin sinisi, qoşa təndir, uçan xalça, kəndirbaz çubuğu) · thin stand-in *(guessed)*	stand-in: 3 pickups + flying carpet; Simurq and kəndirbaz çubuğu not yet (later step 2)
+checklist	S3	pass	index.html:834	Nar to continue after a crash · thin stand-in *(guessed)*	spend nar to continue; cost doubles each time
+checklist	S4	pass	index.html:932	Score multiplier from missions · in the slice	stand-in: +1 multiplier every 500 m, capped at 10
+checklist	S5	unlisted	-	Nənənin dükanı (shop and upgrades) · in the slice	
+checklist	S6	unlisted	-	Unlockable characters · in the slice	
+checklist	S7	unlisted	-	Kosa, unlocked with Novruz sweets · in the slice	
+checklist	S8	unlisted	-	Missions · in the slice	
+checklist	S9	unlisted	-	Word hunt, repeatable · in the slice	
+checklist	S10	unlisted	-	Festival events (Novruz, winter, nar bayramı) · in the slice	
+checklist	S11	unlisted	-	Azerbaijan tour: Şəki, Qəbələ, Naxçıvan, Lənkəran, Quba, Qobustan · in the slice	
+checklist	S12	unlisted	-	Intro story · in the slice	
+checklist	S13	unlisted	-	Music and voice lines · in the slice	
+checklist	M1	pass	evidence/title.png	The title shows Cırtdan, grandma's line and the controls.	title with Cırtdan, Nənə, his saying and the controls
+checklist	M2	pass	evidence/play-portrait.png	Enter or a tap: the Div bursts out behind and the run starts slow on an empty street with a row of bread to collect.	the Div on screen for the first 3 s, a bread line on the empty street (index.html:676)
+checklist	M3	pass	index.html:710	The first obstacles come one at a time with a beat to read each: a pile of baskets to jump, a carpet on a rope to slide under, a bazaar stall to swerve round.	intro rows: baskets, carpet, stall, then mixed, cart ramp, phaeton
+checklist	M4	pass	index.html:722	By 40 seconds a plank ramp leads onto hay-cart roofs with bread along them, and the first camel caravan walks toward you in one lane.	the first caravan is forced at ~38 s; the cart ramp is intro row 5 (index.html:710)
+checklist	M5	pass	evidence/play-portrait2.png	A side bump makes the Div loom up and the edges glow red; he drops back after a few seconds: the hook pays off.	red edges and the Div close after a stumble; he falls back after div_near_time
+checklist	C1	pass	index.html:676	The street is safe for the first 8 seconds; the first real trouble, two lanes blocked at once, comes at about 45 seconds.	safe_start 8 s, double_block_after 45 s in config.js
+checklist	C2	pass	index.html:683	Speed rises steadily to a cap around 2.5 minutes.	10 to 22 m/s at 0.08 m/s per s: cap at 150 s
+checklist	C3	pass	evidence/over.png	A head-on hit with a phaeton or caravan, or two side bumps close together, ends the run; a nar can be spent to continue (the cost doubles each time in a run).	a head-on crash ends the run; continue with nar offered
+checklist	C4	pass	index.html:794	Later chunks mix moving caravans with roof routes and tunnels.	gates every 380-580 m; caravans and cart rows mixed in the random rows
 webgl	ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)
 browser	HeadlessChrome/158.0.0.0
-console	play	2000	[.WebGL-0x2b7c00345a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+saved	play	0	localstorage	cirtdan-save
+console	play	3213	[.WebGL-0x3d5c0037da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
 scene	play	0	title
-scene	play	1	play
+scene	play	41	story
+scene	play	81	play
+digits	log	18px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	4.307
 digits	log	bold 22px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	5.393
+digits	log	17px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	4.067
 digits	log	bold 40px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	9.805
 digits	log	bold 44px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	10.785
 digits	log	bold 34px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	8.334
 digits	log	bold 30px "Trebuchet MS", "Segoe UI", Verdana, sans-serif	proportional	7.354
-measure	step-time	play	0.042	5.000	474
-lane	play	stop	7.9	956
-console	play	0	[.WebGL-0x2b7c00345a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
-console	play	0	[.WebGL-0x2b7c00345a00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
+measure	step-time	play	0.047	5.300	312
+lane	play	stop	5.2	822
+console	play	0	[.WebGL-0x3d5c0037da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels
+console	play	0	[.WebGL-0x3d5c0037da00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)
 uncaught	play	0
 text	play	canvas	172,30,219,60	58.5	10.53	inside	x1
-text	play	canvas	1086,24,1254,58	64.5	10.53	inside	000081
-text	play	canvas	1235,85,1255,110	49.5	8.35	inside	4
+text	play	canvas	1086,24,1255,58	64.5	10.53	inside	000039
+text	play	canvas	1235,84,1255,111	49.5	8.35	inside	0
 text	play	canvas	1238,134,1255,157	43.5	7.29	inside	2
-text	play	canvas	80,660,236,682	31.5	4.46	inside	x1  iki toxunuş
+text	play	canvas	72,667,98,683	31.5	3.55	inside	x1
+text	play	canvas	438,576,843,604	42.0	4.30	inside	← → zolaq   ↑ tullan   ↓ sürüş
 screen	play	drawn
 shot	play	prototypes/cirtdan/evidence/play.png
-responds	changed	124
+responds	changed	144

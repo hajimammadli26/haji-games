@@ -59,7 +59,8 @@ const events = []; // window.game.events: anything the game wants a run to see
 // ---- Saved between visits (wrapped: storage may be blocked) -------------------------------
 const save = (() => {
   let d = { best: 0, nar: null, bread: 0, carpets: 0, levels: {}, chars: ['cirtdan'], char: 'cirtdan',
-    mset: 0, mprog: [0, 0, 0], mmult: 1, sets: 0, city: 'baku', wordDay: -1, wordGot: 0, wordStreak: 0, wordDone: -1, event: 'auto', tokens: 0 };
+    mset: 0, mprog: [0, 0, 0], mmult: 1, sets: 0, city: 'baku', wordDay: -1, wordGot: 0, wordStreak: 0, wordDone: -1, event: 'auto', tokens: 0,
+    costume: 'none', costumes: [], stones: 0, huntWeek: -1, huntGot: 0, huntDone: -1, giftDay: -1, runs: [], music: true, lang: 'az' };
   try { Object.assign(d, JSON.parse(localStorage.getItem('cirtdan-save') || '{}')); } catch (e) {}
   if (d.nar === null) d.nar = tune.start_nar;
   return {
@@ -247,7 +248,7 @@ function drum(t, kind, vol) { // nağara: dum (low, centre) and tek (high, rim);
   }
 }
 function scheduleMusic() {
-  if (!audio || muted || !music.mode || tune.music_volume <= 0) { if (audio) music.next = audio.ac.currentTime + 0.05; return; }
+  if (!audio || muted || !music.mode || tune.music_volume <= 0 || save.get('music') === false) { if (audio) music.next = audio.ac.currentTime + 0.05; return; }
   const ac = audio.ac;
   if (music.next < ac.currentTime) music.next = ac.currentTime + 0.05;
   const speed = state && scene === 'play' ? state.speed : tune.speed_start;
@@ -456,11 +457,18 @@ const CHARS = [ // the GDD's roster; locked ones need events the game does not h
   { id: 'tiqtiq', name: 'Tıq-Tıq xanım', desc: 'Cəld və şən qız', cost: 'tiqtiq_cost', hat: 'scarf', hatColor: '#d6362f', vest: '#2b7a48', trim: '#f2d16b', pants: '#7a2c3e', shirt: '#fbe7c6', braids: true },
   { id: 'kecel', name: 'Keçəl', desc: 'Zarafatcıl və bic oğlan', sets: 'kecel_sets', hat: 'bald', vest: '#7a2c3e', trim: '#f1c34a', pants: '#2a2a3a', shirt: '#e9e2cf' },
   { id: 'kendirbaz', name: 'Kəndirbaz', desc: 'İp üstündə oynayan cəld oğlan', cost: 'kendirbaz_cost', hat: 'tall', hatColor: '#f3ecd8', vest: '#c8322c', trim: '#1f9e9a', pants: '#1d4f9a', shirt: '#f2b632' },
-  { id: 'melik', name: 'Məlikməmməd', desc: 'Cəsur şahzadə, qılınclı', soon: 'Xüsusi tədbirdə açılacaq' },
-  { id: 'peri', name: 'Pəri qız', desc: 'Sehrli qanadlı qız', soon: 'Sehrli daşlarla açılacaq' },
+  { id: 'melik', name: 'Məlikməmməd', desc: 'Cəsur şahzadə, qılınclı', hunt: true, hat: 'crown', hatColor: '#d8a53a', vest: '#1d3f8a', trim: '#f2d16b', pants: '#2a2a3a', shirt: '#f3ecd8' },
+  { id: 'peri', name: 'Pəri qız', desc: 'Sehrli qanadlı qız', stones: 'peri_stones', hat: 'peri', hatColor: '#f2a6c8', vest: '#8ec9e8', trim: '#ffffff', pants: '#b48ad8', shirt: '#f7f0ff' },
   { id: 'kosa', name: 'Kosa', desc: 'Novruz bayramının obrazı', tokens: 'kosa_tokens', hat: 'kosa', hatColor: '#3b2414', vest: '#8a6a44', trim: '#f2d16b', pants: '#5a3a22', shirt: '#c9a46a' },
 ];
 const charDef = id => CHARS.find(c => c.id === id) || CHARS[0];
+const COSTUMES = [ // Cırtdan's costumes (GDD: Novruz, Qış, Dənizçi); a festival dresses him in its own when he wears his usual
+  { id: 'none', name: 'Adi geyim', look: {} },
+  { id: 'novruz', name: 'Novruz geyimi', look: { vest: '#2b7a48', trim: '#d6362f', hat: 'papaq', hatColor: '#c8221d', sprig: true } },
+  { id: 'winter', name: 'Qış geyimi', look: { vest: '#7a5a3a', trim: '#efe6cf', shirt: '#c9a46a', hat: 'winter', hatColor: '#efe6cf' } },
+  { id: 'sailor', name: 'Dənizçi geyimi', look: { vest: '#1d4f9a', trim: '#ffffff', shirt: '#ffffff', pants: '#1d4f9a', hat: 'sailor', hatColor: '#ffffff' } },
+];
+function costumeNow() { const c = save.get('costume'); if (c && c !== 'none') return c; let ev = null; try { ev = activeEvent(); } catch (e) { /* at load, before the festival list exists; reset() dresses him again */ } return ev === 'xezer' ? 'sailor' : ev === 'winter' ? 'winter' : ev === 'novruz' ? 'novruz' : 'none'; }
 function vestTex(base, trim) {
   return canvasTex(128, 128, (g, w, h) => {
     g.fillStyle = base; g.fillRect(0, 0, w, h);
@@ -469,7 +477,8 @@ function vestTex(base, trim) {
   });
 }
 function makeCirtdan(id = 'cirtdan') { // tiny, big eyes, a hat of his own, patterned vest, patched bread sack
-  const c = charDef(id);
+  const c = { ...charDef(id) };
+  if (id === 'cirtdan') Object.assign(c, (COSTUMES.find(k => k.id === costumeNow()) || COSTUMES[0]).look);
   const g = new THREE.Group(), rig = new THREE.Group(); g.add(rig);
   const skin = mat('skin', '#f2c08f'), shirt = mat('shirt' + c.shirt, c.shirt), pants = mat('pants' + c.pants, c.pants);
   const hip = new THREE.Group(); hip.position.y = 0.52; rig.add(hip);
@@ -477,7 +486,7 @@ function makeCirtdan(id = 'cirtdan') { // tiny, big eyes, a hat of his own, patt
   [legL, legR].forEach(l => { part(G.cyl, pants, 0.085, 0.38, 0.085, 0, -0.19, 0, l); part(G.sphere, mat('chariq', '#7a3b16'), 0.1, 0.07, 0.16, 0, -0.42, 0.04, l); });
   const torso = new THREE.Group(); torso.position.y = 0.52; rig.add(torso);
   part(G.cyl, shirt, 0.2, 0.42, 0.16, 0, 0.21, 0, torso);
-  part(G.box, M['vest' + c.id] || (M['vest' + c.id] = new THREE.MeshLambertMaterial({ map: c.id === 'cirtdan' ? TEX.vest : vestTex(c.vest, c.trim) })), 0.42, 0.36, 0.34, 0, 0.24, 0, torso);
+  part(G.box, M['vest' + c.vest + c.trim] || (M['vest' + c.vest + c.trim] = new THREE.MeshLambertMaterial({ map: c.vest === '#1f4f8f' && c.trim === '#f1c34a' ? TEX.vest : vestTex(c.vest, c.trim) })), 0.42, 0.36, 0.34, 0, 0.24, 0, torso);
   part(G.cyl, mat('belt', '#c0302a'), 0.215, 0.07, 0.175, 0, 0.04, 0, torso);
   const sack = part(G.sphere, mat('sack', '#c9a46a'), 0.24, 0.27, 0.16, 0, 0.26, 0.22, torso); // on his back (+z faces the camera)
   part(G.box, mat('patch', '#7d5a9b'), 0.5, 0.45, 0.1, 0.25, 0.2, 0.95, sack);
@@ -505,6 +514,22 @@ function makeCirtdan(id = 'cirtdan') { // tiny, big eyes, a hat of his own, patt
   } else if (c.hat === 'bald') { // Keçəl: a shiny bald head and a cheeky grin
     part(G.sphere, mat('baldShine', '#ffe7c4'), 0.1, 0.06, 0.08, -0.08, 0.44, -0.12, head);
     part(G.box, mat('smile', '#8a2a1c'), 0.18, 0.04, 0.02, 0, 0.05, -0.275, head);
+  } else if (c.hat === 'winter') { // a white fur hat with ear flaps
+    part(G.sphere, mat('kosaFur', '#efe6cf'), 0.3, 0.22, 0.3, 0, 0.38, 0, head);
+    [-0.27, 0.27].forEach(x => part(G.sphere, mat('kosaFur', '#efe6cf'), 0.08, 0.16, 0.12, x, 0.16, 0, head));
+  } else if (c.hat === 'sailor') { // a white sailor cap with a blue band
+    part(G.cyl, mat('sailorCap', '#ffffff'), 0.3, 0.1, 0.3, 0, 0.42, 0, head);
+    part(G.cyl, mat('sailorBand', '#1d4f9a'), 0.27, 0.07, 0.27, 0, 0.36, 0, head);
+    [-0.05, 0.05].forEach(x => part(G.box, mat('sailorBand', '#1d4f9a'), 0.04, 0.2, 0.02, x, 0.24, 0.28, head));
+  } else if (c.hat === 'crown') { // Məlikməmməd: a golden crown, a red cape, a sword at his side
+    part(G.cyl, mat('gold', '#d8a53a'), 0.22, 0.16, 0.22, 0, 0.45, 0, head);
+    for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; part(G.cone, mat('gold', '#d8a53a'), 0.05, 0.14, 0.05, Math.cos(a) * 0.2, 0.58, Math.sin(a) * 0.2, head); }
+    part(G.sphere, mat('ruby', '#c8221d'), 0.05, 0.05, 0.03, 0, 0.46, -0.22, head);
+    part(G.sphere, mat('hairDark', '#2a160c'), 0.28, 0.14, 0.2, 0, 0.3, 0.1, head);
+  } else if (c.hat === 'peri') { // Pəri qız: long light hair with a flower crown (her wings are on her back)
+    part(G.sphere, mat('periHair', '#e8c27a'), 0.32, 0.3, 0.3, 0, 0.25, 0.05, head);
+    part(G.box, mat('periHair', '#e8c27a'), 0.5, 0.55, 0.12, 0, -0.05, 0.2, head);
+    for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; part(G.sphere, mat('flower' + (i % 2), i % 2 ? '#f2a6c8' : '#ffffff'), 0.06, 0.05, 0.06, Math.cos(a) * 0.27, 0.42, Math.sin(a) * 0.27, head); }
   } else if (c.hat === 'kosa') { // Kosa: a tall pointed sheepskin hat, a little bell, a sheepskin coat
     part(G.cone, mat('kosaHat', '#3b2414'), 0.24, 0.7, 0.24, 0, 0.66, 0, head);
     part(G.torus, mat('kosaFur', '#efe6cf'), 0.24, 0.24, 0.45, 0, 0.33, 0, head).rotation.x = Math.PI / 2;
@@ -516,8 +541,12 @@ function makeCirtdan(id = 'cirtdan') { // tiny, big eyes, a hat of his own, patt
     part(G.sphere, mat('simRed', '#c8322c'), 0.07, 0.07, 0.07, 0, 0.75, 0, head);
     part(G.box, mat('hatBand', '#1f9e9a'), 0.41, 0.05, 0.41, 0, 0.38, 0, head);
   }
+  if (c.sprig) part(G.cone, mat('sprout', '#5fbf3a'), 0.04, 0.22, 0.04, 0.12, 0.62, 0, head);
+  if (c.hat === 'peri') [-1, 1].forEach(sd => { const w = part(G.sphere, new THREE.MeshLambertMaterial({ color: '#cfe8ff', transparent: true, opacity: 0.65 }), 0.32, 0.45, 0.04, sd * 0.25, 0.35, 0.3, torso); w.rotation.z = sd * 0.5; });
+  if (c.hat === 'crown') { part(G.box, mat('cape', '#a3241f'), 0.46, 0.55, 0.04, 0, 0.12, 0.2, torso); const sw = part(G.box, mat('steel', '#c8d0d8'), 0.04, 0.5, 0.05, 0.24, -0.1, 0.05, torso); sw.rotation.z = 0.3; part(G.box, mat('gold', '#d8a53a'), 0.14, 0.04, 0.06, 0.18, 0.13, 0.05, torso).rotation.z = 0.3; }
+  const tongue = part(G.box, mat('tongue', '#e05a6a'), 0.08, 0.03, 0.12, 0, 0.02, -0.32, head); tongue.visible = false; // stuck out at the Div
   blobShadow(g, 0.32);
-  g.userData = { rig, hip, torso, legL, legR, armL, armR, head };
+  g.userData = { rig, hip, torso, legL, legR, armL, armR, head, tongue };
   return g;
 }
 function makeDiv() { // huge, furry, horned, round belly, wooden club: comic, not scary
@@ -912,6 +941,46 @@ TEX.rockArt = canvasTex(256, 256, (g, w, h) => { // Qobustan: brown rock with ca
   for (let i = 0; i < 6; i++) { g.beginPath(); g.moveTo(70 + i * 22, 182); g.lineTo(70 + i * 22, 156); g.stroke(); }
   g.beginPath(); g.moveTo(150, 236); g.lineTo(200, 236); g.moveTo(160, 236); g.lineTo(158, 250); g.moveTo(190, 236); g.lineTo(192, 250); g.moveTo(200, 236); g.lineTo(210, 222); g.lineTo(205, 212); g.moveTo(208, 222); g.lineTo(218, 214); g.stroke(); // a goat
 });
+function makeBeach(side, rnd) { // Xəzər yayı: sand, striped umbrellas, the sea, now and then an old ship or an oil derrick
+  const g = new THREE.Group(), w = 6 + rnd() * 3;
+  part(G.box, mat('sand', '#f0d9a0'), 9, 0.12, w, side * 4.6, 0.06, 0, g);
+  const sea = part(G.plane, mat('sea', '#2c6fd1'), 70, w + 0.2, 1, side * 44, 0.02, 0, g); sea.rotation.x = -Math.PI / 2;
+  part(G.box, mat('foam', '#ffffff'), 0.3, 0.05, w, side * 9.1, 0.08, 0, g);
+  if (rnd() < 0.6) { const u = new THREE.Group(); u.position.set(side * (3 + rnd() * 4), 0, (rnd() - 0.5) * w); g.add(u);
+    part(G.cyl, mat('pole', '#e9e2cf'), 0.04, 2.2, 0.04, 0, 1.1, 0, u); part(G.cone, texMat('awning', TEX.awning), 1.2, 0.5, 1.2, 0, 2.3, 0, u); }
+  if (rnd() < 0.15) { const sh = new THREE.Group(); sh.position.set(side * (22 + rnd() * 10), 0, 0); g.add(sh); // an old wooden ship
+    part(G.box, mat('hull', '#6b4220'), 2.2, 1.4, 7, 0, 0.6, 0, sh); part(G.cyl, mat('pole', '#e9e2cf'), 0.08, 6, 0.08, 0, 4, 0, sh); part(G.plane, mat('sail', '#f6f2ea', { side: THREE.DoubleSide }), 3, 3.6, 1, 0, 4.2, 0.1, sh).rotation.y = Math.PI / 2; }
+  if (rnd() < 0.12) { const d = new THREE.Group(); d.position.set(side * (34 + rnd() * 12), 0, 0); g.add(d); // a neft buruğu in the water
+    [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([a, b]) => { const l = part(G.box, mat('derrick', '#3a3a40'), 0.12, 9, 0.12, a * 0.9, 4.5, b * 0.9, d); l.rotation.z = -a * 0.08; l.rotation.x = b * 0.08; });
+    for (let y = 1; y < 9; y += 2) part(G.box, mat('derrick', '#3a3a40'), 1.9 - y * 0.12, 0.08, 1.9 - y * 0.12, 0, y, 0, d); }
+  return { g, w };
+}
+function makeSandcastle() { // qum qalası: jump it
+  const g = new THREE.Group(), sand = mat('sandC', '#e8c98a');
+  part(G.box, sand, 1.3, 0.45, 0.9, 0, 0.22, 0, g);
+  [[-0.5, 0], [0.5, 0], [0, 0]].forEach(([x], i) => { part(G.cyl, sand, 0.2, 0.45 + (i === 2 ? 0.2 : 0), 0.2, x, 0.6 + (i === 2 ? 0.1 : 0), 0, g); part(G.cone, sand, 0.22, 0.2, 0.22, x, 0.92 + (i === 2 ? 0.2 : 0), 0, g); });
+  part(G.box, mat('flagRed', '#c8221d'), 0.18, 0.12, 0.02, 0.08, 1.32, 0, g);
+  blobShadow(g, 0.8); return g;
+}
+function makeKiosk() { // a dondurma kiosk: swerve round it
+  const g = new THREE.Group();
+  part(G.box, mat('kiosk', '#f6f2ea'), 1.7, 2.0, 1.4, 0, 1.0, 0, g);
+  part(G.box, mat('kioskBand', '#2c6fd1'), 1.72, 0.3, 1.42, 0, 1.6, 0, g);
+  const roof = part(G.cone, texMat('awning', TEX.awning), 1.3, 0.7, 1.3, 0, 2.4, 0, g); roof.rotation.y = Math.PI / 4;
+  part(G.cone, mat('cone', '#d9a24a'), 0.18, 0.5, 0.18, 0, 2.95, 0, g).rotation.x = Math.PI; part(G.sphere, mat('scoop', '#f2a6c8'), 0.22, 0.2, 0.22, 0, 3.25, 0, g);
+  blobShadow(g, 1.0); return g;
+}
+function makeButaStone() { // the weekly hunt's buta stone: a turquoise tile with a carved buta
+  const g = new THREE.Group();
+  if (!TEX.butaStone) TEX.butaStone = canvasTex(128, 128, (c, w, h) => { c.fillStyle = '#1f9e9a'; c.fillRect(0, 0, w, h); buta(c, 64, 70, 4, 0.4, '#f2d16b', '#0d5a58'); });
+  part(G.cyl, texMat('butaStone', TEX.butaStone), 0.32, 0.12, 0.32, 0, 0, 0, g).rotation.x = Math.PI / 2;
+  return g;
+}
+function makeMagicStone() { // a sehrli daş: a glowing violet crystal
+  const g = new THREE.Group();
+  part(G.octa || (G.octa = new THREE.OctahedronGeometry(1)), mat('magic', '#b48ad8', { emissive: '#7a3ad8', emissiveIntensity: 0.7, flatShading: true }), 0.2, 0.34, 0.2, 0, 0, 0, g);
+  return g;
+}
 const fogless = g => { g.traverse(m => { if (m.material) { m.material = m.material.clone(); m.material.fog = false; } }); return g; };
 const hills = (g, cols, n, base, peakCol) => { for (let i = 0; i < n; i++) part(G.cone, mat('hill' + cols[i % 2], cols[i % 2], { flatShading: true }), 34 + i * 5, base + (i % 3) * 18, 34, -120 + i * (240 / n), base / 2, -40 - (i % 2) * 25, g); if (peakCol) part(G.cone, mat('peak' + peakCol, peakCol, { flatShading: true }), 12, 16, 12, -10, base + 34, -55, g); };
 function makeHouseNax(side, rnd) { // flat-roofed brick houses, pointed-arch turquoise windows
@@ -1113,6 +1182,7 @@ function makeQebeleBack() { // mountains, a waterfall, the forest on the horizon
 function makeHouse(side, rnd) {
   if (city() === 'sheki') return makeHouseSheki(side, rnd);
   if (city() === 'qebele') return makeForest(side, rnd);
+  if (activeEvent() === 'xezer' && side < 0) return makeBeach(side, rnd);
   if (CITY_LOOK[city()]) return CITY_LOOK[city()].house(side, rnd);
   const g = new THREE.Group(), h = 5 + rnd() * 5, w = 5 + rnd() * 3, d = 5;
   const wallM = texMat('wallM', TEX.wall);
@@ -1170,7 +1240,7 @@ const fly3 = makeFlyCarpet(); fly3.visible = false; player3.add(fly3); fly3.posi
 const nene3 = makeNene(); nene3.visible = false; scene3.add(nene3);
 const simurq3 = makeSimurq(); simurq3.visible = false; scene3.add(simurq3);
 const pole3 = makePole(); pole3.visible = false; pole3.scale.setScalar(0.7); player3.add(pole3); pole3.position.set(0, 0.95, -0.2);
-function setRunner(id) { // the chosen character runs from now on
+function setRunner(id) { // the chosen character runs from now on (rebuilt too when a costume or festival changes the look)
   save.set('char', id);
   scene3.remove(player3); player3 = makeCirtdan(id); player3.add(fly3, pole3); scene3.add(player3);
 }
@@ -1260,7 +1330,7 @@ const EVENTS = [
   { id: 'novruz', name: 'Novruz bayramı', when: '15 Mart – 5 Aprel', what: 'tonqallar, səməni, şəkərbura və paxlava; Kosa açılır', from: [3, 15], to: [4, 5] },
   { id: 'winter', name: 'Qış (Yeni il)', when: '15 Dekabr – 31 Yanvar', what: 'qar yağır, Div qış paltarında', from: [12, 15], to: [1, 31] },
   { id: 'nar', name: 'Nar bayramı', when: '20 Oktyabr – 10 Noyabr', what: 'Göyçay nar bağları, nar ikiqat çox düşür', from: [10, 20], to: [11, 10] },
-  { id: 'xezer', name: 'Xəzər yayı', when: 'İyun – Avqust', what: 'dənizkənarı səviyyə', soon: true },
+  { id: 'xezer', name: 'Xəzər yayı', when: 'İyun – Avqust', what: 'dənizkənarı: qum qalaları, dondurma, gəmilər, neft buruqları; Cırtdan dənizçi geyimində', from: [6, 1], to: [8, 31] },
 ];
 function calendarEvent() { // the festival the date is in, if any (the clock only picks the theme, never the play)
   const d = new Date(), md = (d.getMonth() + 1) * 100 + d.getDate();
@@ -1277,6 +1347,26 @@ const WORDS = ['NOVRUZ', 'XALÇA', 'TƏNDİR', 'QALA', 'TAR', 'PAXLAVA', 'ŞƏK�
 function today() { const p = Number(params.get('day')); if (p) return p; const d = new Date(); return Math.floor((d.getTime() - d.getTimezoneOffset() * 60000) / 86400000); }
 function dayWord() { // the word being hunted: the day picks where the list starts, each word spelled moves to the next
   const w = WORDS[(today() + (save.get('wordN') || 0)) % WORDS.length]; return { word: w, got: Math.min(save.get('wordGot'), w.length - 1), done: false };
+}
+// ---- The weekly hunt (buta stones; the first one won unlocks Məlikməmməd), magic stones, Nənə's daily gift --
+function huntState() {
+  const week = Math.floor(today() / 7);
+  if (save.get('huntWeek') !== week) { save.put('huntWeek', week); save.put('huntGot', 0); }
+  return { got: save.get('huntGot'), need: tune.hunt_target, open: save.get('huntDone') !== week };
+}
+function takeButa() {
+  const h = huntState(); save.put('huntGot', h.got + 1); state.countT = 1.5; state.countKind = 'buta'; sfx.bread();
+  if (h.got + 1 >= h.need) {
+    save.put('huntDone', Math.floor(today() / 7));
+    if (!save.get('chars').includes('melik')) { save.put('chars', [...save.get('chars'), 'melik']); banner('Həftəlik ov bitdi! Məlikməmməd açıldı!'); }
+    else { const g = [gift(), gift(), gift()]; save.put('bread', save.get('bread') + 1000); banner(`Həftəlik ov bitdi! ${g.join(', ')}, 1000 çörək`); }
+    state.bannerT = 3.5; sfx.power();
+  }
+  save.flush();
+}
+function dailyGift() { // once a day, on the title: Nənə gives a bundle
+  if (save.get('giftDay') === today()) return null;
+  save.put('giftDay', today()); const g = gift(); save.flush(); return g;
 }
 function gift() { // a free Nənənin bağlaması; says what was in it
   const r = rng();
@@ -1319,6 +1409,7 @@ function themeWorld() { // the street dressed for the festival
   if (rain) rain.visible = !!(look && look.rain && ev !== 'winter');
   if (snow) snow.visible = ev === 'winter';
   divWinter.visible = ev === 'winter';
+  setRunner(save.get('char')); // a festival may dress Cırtdan in its costume
   tower.visible = city() === 'baku'; for (const id in BACKS) BACKS[id].visible = city() === id;
   street.material.map = city() === 'qebele' || (look && look.map === 'trail') ? TEX.trail : TEX.cobble; street.material.needsUpdate = true;
   if (look && ev !== 'winter') M.cobble.color.set(look.tint);
@@ -1359,7 +1450,7 @@ function speedAt(t) { return Math.min(tune.speed_max, tune.speed_start + tune.sp
 function addObstacle(kind, lane, s0, opts = {}) {
   const k = KIND[kind];
   let mesh;
-  const forest = city() === 'qebele', swap = (CITY_LOOK[city()] || {}).swap || {};
+  const forest = city() === 'qebele', swap = activeEvent() === 'xezer' ? { basket: makeSandcastle, stall: makeKiosk } : (CITY_LOOK[city()] || {}).swap || {};
   if (swap[kind]) mesh = swap[kind]();
   if (mesh) { /* the city's own look */ }
   else if (kind === 'basket') mesh = forest ? makeStump() : makeBaskets();
@@ -1379,7 +1470,7 @@ function addObstacle(kind, lane, s0, opts = {}) {
   return o;
 }
 function addPickup(kind, lane, s, y) {
-  const mesh = kind === 'treat' ? CITY_LOOK[city()].treat[1]() : kind === 'finduq' ? makeFinduq() : kind === 'halva' ? makeHalva() : kind === 'letter' ? makeLetter(dayWord().word[dayWord().got]) : kind === 'sekerbura' ? makeSekerbura() : kind === 'paxlava' ? makePaxlava() : kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? makePole() : makeTendir();
+  const mesh = kind === 'buta' ? makeButaStone() : kind === 'stone' ? makeMagicStone() : kind === 'treat' ? CITY_LOOK[city()].treat[1]() : kind === 'finduq' ? makeFinduq() : kind === 'halva' ? makeHalva() : kind === 'letter' ? makeLetter(dayWord().word[dayWord().got]) : kind === 'sekerbura' ? makeSekerbura() : kind === 'paxlava' ? makePaxlava() : kind === 'bread' ? makeBread() : kind === 'nar' ? makeNar() : kind === 'magnet' ? makeSini() : kind === 'shoe' ? makeChariq() : kind === 'simurq' ? makeFeather() : kind === 'pole' ? makePole() : makeTendir();
   const p = { kind, lane, x: laneX(lane), s, y, mesh, taken: false, spin: rng() * 6 };
   mesh.position.set(p.x, y, -s); worldRoot.add(mesh); pickups.push(p);
 }
@@ -1477,6 +1568,8 @@ function genRow() {
     else if (!gen.simurqs && gen.rows >= tune.simurq_first_row) { special = 'simurq'; gen.simurqs = 1; } // every run meets the Simurq early
     else if (r < tune.nar_chance + tune.power_chance && gen.rows > INTRO.length) { special = rng() < tune.simurq_share ? 'simurq' : ['magnet', 'shoe', 'double', 'pole'][rng() * 4 | 0]; if (special === 'simurq') gen.simurqs = (gen.simurqs || 0) + 1; }
     if (special) { const k = Math.min(3, n - 1); addPickup(special, l, slot(k), 1.0); taken.add(k); }
+    if (huntState().open && gen.rows > INTRO.length && rng() < tune.hunt_chance) { const k = n - 1; if (!taken.has(k)) { addPickup('buta', l, slot(k), 0.8); taken.add(k); } }
+    if (gen.rows > INTRO.length && rng() < tune.stone_chance) { const k = Math.min(2, n - 1); if (!taken.has(k)) { addPickup('stone', l, slot(k), 1.0); taken.add(k); } }
     if (gen.rows > 3 && rng() < tune.letter_chance && !pickups.some(p => p.kind === 'letter' && !p.taken)) {
       const other = freeL.filter(x => x !== l);
       if (other.length) addPickup('letter', other[rng() * other.length | 0], s + 1, 1.1); // a lane of its own
@@ -1552,6 +1645,7 @@ function endRun() {
   save.flush();
   save.set('bread', save.get('bread') + state.bread);
   if (state.score > save.get('best')) { save.set('best', Math.floor(state.score)); state.newBest = true; }
+  const d = new Date(); save.set('runs', [...save.get('runs'), { score: Math.floor(state.score), bread: state.bread, char: save.get('char'), city: city(), date: `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}` }].sort((a, b) => b.score - a.score).slice(0, 10));
   state.gained = state.dead === 'caught' ? 'Div səni tutdu!' : 'Bam! Div səni tutdu!';
 }
 function continueRun() { // spend nar: the Div backs off, the street ahead is cleared a little
@@ -1660,6 +1754,8 @@ function updateRun(dt) {
       p.taken = true;
       if (p.kind === 'bread') { st.bread++; sfx.bread(); mission('runBread', st.bread); mission('bread', 1); }
       else if (p.kind === 'letter') takeLetter();
+      else if (p.kind === 'buta') takeButa();
+      else if (p.kind === 'stone') { save.put('stones', save.get('stones') + 1); save.flush(); st.countT = 1.5; st.countKind = 'stone'; sfx.nar(); }
       else if (p.kind === 'treat') { st.bread += tune.treat_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.treat_worth); }
       else if (p.kind === 'finduq') { st.bread += tune.nut_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.nut_worth); }
       else if (p.kind === 'halva') { st.bread += tune.halva_worth; sfx.bread(); mission('runBread', st.bread); mission('bread', tune.halva_worth); }
@@ -1680,10 +1776,14 @@ function updateRun(dt) {
   // power-ups and score
   for (const k in st.power) st.power[k] = Math.max(0, st.power[k] - dt);
   st.carpet = Math.max(0, st.carpet - dt); st.invuln = Math.max(0, st.invuln - dt);
+  for (const k of [1, 2.5, 5, 10]) if (st.prevS < tune.milestones * k && st.s >= tune.milestones * k) { // a comic moment
+    st.tripT = 1.6; st.tongueT = 1.4; st.divT = 0; banner(k === 1 ? 'Div büdrədi! Hə-hə!' : k === 2.5 ? 'Div yıxıldı, Cırtdan dil çıxardı!' : k === 5 ? 'Div çarığını itirdi!' : 'Div yoruldu, amma əl çəkmir!'); say.hiHi();
+  }
+  st.tripT = Math.max(0, (st.tripT || 0) - dt); st.tongueT = Math.max(0, (st.tongueT || 0) - dt);
   st.mult = Math.min(tune.mult_cap, save.get('mmult') + Math.floor(st.s / tune.mult_every));
   mission('runDist', st.s);
   st.score += st.speed * dt * st.mult * (st.power.double > 0 ? 2 : 1);
-  st.bannerT = Math.max(0, st.bannerT - dt); st.wordT = Math.max(0, (st.wordT || 0) - dt); st.tokenT = Math.max(0, (st.tokenT || 0) - dt); st.flash = Math.max(0, st.flash - dt * 2);
+  st.bannerT = Math.max(0, st.bannerT - dt); st.wordT = Math.max(0, (st.wordT || 0) - dt); st.countT = Math.max(0, (st.countT || 0) - dt); st.tokenT = Math.max(0, (st.tokenT || 0) - dt); st.flash = Math.max(0, st.flash - dt * 2);
   st.stepT += dt * st.speed / 3.2;
   if (st.grounded && st.slide <= 0 && st.stepT > 1) { st.stepT = 0; sfx.step(); }
   if (Math.floor(st.s / tune.mult_every) !== Math.floor(st.prevS / tune.mult_every)) banner(`Vurğu x${st.mult}!`);
@@ -1708,7 +1808,8 @@ function poseRunner(g, u, t) { // run cycle, jump tuck, slide
     r.rig.position.y = Math.abs(run) * 0.06;
   }
   r.torso.rotation.x = st.slide > 0 ? 0 : -0.12;
-  r.head.rotation.y = state.divT > 0 ? Math.PI * 0.55 + Math.sin(t * 3) * 0.25 : 0; // glances back at the Div, face showing
+  r.head.rotation.y = state.tongueT > 0 ? Math.PI * 0.9 : state.divT > 0 ? Math.PI * 0.55 + Math.sin(t * 3) * 0.25 : 0; // glances back at the Div, face showing
+  if (r.tongue) r.tongue.visible = state.tongueT > 0;
 }
 function poseDiv(g, t, speed) {
   const r = g.userData, run = Math.sin(t * (4 + speed * 0.3));
@@ -1738,10 +1839,12 @@ function drawWorld() {
   else player3.rotation.x = 0;
   // the Div behind, a little to the side so you see him and Cırtdan both
   let gap = st.divGap;
+  if (st.tripT > 0) gap = tune.div_near_gap + (1.6 - st.tripT) * 5; // he pops up close, trips and tumbles away
   if (st.dead) gap = Math.max(0.6, tune.div_near_gap - st.deadT * 3);
   div3.position.set(x * 0.6 + (st.dead ? 0 : -0.9), 0, -(s - gap)); div3.rotation.y = Math.PI; // runs toward -z, his back to the camera
   div3.visible = gap < tune.div_far_gap - 1;
   poseDiv(div3, animT, st.speed);
+  div3.rotation.x = st.tripT > 0 ? -Math.min(1.3, (1.6 - st.tripT) * 2.5) : 0;
   if (st.dead && st.deadT > 0.4) { div3.userData.armR.rotation.x = -2.6; div3.userData.armL.rotation.x = -2.6; }
   // pickups spin and bob; taken ones shrink away
   for (const p of pickups) {
@@ -1863,6 +1966,12 @@ function drawHud() {
   if (st.wordT > 0 && st.wordShow) { // the word shows for a moment when a letter is taken, then fades away
     ctx.globalAlpha = Math.min(1, st.wordT / 0.5); drawWord(W / 2, H * 0.36, W < 700 ? 30 : 38, st.wordShow); ctx.globalAlpha = 1;
   }
+  if (st.countT > 0) { // buta stones and magic stones: the count shows for a moment
+    ctx.globalAlpha = Math.min(1, st.countT / 0.5); const y = W < 700 ? 246 : 234;
+    if (st.countKind === 'buta') { ctx.fillStyle = '#1f9e9a'; ctx.beginPath(); ctx.arc(W - 168, y, 14, 0, Math.PI * 2); ctx.fill(); buta(ctx, W - 168, y + 2, 1.1, 0.4, '#f2d16b', '#0d5a58'); outlined(`${huntState().got}/${tune.hunt_target}`, W - 24, y, 26, '#bff0ee', 'right'); }
+    else { ctx.fillStyle = '#b48ad8'; ctx.beginPath(); ctx.moveTo(W - 168, y - 16); ctx.lineTo(W - 156, y); ctx.lineTo(W - 168, y + 16); ctx.lineTo(W - 180, y); ctx.fill(); outlined(`${save.get('stones')}`, W - 24, y, 26, '#e6d6ff', 'right'); }
+    ctx.globalAlpha = 1;
+  }
   if (st.tokenT > 0) { // Novruz sweets: the count shows for a moment when one is taken
     ctx.globalAlpha = Math.min(1, st.tokenT / 0.5); const y = W < 700 ? 208 : 196; drawSweet(W - 168, y, 14); outlined(String(save.get('tokens')), W - 24, y, 28, '#ffe6b0', 'right'); ctx.globalAlpha = 1;
   }
@@ -1891,24 +2000,24 @@ function titleCamera(t) { // the title: Cırtdan and Nənə in the street, the M
   player3.rotation.set(0, 0, 0); nene3.visible = false;
 }
 const FIGS = [ // ?scene=figures: every figure side by side, its name under it
-  ['Cırtdan', makeCirtdan, 1.6], ['Tıq-Tıq', () => makeCirtdan('tiqtiq'), 1.6], ['Keçəl', () => makeCirtdan('kecel'), 1.6], ['Kəndirbaz', () => makeCirtdan('kendirbaz'), 1.6], ['Kosa', () => makeCirtdan('kosa'), 1.6], ['Div', makeDiv, 0.75], ['Nənə', makeNene, 1.4], ['Dəvə karvanı', makeCamel, 0.8],
+  ['Cırtdan', makeCirtdan, 1.6], ['Tıq-Tıq', () => makeCirtdan('tiqtiq'), 1.6], ['Keçəl', () => makeCirtdan('kecel'), 1.6], ['Kəndirbaz', () => makeCirtdan('kendirbaz'), 1.6], ['Kosa', () => makeCirtdan('kosa'), 1.6], ['Məlik', () => makeCirtdan('melik'), 1.6], ['Pəri', () => makeCirtdan('peri'), 1.6], ['Div', makeDiv, 0.75], ['Nənə', makeNene, 1.4], ['Dəvə karvanı', makeCamel, 0.8],
   ['Fayton', makePhaeton, 0.55], ['Yük arabası', () => makeCart(4), 0.6], ['Nərdivan', makeRamp, 0.6],
   ['Səbət və küp', makeBaskets, 1.2], ['Xalça ipi', () => makeCarpetRope(TEX.carpetRed), 0.75], ['Çadır', makeStall, 0.7],
   ['Yağ çörəyi', makeBread, 2.4], ['Nar', makeNar, 2.4], ['Sini', makeSini, 2.2], ['Çarıq', makeChariq, 2.4],
-  ['Təndir', makeTendir, 2.4], ['Simurq', makeSimurq, 0.85], ['Lələk', makeFeather, 1.6], ['Çubuq', makePole, 0.9], ['Tonqal', makeBonfire, 1.1], ['Səməni', makeSemeni, 1.6], ['Şəkərbura', makeSekerbura, 2.4], ['Paxlava', makePaxlava, 2.6], ['Hərf', () => makeLetter('N'), 1.6], ['Nar ağacı', makeNarTree, 0.75], ['Halva', makeHalva, 2.6], ['Şəki evi', () => makeHouseSheki(1, () => 0.5).g, 0.22], ['Kötük', makeStump, 1.3], ['Budaq', makeBranch, 0.75], ['Qaya', makeBoulder, 0.8], ['Fındıq', makeFinduq, 2.6], ['Duz', makeSaltPile, 1.1], ['Naringi', makeTangerine, 2.6], ['Dəzgah', makeLoom, 0.75], ['Qutu', makeAppleCrates, 1.1], ['Vulkan', makeMudVolcano, 1.1], ['Qayaüstü', makeArtBoulder, 0.75], ['Daş tağ', makeRockArch, 0.75], ['Şam ağacı', () => makePine(1), 0.55], ['Uçan xalça', makeFlyCarpet, 1.1], ['Darvaza', makeGate, 0.16], ['Qız Qalası', makeTower, 0.05],
+  ['Təndir', makeTendir, 2.4], ['Simurq', makeSimurq, 0.85], ['Lələk', makeFeather, 1.6], ['Çubuq', makePole, 0.9], ['Tonqal', makeBonfire, 1.1], ['Səməni', makeSemeni, 1.6], ['Şəkərbura', makeSekerbura, 2.4], ['Paxlava', makePaxlava, 2.6], ['Hərf', () => makeLetter('N'), 1.6], ['Nar ağacı', makeNarTree, 0.75], ['Halva', makeHalva, 2.6], ['Şəki evi', () => makeHouseSheki(1, () => 0.5).g, 0.22], ['Kötük', makeStump, 1.3], ['Budaq', makeBranch, 0.75], ['Qaya', makeBoulder, 0.8], ['Fındıq', makeFinduq, 2.6], ['Duz', makeSaltPile, 1.1], ['Naringi', makeTangerine, 2.6], ['Dəzgah', makeLoom, 0.75], ['Qutu', makeAppleCrates, 1.1], ['Vulkan', makeMudVolcano, 1.1], ['Qayaüstü', makeArtBoulder, 0.75], ['Daş tağ', makeRockArch, 0.75], ['Qum qalası', makeSandcastle, 1.1], ['Dondurma', makeKiosk, 0.75], ['Buta daşı', makeButaStone, 2.4], ['Sehrli daş', makeMagicStone, 2.4], ['Şam ağacı', () => makePine(1), 0.55], ['Uçan xalça', makeFlyCarpet, 1.1], ['Darvaza', makeGate, 0.16], ['Qız Qalası', makeTower, 0.05],
 ];
 let figGroup = null, figLabels = [];
 function buildFigures() {
   figGroup = new THREE.Group(); scene3.add(figGroup); figLabels = [];
-  const cols = 11;
+  const cols = 12;
   FIGS.forEach(([name, make, sc], i) => {
     const m = make(); m.scale.setScalar(sc);
     const col = i % cols, row = i / cols | 0;
-    const x = (col - (cols - 1) / 2) * 2.0, y = 6.3 - row * 2.4;
+    const x = (col - (cols - 1) / 2) * 1.9, y = 6.3 - row * 2.4;
     m.position.set(x, y, 0); m.rotation.y = name === 'Fayton' || name === 'Yük arabası' || name === 'Dəvə karvanı' || name === 'Nərdivan' ? 0.9 : 0.35;
     if (name === 'Cırtdan' || name === 'Div' || name === 'Nənə') m.rotation.y = 0.35;
     if (['Yağ çörəyi', 'Sini'].includes(name)) m.rotation.x = 0.4;
-    if (['Cırtdan', 'Tıq-Tıq', 'Keçəl', 'Kəndirbaz', 'Kosa'].includes(name)) m.rotation.y = Math.PI - 0.35; // faces are on -z
+    if (['Cırtdan', 'Tıq-Tıq', 'Keçəl', 'Kəndirbaz', 'Kosa', 'Məlik', 'Pəri'].includes(name)) m.rotation.y = Math.PI - 0.35; // faces are on -z
     if (name === 'Simurq') { m.rotation.y = 1.1; m.rotation.x = 0.3; }
     m.position.y += name === 'Yağ çörəyi' || name === 'Nar' || name === 'Çarıq' || name === 'Təndir' || name === 'Sini' ? 0.9 : 0;
     figGroup.add(m); figLabels.push([name, new THREE.Vector3(x, y - 0.35, 0)]);
@@ -1976,8 +2085,9 @@ function endStory() { save.set('story', true); const f = storyThen; storyThen = 
 // ---- Menus: the title's buttons and the list screens (shop, characters, missions) ----------------------
 const play = () => { reset(); scene = 'play'; sfx.div(); };
 const MENU = [['Oyna', 'Enter', () => (save.get('story') ? play() : startStory(play))], ['Nənənin dükanı', '1', () => openList('shop')],
-  ['Personajlar', '2', () => openList('chars')], ['Tapşırıqlar', '3', () => openList('missions')], ['Şəhərlər', '4', () => openList('cities')], ['Tədbirlər', '5', () => openList('events')], ['Nağıl', '6', () => startStory(null)]];
+  ['Personajlar', '2', () => openList('chars')], ['Tapşırıqlar', '3', () => openList('missions')], ['Şəhərlər', '4', () => openList('cities')], ['Liderlər', '5', () => openList('leaders')], ['Ayarlar', '6', () => openList('settings')]];
 let menuSel = 0, listSel = 0;
+const titleGift = { done: false, msg: '', t: 0 };
 function openList(name) { listSel = 0; scene = name; }
 function menuRects() {
   const wide = W >= 900, bw = wide ? Math.min(460, W * 0.38) : Math.min(W - 40, 420), bx = wide ? W - bw - 50 : (W - bw) / 2;
@@ -2013,6 +2123,9 @@ function charRows() {
     if (c.soon) { btn = 'Kilidli'; sub = `${c.desc} · ${c.soon}`; }
     else if (sel) btn = 'Seçilib';
     else if (owned) { btn = 'Seç'; can = true; act = () => { setRunner(c.id); toast(`${c.name} qaçır!`); }; }
+    else if (c.hunt) { const h = huntState(); sub = `${c.desc} · həftəlik ov: buta daşları ${Math.min(h.got, h.need)}/${h.need}`; btn = 'Kilidli'; }
+    else if (c.stones) { const need = tune[c.stones], have = save.get('stones'); sub = `${c.desc} · sehrli daşlar: ${Math.min(have, need)}/${need}`;
+      if (have >= need) { btn = 'Aç'; can = true; act = () => { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); }; } else btn = 'Kilidli'; }
     else if (c.tokens) { const need = tune[c.tokens], have = save.get('tokens'); sub = `${c.desc} · şəkərbura və paxlava: ${Math.min(have, need)}/${need} (Novruzda)`;
       if (have >= need) { btn = 'Aç'; can = true; act = () => { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); }; } else btn = 'Kilidli'; }
     else if (c.cost) { btn = `${tune[c.cost]}`; bread = true; can = save.get('bread') >= tune[c.cost]; act = () => { if (spend(tune[c.cost])) { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); } }; }
@@ -2020,6 +2133,33 @@ function charRows() {
       if (have >= need) { btn = 'Aç'; can = true; act = () => { save.set('chars', [...save.get('chars'), c.id]); setRunner(c.id); toast(`${c.name} açıldı!`); }; } else btn = 'Kilidli'; }
     return { icon: (x, y) => hudIconHead(c, x, y, 20), label: c.name, sub, btn, bread, can, act, dim: !!c.soon };
   });
+}
+function costumeRows() {
+  return COSTUMES.map(k => {
+    const own = k.id === 'none' || save.get('costumes').includes(k.id), sel = (save.get('costume') || 'none') === k.id;
+    let btn = sel ? 'Geyinib' : own ? 'Geyin' : `${tune.costume_cost}`, can = !sel && (own || save.get('bread') >= tune.costume_cost);
+    const act = () => { if (!own) { if (!spend(tune.costume_cost)) return; save.set('costumes', [...save.get('costumes'), k.id]); } save.set('costume', k.id); setRunner(save.get('char')); toast(`Cırtdan: ${k.name}`); };
+    return { icon: (x, y) => hudIconHead({ ...CHARS[0], ...k.look }, x, y, 20), label: k.name, sub: k.id === 'none' ? 'qırmızı papaq, naxışlı jilet (bayramda bayram geyimi)' : 'Cırtdan üçün', btn, bread: !own, can, act };
+  });
+}
+function leaderRows() {
+  const runs = save.get('runs');
+  if (!runs.length) return [{ icon: (x, y) => hudIconCheck(x, y, 18, false), label: 'Hələ qaçış yoxdur', sub: 'Qaç və rekordunu yaz!', btn: null }];
+  return runs.slice(0, 8).map((r, i) => ({ icon: (x, y) => { ctx.fillStyle = ['#ffcf4a', '#d8d8e0', '#d08a4a'][i] || 'rgba(255,244,220,0.3)'; ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill(); text(String(i + 1), x, y + 1, 18, '#3a1a0c'); },
+    label: `${r.score} xal`, sub: `${charDef(r.char).name} · ${(CITIES.find(c => c.id === r.city) || CITIES[0]).name} · ${r.bread} çörək · ${r.date}`, btn: null }));
+}
+function league() { const b = save.get('best'); return b >= tune.league_div ? 'Div liqası' : b >= tune.league_gold ? 'Qızıl liqa' : b >= tune.league_silver ? 'Gümüş liqa' : 'Bürünc liqa'; }
+function settingsRows() {
+  const L = window.LANG, lang = save.get('lang') || 'az';
+  return [
+    { icon: (x, y) => cityIcon('baku', x, y, 16), label: 'Dil', sub: L ? L.names[lang] : 'Azərbaycan (tərcümələr hazırlanır)', btn: L ? 'Dəyiş' : 'Tezliklə', can: !!L,
+      act: () => { const ls = L.langs; save.set('lang', ls[(ls.indexOf(lang) + 1) % ls.length]); } },
+    { icon: (x, y) => hudIconCheck(x, y, 16, !muted), label: 'Səslər', sub: muted ? 'söndürülüb' : 'açıq', btn: muted ? 'Aç' : 'Söndür', can: true, act: () => setMuted(!muted) },
+    { icon: (x, y) => hudIconCheck(x, y, 16, save.get('music') !== false), label: 'Musiqi', sub: save.get('music') !== false ? 'açıq' : 'söndürülüb', btn: save.get('music') !== false ? 'Söndür' : 'Aç', can: true, act: () => save.set('music', save.get('music') === false) },
+    { icon: (x, y) => eventIcon('novruz', x, y, 16), label: 'Tədbirlər', sub: 'Novruz, Qış, Nar bayramı, Xəzər yayı', btn: 'Aç', can: true, act: () => openList('events') },
+    { icon: (x, y) => hudIconCarpet(x, y, 16), label: 'Geyimlər', sub: 'Cırtdanın Novruz, Qış və Dənizçi geyimləri', btn: 'Aç', can: true, act: () => openList('costumes') },
+    { icon: (x, y) => hudIconBox(x, y, 16), label: 'Nağıl', sub: 'Cırtdanın hekayəsinə yenidən bax', btn: 'Bax', can: true, act: () => startStory(null) },
+  ];
 }
 function cityRows() {
   return CITIES.map(c => ({ icon: (x, y) => cityIcon(c.id, x, y, 18), label: c.name, sub: c.soon ? `${c.what} · tezliklə` : c.what, dim: !!c.soon,
@@ -2053,8 +2193,11 @@ function eventIcon(id, x, y, r) {
   else { ctx.fillStyle = '#d9a95f'; ctx.fillRect(x - r * 0.8, y - r * 0.6, r * 1.6, r * 1.3); ctx.fillStyle = '#5a3216'; ctx.fillRect(x - r * 0.3, y - r * 0.2, r * 0.6, r * 0.9); }
 }
 function missionRows() {
-  return currentMissions().map(m => ({ icon: (x, y) => hudIconCheck(x, y, 18, m.prog >= m.target), label: m.txt(m.target),
-    sub: m.prog >= m.target ? 'Bitdi!' : `${Math.floor(m.prog)} / ${m.target}${m.run ? ' (bir qaçışda)' : ''}`, prog: m.prog / m.target, btn: null }));
+  const h = huntState();
+  return [...currentMissions().map(m => ({ icon: (x, y) => hudIconCheck(x, y, 18, m.prog >= m.target), label: m.txt(m.target),
+    sub: m.prog >= m.target ? 'Bitdi!' : `${Math.floor(m.prog)} / ${m.target}${m.run ? ' (bir qaçışda)' : ''}`, prog: m.prog / m.target, btn: null })),
+    { icon: (x, y) => { ctx.fillStyle = '#1f9e9a'; ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI * 2); ctx.fill(); buta(ctx, x, y + 2, 1.1, 0.4, '#f2d16b', '#0d5a58'); },
+      label: 'Həftəlik ov: buta daşlarını tap', sub: h.open ? `${Math.min(h.got, h.need)} / ${h.need} · mükafat: ${save.get('chars').includes('melik') ? '3 bağlama və 1000 çörək' : 'Məlikməmməd'}` : 'Bu həftə bitdi! Gələn həftə yenisi', prog: h.open ? Math.min(1, h.got / h.need) : 1, btn: null }];
 }
 function hudIconBox(x, y, r) { // a cloth bundle tied at the top
   ctx.fillStyle = '#b3262a'; ctx.beginPath(); ctx.ellipse(x, y + r * 0.2, r, r * 0.75, 0, 0, Math.PI * 2); ctx.fill();
@@ -2068,6 +2211,10 @@ function hudIconHead(c, x, y, r) { // a little portrait of each character
   if (c.hat === 'papaq') { ctx.fillStyle = hc; ctx.fillRect(x - r * 0.75, y - r * 0.95, r * 1.5, r * 0.55); }
   else if (c.hat === 'scarf') { ctx.fillStyle = hc; ctx.beginPath(); ctx.arc(x, y, r * 0.9, Math.PI, 0); ctx.fill(); ctx.fillStyle = '#2a160c'; ctx.fillRect(x - r * 0.95, y, r * 0.2, r * 0.8); ctx.fillRect(x + r * 0.75, y, r * 0.2, r * 0.8); }
   else if (c.hat === 'tall') { ctx.fillStyle = hc; ctx.fillRect(x - r * 0.5, y - r * 1.3, r, r * 0.8); ctx.fillStyle = '#c8322c'; ctx.beginPath(); ctx.arc(x, y - r * 1.35, r * 0.15, 0, Math.PI * 2); ctx.fill(); }
+  else if (c.hat === 'crown') { ctx.fillStyle = '#d8a53a'; ctx.beginPath(); ctx.moveTo(x - r * 0.7, y - r * 0.45); ctx.lineTo(x - r * 0.7, y - r * 1.1); ctx.lineTo(x - r * 0.35, y - r * 0.75); ctx.lineTo(x, y - r * 1.2); ctx.lineTo(x + r * 0.35, y - r * 0.75); ctx.lineTo(x + r * 0.7, y - r * 1.1); ctx.lineTo(x + r * 0.7, y - r * 0.45); ctx.fill(); }
+  else if (c.hat === 'peri') { ctx.fillStyle = '#e8c27a'; ctx.beginPath(); ctx.arc(x, y - r * 0.1, r * 0.95, Math.PI, 0); ctx.fill(); ctx.fillRect(x - r * 0.95, y - r * 0.1, r * 0.3, r * 1.1); ctx.fillRect(x + r * 0.65, y - r * 0.1, r * 0.3, r * 1.1); ctx.fillStyle = '#f2a6c8'; for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.arc(x + i * r * 0.35, y - r * 0.9, r * 0.13, 0, Math.PI * 2); ctx.fill(); } }
+  else if (c.hat === 'winter') { ctx.fillStyle = '#efe6cf'; ctx.beginPath(); ctx.arc(x, y - r * 0.2, r * 0.9, Math.PI, 0); ctx.fill(); ctx.fillRect(x - r * 0.95, y - r * 0.2, r * 0.3, r * 0.6); ctx.fillRect(x + r * 0.65, y - r * 0.2, r * 0.3, r * 0.6); }
+  else if (c.hat === 'sailor') { ctx.fillStyle = '#ffffff'; ctx.fillRect(x - r * 0.75, y - r * 1.0, r * 1.5, r * 0.45); ctx.fillStyle = '#1d4f9a'; ctx.fillRect(x - r * 0.75, y - r * 0.6, r * 1.5, r * 0.15); }
   else if (c.hat === 'bald') { ctx.fillStyle = '#ffe7c4'; ctx.beginPath(); ctx.ellipse(x - r * 0.25, y - r * 0.4, r * 0.2, r * 0.1, -0.4, 0, Math.PI * 2); ctx.fill(); }
   else { ctx.fillStyle = '#5a4a3a'; ctx.font = `bold ${r}px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText('?', x, y - r * 0.9); }
 }
@@ -2158,6 +2305,9 @@ const scenes = {
   chars: listScene('chars', 'Personajlar', charRows, () => `İndi qaçan: ${charDef(save.get('char')).name}`),
   cities: listScene('cities', 'Şəhərlər', cityRows, () => 'Azərbaycan turu: Div səni hər şəhərdə qovur'),
   events: listScene('events', 'Tədbirlər', eventRows, () => 'Bayram küçələri bəzəyir; təqvimə görə özü açılır'),
+  costumes: listScene('costumes', 'Geyimlər', costumeRows, () => 'Bayramlarda Cırtdan özü bayram geyimini geyinir'),
+  leaders: listScene('leaders', 'Liderlər', leaderRows, () => `${league()} · Rekord: ${save.get('best')} · onlayn reytinq server tələb edir (sonra)`),
+  settings: listScene('settings', 'Ayarlar', settingsRows, null),
   missions: listScene('missions', 'Tapşırıqlar', missionRows, () => `Xal vurğusu x${save.get('mmult')}: üç tapşırığı bitir, +1 qazan`),
   figures: {
     update(dt) { state.t += dt; },
@@ -2182,6 +2332,9 @@ const scenes = {
   title: {
     update(dt) {
       state.t += dt;
+      if (!titleGift.done) { titleGift.done = true; const g = dailyGift(); if (g) { titleGift.msg = `Nənənin gündəlik hədiyyəsi: ${g}!`; titleGift.t = 5; } }
+      titleGift.t = Math.max(0, titleGift.t - dt);
+      if (titleGift.t > 0) { if (anyPressed('Enter', 'Space', 'Escape') || taps.length) titleGift.t = 0; return; } // the gift first: a tap closes it
       const rects = menuRects();
       if (anyPressed('ArrowDown', 'KeyS')) menuSel = (menuSel + 1) % MENU.length;
       if (anyPressed('ArrowUp', 'KeyW')) menuSel = (menuSel + MENU.length - 1) % MENU.length;
@@ -2210,6 +2363,7 @@ const scenes = {
         outlined('Söz ovu: hərfləri yolda yığ', cx, y - 34, 20, '#ffe6b0');
         drawWord(cx, y, 28);
         const ev = EVENTS.find(e => e.id === activeEvent()); outlined(`${CITIES.find(c => c.id === city()).name}${ev ? ' · ' + ev.name : ''}`, cx, y + 38, 22, '#ffcf4a'); }
+      if (titleGift.t > 0) { ctx.globalAlpha = Math.min(1, titleGift.t); ctx.fillStyle = 'rgba(40,12,8,0.6)'; ctx.fillRect(0, 0, W, H); const bw = Math.min(W - 30, 620); text('Toxun və ya Enter', W / 2, H / 2 + 62, 18, '#ffe6b0', 'center', 'normal'); ctx.fillStyle = 'rgba(43,122,72,0.92)'; rrect((W - bw) / 2, H / 2 - 40, bw, 80, 18); ctx.fill(); hudIconBox((W - bw) / 2 + 40, H / 2, 20); fitLeft(titleGift.msg, (W - bw) / 2 + 72, H / 2, 24, '#fff4dc', bw - 90); ctx.globalAlpha = 1; }
       text(`Rekord: ${save.get('best')}`, 24, H - 24, 22, '#fff4dc', 'left');
       hudIconBread(W - 200, H - 26, 12); text(String(save.get('bread')), W - 182, H - 24, 22, '#ffd77a', 'left');
       hudIconNar(W - 80, H - 28, 12); text(String(save.get('nar')), W - 62, H - 26, 22, '#fff4dc', 'left');
