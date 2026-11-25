@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Engine Version** | Godot 4.7 |
-| **Installed at pin time** | NOT DETERMINED (2026-11-25) — the project is set up from a cloud session with no Godot; the editor runs on the owner's Windows PC, version not yet reported. Pinned 4.7.2 (latest stable). |
+| **Installed at pin time** | Cloud session 2026-11-25: Godot 4.7.2.stable.official.ed1daf0bf (official Linux build, SHA512 checked against the release's SHA512-SUMS.txt); `--headless --import` of the empty project: no errors. The owner's Windows editor: not yet reported. |
 | **Release Date** | June 2026 (latest patch: 4.7.2, August 2026) |
 | **Project Pinned** | 2026-10-17 |
 | **Last Docs Verified** | 2026-10-21 (Windows driver default and Compositor, against Godot source); 2026-10-17 (release timeline and 4.7 changes); 2026-02-12 (4.4-4.6 content) |
