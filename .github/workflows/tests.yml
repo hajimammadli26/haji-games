@@ -1,0 +1,41 @@
+# Runs the gdUnit4 test suite (tests/) on every push to main and every pull request.
+# Godot is downloaded from the official release and checked against its SHA-512 before use.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  gdunit4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GODOT_VERSION: 4.7.2-stable
+      GODOT_SHA512: 9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot
+        run: |
+          curl -sSLo godot.zip "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          echo "${GODOT_SHA512}  godot.zip" | sha512sum -c -
+          unzip -q godot.zip -d godot
+          mv "godot/Godot_v${GODOT_VERSION}_linux.x86_64" godot/godot
+
+      - name: Import the project
+        run: timeout 600 godot/godot --headless --path . --import || true
+
+      - name: Run the tests
+        run: >
+          timeout 900 godot/godot --headless -s -d --remote-debug tcp://127.0.0.1:0
+          res://addons/gdUnit4/bin/GdUnitCmdTool.gd --path . -a res://tests -c --ignoreHeadlessMode
+
+      - name: Keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gdunit4-report
+          path: reports/
+          if-no-files-found: ignore

@@ -49,7 +49,7 @@ commands:
   # TODO: godot is not on PATH here (the editor runs on the owner's Windows PC) — set the editor's full path via /project-settings
   # build: no export preset yet; once an Android preset exists in the editor: godot --headless --export-debug 'Android'
   build: "[TO BE CONFIGURED]"
-  test: "godot --headless -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests --ignoreHeadlessMode"
+  test: "godot --headless -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests -c --ignoreHeadlessMode"
   run: "godot --path . --windowed --resolution 1280x720"
   smoke: "godot --headless --quit-after 5"
 

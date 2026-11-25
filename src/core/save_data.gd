@@ -15,10 +15,13 @@ var _d := {}
 var _path := PATH
 
 
-## Loads the save at path (tests pass their own), filling any key an older save lacks.
+## Loads the save at path, filling any key an older save lacks. An empty path keeps everything in memory
+## (tests: no files).
 func _init(path: String = PATH, start_nar: int = 2) -> void:
 	_path = path
 	_d = _defaults(start_nar)
+	if _path == "":
+		return
 	var parsed: Variant = _read(_path)
 	if not parsed is Dictionary: # damaged or missing: the last good copy
 		parsed = _read(_path + ".bak")
@@ -65,6 +68,8 @@ func put(key: String, value: Variant) -> void:
 ## Writes everything safely: to a temporary file first, then swapped in, the old one kept as .bak,
 ## so a crash or a full disk mid-write never loses the player's progress. False if it could not be written.
 func flush() -> bool:
+	if _path == "":
+		return true
 	var tmp := _path + ".tmp"
 	var f := FileAccess.open(tmp, FileAccess.WRITE)
 	if f == null:
