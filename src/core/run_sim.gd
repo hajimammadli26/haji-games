@@ -22,6 +22,17 @@ signal bread_taken(total: int)
 signal jumped
 ## Cırtdan started a slide.
 signal slid
+## A power-up was picked up (magnet, shoe, double, pole, simurq) or the boost started (fly).
+signal power_taken(kind: String)
+## A nar was picked up.
+signal nar_taken
+## The flying carpet took a hit for Cırtdan.
+signal shield_used
+## The Simurq or the boost put Cırtdan back on the ground.
+signal landed_from_flight
+
+## Power-ups and how long each lasts is power_time(kind).
+const POWERS := ["magnet", "shoe", "double", "pole", "simurq", "fly"]
 
 const PSTAND := 1.45 ## standing height (papaq included), so a carpet at 1.15 needs a slide
 const PSLIDE := 0.5 ## height while sliding
@@ -45,6 +56,8 @@ class RunInput:
 	var right := false
 	var jump := false
 	var slide := false
+	var carpet := false ## use a flying carpet (double tap)
+	var boost := false ## start the bought boost (only in its window)
 
 	## Clears every flag (call after each step).
 	func clear() -> void:
@@ -52,6 +65,8 @@ class RunInput:
 		right = false
 		jump = false
 		slide = false
+		carpet = false
+		boost = false
 
 ## Something on the street. s0 is its near end along the track.
 class Obstacle:
@@ -69,6 +84,7 @@ class Obstacle:
 	var moving := false
 	var hit := false
 	var passed := false
+	var cleared := false ## taken away by a shield or a continue: no longer there
 	var node: Node3D ## its drawing, owned by the game scene
 
 	## The far end along the track.
@@ -111,6 +127,15 @@ var bread := 0
 var score := 0.0
 var mult := 1
 var dead := "" ## "", "crash" or "caught"
+var power := {} ## kind -> seconds left
+var levels := {} ## shop levels by power kind (set by the game from the save)
+var carpet_t := 0.0 ## seconds the shield carpet has left
+var carpets := 0 ## carpets in hand this run (free ones first)
+var free_carpets := 0
+var boosts := 0 ## start boosts owned (the game spends one from the save)
+var boost_used := false
+var nar_got := 0
+var continues := 0
 var obstacles: Array[Obstacle] = []
 var pickups: Array[Pickup] = []
 
@@ -147,8 +172,62 @@ func reset() -> void:
 	score = 0.0
 	mult = 1
 	dead = ""
+	for k in POWERS:
+		power[k] = 0.0
+	carpet_t = 0.0
+	free_carpets = tune.carpets_per_run
+	carpets = free_carpets
+	boost_used = false
+	nar_got = 0
+	continues = 0
 	obstacles.clear()
 	pickups.clear()
+
+
+## How long a power-up lasts at its shop level.
+func power_time(kind: String) -> float:
+	if kind == "fly":
+		return tune.boost_time
+	var base := tune.simurq_time if kind == "simurq" else tune.power_time
+	return base + float(levels.get(kind, 0)) * tune.upgrade_step
+
+
+## True while the Simurq or the boost carries Cırtdan.
+func is_flying() -> bool:
+	return power["simurq"] > 0.0 or power["fly"] > 0.0
+
+
+## True while the start boost can still be used.
+func boost_open() -> bool:
+	return not boost_used and boosts > 0 and time < tune.boost_window and dead == ""
+
+
+## Nar for the next continue: continue_cost, doubling each time in a run.
+func continue_cost() -> int:
+	return tune.continue_cost * (1 << continues)
+
+
+## Back into the run after a crash: the Div backs off, the street just ahead is cleared,
+## a moment of safety. The game takes the nar from the save first.
+func continue_run() -> void:
+	continues += 1
+	dead = ""
+	div_t = 0.0
+	stumble_t = 0.0
+	invuln = 2.5
+	vy = 0.0
+	for o in obstacles:
+		if o.s0 < s + 25.0 and o.s1() > s - 2.0:
+			o.hit = true
+			o.cleared = true
+
+
+## A winding line of bread high over the street, for a flight of this many seconds.
+func sky_bread(seconds: float) -> void:
+	var n := maxi(3, int((seconds * speed - 18.0) / 3.0)) # ends before he lands
+	for i in n:
+		var l := clampi(roundi(1.0 + sin(i * 0.35) * 1.2), 0, 2)
+		add_pickup("bread", l, s + 14.0 + i * 3.0, tune.simurq_height + 0.6)
 
 
 ## The x of a lane's centre (lane 0, 1 or 2).
@@ -216,6 +295,18 @@ func step(dt: float, input: RunInput) -> void:
 		lane += 1
 	if input.jump:
 		jump_buf = tune.input_buffer
+	if input.carpet and carpets > 0 and carpet_t <= 0.0:
+		carpets -= 1
+		if free_carpets > 0:
+			free_carpets -= 1
+		carpet_t = tune.carpet_time
+		power_taken.emit("carpet")
+	if input.boost and boost_open():
+		boost_used = true
+		boosts -= 1
+		power["fly"] = tune.boost_time
+		sky_bread(tune.boost_time)
+		power_taken.emit("fly")
 	if input.slide:
 		if not grounded:
 			vy = -tune.fast_fall_speed
@@ -230,54 +321,77 @@ func step(dt: float, input: RunInput) -> void:
 	# vertical
 	air_t = 0.0 if grounded else air_t + dt
 	if jump_buf > 0.0 and (grounded or air_t < tune.coyote_time):
-		vy = sqrt(2.0 * tune.gravity * tune.jump_height)
+		var hgt := tune.super_jump_height if power["shoe"] > 0.0 else tune.jump_height
+		vy = sqrt(2.0 * tune.gravity * hgt)
 		grounded = false
 		jump_buf = 0.0
 		slide_t = 0.0
 		air_t = 1.0
 		jumped.emit()
 	jump_buf = maxf(0.0, jump_buf - dt)
-	vy -= tune.gravity * dt
-	y += vy * dt
+	var flying := is_flying()
+	if flying: # the Simurq or the carpet holds him high; the street passes below
+		y += (tune.simurq_height - y) * minf(1.0, dt * 2.5)
+		vy = 0.0
+		grounded = false
+		slide_t = 0.0
+		if maxf(power["simurq"], power["fly"]) <= dt: # a safe landing
+			invuln = maxf(invuln, 1.6)
+			landed_from_flight.emit()
+	else:
+		vy -= tune.gravity * dt
+		y += vy * dt
 	var sup := _support_at(x, prev_y, s)
-	if y <= sup.x:
+	if flying:
+		pass
+	elif y <= sup.x:
 		y = sup.x
 		vy = 0.0
 		grounded = true
 		on_roof = _roof_kind
+		if power["pole"] > 0.0 and slide_t <= 0.0: # kəndirbaz hops
+			vy = sqrt(2.0 * tune.gravity * tune.pole_height)
+			grounded = false
+			jumped.emit()
 	else:
 		grounded = y - sup.x < 0.05 and vy <= 0.0
 	slide_t = maxf(0.0, slide_t - dt)
-	_collide()
+	if not flying:
+		_collide()
 	if dead != "":
 		return
 	for o in obstacles: # caravans walk toward you
 		o.prev_s0 = o.s0
 		if o.moving:
 			o.s0 -= tune.caravan_speed * dt
+	_dt = dt
 	_take_pickups()
 	# the Div
 	div_t = maxf(0.0, div_t - dt)
 	stumble_t = maxf(0.0, stumble_t - dt)
 	intro_t = maxf(0.0, intro_t - dt)
 	invuln = maxf(0.0, invuln - dt)
+	carpet_t = maxf(0.0, carpet_t - dt)
+	for k in POWERS:
+		power[k] = maxf(0.0, power[k] - dt)
 	var want := tune.div_near_gap if div_t > 0.0 or intro_t > 0.0 else tune.div_far_gap
 	var rate := 3.0 if want < div_gap else 0.8
 	div_gap += (want - div_gap) * minf(1.0, dt * rate)
 	# score
 	mult = 1 + mini(tune.mult_cap - 1, int(s / tune.mult_every))
-	score += speed * dt * mult
+	score += speed * dt * mult * (2.0 if power["double"] > 0.0 else 1.0)
 	_forget_behind()
 
 
 var _roof_kind := ""
+var _dt := 0.0
 
 ## The ground under Cırtdan (x = height): the street, a ramp, a cart roof or the camels' backs.
 func _support_at(px: float, py: float, ps: float) -> Vector2:
 	var g := 0.0
 	_roof_kind = ""
 	for o in obstacles:
-		if not (o.ramp or o.roof) or (o.hit and o.node != null and not o.node.visible):
+		if not (o.ramp or o.roof) or o.cleared:
 			continue
 		if absf(px - lane_x(o.lane)) > o.half + PHALF * 0.5:
 			continue
@@ -301,11 +415,15 @@ func _overlaps(o: Obstacle, ox_s0: float, px: float, py: float, h: float, ps: fl
 func _collide() -> void:
 	var h := PSLIDE if slide_t > 0.0 else PSTAND
 	for o in obstacles:
-		if o.hit or o.ramp:
+		if o.hit or o.ramp or o.cleared:
 			continue
 		if o.roof and y >= o.top - 0.35:
 			continue # on its roof
 		if not _overlaps(o, o.s0, x, y, h, s):
+			continue
+		if power["pole"] > 0.0 and prev_y >= o.top - 0.15: # a kəndirbaz lands on it and springs off
+			y = o.top
+			vy = sqrt(2.0 * tune.gravity * tune.pole_height)
 			continue
 		var from_front := not _overlaps(o, o.prev_s0, x, y, h, prev_s) and absf(prev_x - lane_x(o.lane)) < o.half + PHALF
 		if from_front:
@@ -328,6 +446,8 @@ func _stumble(o: Obstacle) -> void:
 		o.hit = true
 	if invuln > 0.0:
 		return
+	if _shield(o):
+		return
 	if div_t > 0.0 and stumble_t <= 0.0:
 		dead = "caught"
 		caught.emit()
@@ -343,21 +463,52 @@ func _crash(o: Obstacle) -> void:
 	if invuln > 0.0:
 		o.hit = true
 		return
+	if _shield(o):
+		return
 	o.hit = true
 	dead = "crash"
 	crashed.emit(o.kind)
 
 
+func _shield(o: Obstacle) -> bool: # the flying carpet takes one hit and the thing is gone
+	if carpet_t <= 0.0:
+		return false
+	carpet_t = 0.0
+	invuln = 1.0
+	if o != null:
+		o.hit = true
+		o.cleared = true
+	shield_used.emit()
+	return true
+
+
 func _take_pickups() -> void:
 	var h := PSLIDE if slide_t > 0.0 else PSTAND
+	var flying := is_flying()
 	for p in pickups:
 		if p.taken:
 			continue
+		if p.kind == "bread" and (power["magnet"] > 0.0 or (flying and p.y > 3.0)): # the tray, or the sky line in flight
+			var ds := p.s - s
+			var dxp := p.x - x
+			if absf(ds) < tune.magnet_radius and absf(dxp) < tune.magnet_radius:
+				var k := minf(1.0, _dt * 10.0)
+				p.s -= ds * k
+				p.x -= dxp * k
+				p.y += (y + 0.6 - p.y) * k
 		if absf(p.s - s) < 0.8 and absf(p.x - x) < 0.8 and absf(p.y - (y + h * 0.5)) < 1.0:
 			p.taken = true
 			if p.kind == "bread":
 				bread += 1
 				bread_taken.emit(bread)
+			elif p.kind == "nar":
+				nar_got += 1
+				nar_taken.emit()
+			elif p.kind in POWERS:
+				power[p.kind] = power_time(p.kind)
+				if p.kind == "simurq":
+					sky_bread(power_time("simurq"))
+				power_taken.emit(p.kind)
 
 
 ## Things more than 25 m behind are dropped (the game frees their drawings first: see Game).

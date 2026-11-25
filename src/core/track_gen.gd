@@ -19,6 +19,7 @@ var rng := RandomNumberGenerator.new()
 var next_s := 0.0 ## where the next row goes
 var rows := 0
 var caravans := 0
+var simurqs := 0
 var reserved := [0.0, 0.0, 0.0] ## a caravan's lane stays clear up to this s
 
 
@@ -117,10 +118,27 @@ func _row() -> void:
 	for l in 3:
 		if not used.has(l) and reserved[l] <= s:
 			free_l.append(l)
-	if not free_l.is_empty() and rng.randf() < 0.7:
+	if not free_l.is_empty():
+		# one lane gets the line; a nar or a power-up takes a slot in it instead of sitting on a bread
 		var l := free_l[rng.randi() % free_l.size()]
 		var count := clampi(int((gap_dist - 1.5 + 4.0) / 2.2) + 1, 2, tune.bread_line)
-		_bread_line(l, s - 4.0, count, 0.6)
+		var special := ""
+		var r := rng.randf()
+		if r < tune.nar_chance:
+			special = "nar"
+		elif simurqs == 0 and rows >= tune.simurq_first_row:
+			special = "simurq" # every run meets the Simurq early
+		elif r < tune.nar_chance + tune.power_chance and rows > INTRO.size():
+			special = "simurq" if rng.randf() < tune.simurq_share else ["magnet", "shoe", "double", "pole"][rng.randi() % 4]
+		if special == "simurq":
+			simurqs += 1
+		var slot := mini(3, count - 1)
+		if special != "":
+			sim.add_pickup(special, l, s - 4.0 + slot * 2.2, 1.0)
+		if rng.randf() < 0.7:
+			for i in count:
+				if special == "" or i != slot:
+					sim.add_pickup("bread", l, s - 4.0 + i * 2.2, 0.6)
 	rows += 1
 	next_s = maxf(s + gap_dist, end + 3.0 + v * 0.35)
 

@@ -240,3 +240,72 @@ static func house(side: int, rng: RandomNumberGenerator) -> Array:
 			if rng.randf() < 0.6:
 				_part(g, _box(0.04, 2.2, 1.6), Color("#b3262a"), Vector3(-side * 1.42, y - 1.4, 0))
 	return [g, w]
+
+
+## A pickup's figure by kind: bread, nar, magnet (Nənə's tray), shoe (magic çarıq), double (two ovens),
+## pole (the rope-walker's pole), simurq (a great feather).
+static func pickup(kind: String) -> Node3D:
+	if kind == "bread":
+		return bread()
+	var g := Node3D.new()
+	match kind:
+		"nar": # a red pomegranate with its crown
+			_part(g, _ball(0.34, 0.62), Color("#b5162b"), Vector3.ZERO)
+			for i in 5:
+				var a := i / 5.0 * TAU
+				_part(g, _cyl(0.0, 0.05, 0.16), Color("#7a0f1c"), Vector3(cos(a) * 0.07, 0.36, sin(a) * 0.07))
+		"magnet": # a copper tray with bread on it
+			_part(g, _cyl(0.42, 0.42, 0.05), Color("#cf7a38"), Vector3.ZERO, Vector3(PI / 2, 0, 0))
+			_part(g, _cyl(0.25, 0.25, 0.06), Color("#a8572a"), Vector3(0, 0, 0.02), Vector3(PI / 2, 0, 0))
+			for i in 3:
+				_part(g, _cyl(0.1, 0.1, 0.05), Color("#e59a2f"), Vector3(-0.13 + i * 0.13, 0.03 * i, 0.07), Vector3(PI / 2, 0, 0))
+		"shoe": # a leather çarıq with a turned-up toe and gold sparks
+			_part(g, _ball(0.2, 0.3), Color("#8a4a1c"), Vector3.ZERO, Vector3(0, 0, 0))
+			_part(g, _cyl(0.0, 0.08, 0.3), Color("#8a4a1c"), Vector3(0, 0.12, -0.36), Vector3(-0.9, 0, 0))
+			for p in [Vector3(-0.32, 0.25, 0), Vector3(0.3, 0.1, 0), Vector3(0, 0.4, 0)]:
+				_part(g, _cyl(0.0, 0.05, 0.16), Color("#ffd34a"), p)
+		"double": # two clay ovens with glowing mouths
+			for sx in [-0.22, 0.22]:
+				_part(g, _ball(0.24, 0.64), Color("#b8743e"), Vector3(sx, 0, 0))
+				var f := _part(g, _ball(0.09, 0.14), Color("#ffb43a"), Vector3(sx, 0, 0.22))
+				f.material_override = mat(Color("#ff8a1a"), true)
+		"pole": # the balancing pole, weights at both ends
+			_part(g, _cyl(0.035, 0.035, 1.2), Color("#c48a3e"), Vector3.ZERO, Vector3(0, 0, PI / 2))
+			for sx in [-0.6, 0.6]:
+				_part(g, _ball(0.1), Color("#c8322c"), Vector3(sx, 0, 0))
+		"simurq": # one great tail feather
+			_part(g, _cyl(0.02, 0.02, 1.0), Color("#f5e6c0"), Vector3.ZERO)
+			_part(g, _ball(0.2, 0.84), Color("#1f9e9a"), Vector3(0, 0.18, 0))
+			_part(g, _ball(0.12, 0.5), Color("#f2b632"), Vector3(0, 0.26, 0.02))
+			_part(g, _ball(0.07, 0.18), Color("#2c4fa0"), Vector3(0, 0.3, 0.05))
+	return g
+
+
+## The Simurq: the fairy-tale bird, gold and turquoise, wings out, a long tail. Faces -z.
+## Parts: "wings" (two Node3D to flap).
+static func simurq() -> Node3D:
+	var g := Node3D.new()
+	_part(g, _ball(0.55, 1.8), Color("#f2b632"), Vector3.ZERO, Vector3(PI / 2, 0, 0))
+	_part(g, _ball(0.3, 0.6), Color("#f2b632"), Vector3(0, 0.5, -1.0))
+	_part(g, _cyl(0.0, 0.09, 0.35), Color("#e07b22"), Vector3(0, 0.45, -1.4), Vector3(-PI / 2, 0, 0))
+	var wings := []
+	for sd in [-1, 1]:
+		var w := Node3D.new()
+		w.position = Vector3(sd * 0.45, 0.15, 0)
+		g.add_child(w)
+		for i in 3:
+			_part(w, _box(1.5 - i * 0.25, 0.06, 0.35), [Color("#1f9e9a"), Color("#f2b632"), Color("#c8322c")][i], Vector3(sd * (0.75 - i * 0.1), 0, -0.25 + i * 0.25))
+		wings.append(w)
+	for i in 5:
+		_part(g, _box(0.18, 0.04, 1.9), [Color("#1f9e9a"), Color("#c8322c"), Color("#f2b632"), Color("#c8322c"), Color("#1f9e9a")][i], Vector3((i - 2) * 0.2, 0.05, 1.6), Vector3(0.15, (i - 2) * 0.12, 0))
+	g.set_meta("parts", {"wings": wings})
+	return g
+
+
+## The flying carpet under Cırtdan: a green carpet with a red border and a gold medallion.
+static func flying_carpet() -> Node3D:
+	var g := Node3D.new()
+	_part(g, _box(1.4, 0.05, 1.9), Color("#9e1f24"), Vector3.ZERO)
+	_part(g, _box(1.15, 0.06, 1.6), Color("#2b7a48"), Vector3.ZERO)
+	_part(g, _box(0.5, 0.07, 0.5), Color("#f2d16b"), Vector3.ZERO, Vector3(0, PI / 4, 0))
+	return g
