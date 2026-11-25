@@ -38,3 +38,7 @@ renderer/rendering_method="mobile"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg")
+
+[cirtdan]
+
+online/leaderboard_url=""

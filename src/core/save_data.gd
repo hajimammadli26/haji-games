@@ -46,6 +46,7 @@ func _defaults(start_nar: int) -> Dictionary:
 		"cities": ["baku"], "city": "baku", "mprog": [0, 0, 0], "mmult": 1, "claims": 0,
 		"music": true, "sound": true, "lang": "az", "story": false, "runs": [],
 		"stones": 0, "wordN": 0, "wordGot": 0, "wordStreak": 0, "huntGot": 0,
+		"player": "", "nick": -1, "online": true, "sent_best": 0,
 	}
 
 

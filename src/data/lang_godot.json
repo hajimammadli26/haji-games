@@ -358,5 +358,110 @@
   "tr": "{s} · Rekor: {n}",
   "en": "{s} · Best: {n}",
   "ru": "{s} · Рекорд: {n}"
+ },
+ "Mənim": {
+  "tr": "Benim",
+  "en": "Mine",
+  "ru": "Мои"
+ },
+ "Hamı": {
+  "tr": "Herkes",
+  "en": "Everyone",
+  "ru": "Все"
+ },
+ "Bu həftə": {
+  "tr": "Bu hafta",
+  "en": "This week",
+  "ru": "Эта неделя"
+ },
+ "Ləqəbin: {s}": {
+  "tr": "Lakabın: {s}",
+  "en": "Your nickname: {s}",
+  "ru": "Твоё прозвище: {s}"
+ },
+ "Ləqəb seç": {
+  "tr": "Lakap seç",
+  "en": "Choose a nickname",
+  "ru": "Выбери прозвище"
+ },
+ "Onlayn liderlər": {
+  "tr": "Çevrimiçi liderler",
+  "en": "Online leaders",
+  "ru": "Онлайн-лидеры"
+ },
+ "Ancaq ləqəb və xal göndərilir, ad yox": {
+  "tr": "Sadece lakap ve puan gönderilir, isim değil",
+  "en": "Only a nickname and a score are sent, never a name",
+  "ru": "Отправляются только прозвище и очки, без имени"
+ },
+ "Onlayn liderlər bağlıdır": {
+  "tr": "Çevrimiçi liderler kapalı",
+  "en": "Online leaders are off",
+  "ru": "Онлайн-лидеры выключены"
+ },
+ "Ayarlardan aça bilərsən": {
+  "tr": "Ayarlardan açabilirsin",
+  "en": "You can turn them on in Settings",
+  "ru": "Можно включить в настройках"
+ },
+ "Onlayn liderlər tezliklə": {
+  "tr": "Çevrimiçi liderler yakında",
+  "en": "Online leaders soon",
+  "ru": "Онлайн-лидеры скоро"
+ },
+ "Server qoşulanda burada hamının rekordları görünəcək": {
+  "tr": "Sunucu bağlanınca herkesin rekorları burada görünecek",
+  "en": "When the server is connected, everyone's records will show here",
+  "ru": "Когда подключим сервер, здесь появятся рекорды всех"
+ },
+ "Yüklənir…": {
+  "tr": "Yükleniyor…",
+  "en": "Loading…",
+  "ru": "Загрузка…"
+ },
+ "İnternet yoxdur": {
+  "tr": "İnternet yok",
+  "en": "No internet",
+  "ru": "Нет интернета"
+ },
+ "Bir az sonra yenə yoxla": {
+  "tr": "Biraz sonra tekrar dene",
+  "en": "Try again a little later",
+  "ru": "Попробуй чуть позже"
+ },
+ "Yenə": {
+  "tr": "Tekrar",
+  "en": "Retry",
+  "ru": "Ещё раз"
+ },
+ "Hələ heç kim yoxdur": {
+  "tr": "Henüz kimse yok",
+  "en": "Nobody yet",
+  "ru": "Пока никого"
+ },
+ "İlk sən ol!": {
+  "tr": "İlk sen ol!",
+  "en": "Be the first!",
+  "ru": "Будь первым!"
+ },
+ "{n}. {s} (sən)": {
+  "tr": "{n}. {s} (sen)",
+  "en": "{n}. {s} (you)",
+  "ru": "{n}. {s} (ты)"
+ },
+ "{n} xal · {m} m": {
+  "tr": "{n} puan · {m} m",
+  "en": "{n} points · {m} m",
+  "ru": "очки: {n} · {m} м"
+ },
+ "Sənin yerin: {n}": {
+  "tr": "Senin yerin: {n}",
+  "en": "Your place: {n}",
+  "ru": "Твоё место: {n}"
+ },
+ "{n} xal": {
+  "tr": "{n} puan",
+  "en": "{n} points",
+  "ru": "очки: {n}"
  }
 }

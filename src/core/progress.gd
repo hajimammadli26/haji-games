@@ -386,6 +386,40 @@ func gift() -> String:
 	return "iki nar"
 
 
+# ---- The online leaderboard (nothing personal: a random id and a nickname from fixed lists) ----------
+
+## This device's player id for the online board: 32 random hex digits, made once.
+func player_id() -> String:
+	var id := String(save.get_value("player"))
+	if id.length() != 32:
+		id = Crypto.new().generate_random_bytes(16).hex_encode()
+		save.set_value("player", id)
+	return id
+
+
+## The chosen nickname number (-1: none chosen yet, so nothing is sent).
+func nick() -> int:
+	return get_int("nick", -1)
+
+
+## Chooses the nickname: adjective a and hero h (indexes into Catalog.NICK_ADJ / NICK_HERO).
+func set_nick(a: int, h: int) -> void:
+	var na := Catalog.NICK_ADJ.size()
+	var nh := Catalog.NICK_HERO.size()
+	save.set_value("nick", posmod(a, na) * nh + posmod(h, nh))
+
+
+## True if this score should go to the online board: online is on, a nickname is chosen, and it beats
+## what was sent before.
+func should_send(score: int) -> bool:
+	return bool(save.get_value("online")) and nick() >= 0 and score > get_int("sent_best")
+
+
+## Remembers the best score the server has accepted.
+func sent(score: int) -> void:
+	save.set_value("sent_best", maxi(score, get_int("sent_best")))
+
+
 # ---- Runs and the leaderboard -----------------------------------------------------------------
 
 ## Records a finished run (score, metres, bread); keeps the best 10. Returns true for a new best.

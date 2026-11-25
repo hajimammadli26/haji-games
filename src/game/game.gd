@@ -15,6 +15,7 @@
 ##   --bread=N        that throwaway save starts with N bread
 ##   --char=ID --costume=ID --city=ID   that throwaway save wears this look
 ##   --lang=CODE      that save's language (az, tr, en, ru); --untranslated prints untranslated texts at the shot
+##   --nick=N         that throwaway save has online nickname N; --leaderboard=URL uses a test server
 ##   --story=N        with --shot: show the story at picture N (0-4) and shoot it
 extends Node3D
 
@@ -59,6 +60,7 @@ var hud_root: Control
 var hud_layer: CanvasLayer
 var story: Story
 var snd: Sound
+var online: Online
 var _was_grounded := true
 var _was_lane := 1
 var hud_score: Label
@@ -95,6 +97,8 @@ func _ready() -> void:
 		save = SaveData.new("user://check_save.json", tune.start_nar)
 		save.put("boosts", int(args.get("boosts", "0")))
 		save.put("bread", int(args.get("bread", "0")))
+		if args.has("nick"):
+			save.put("nick", int(args["nick"]))
 		for k in ["char", "costume", "city"]: # a look to check, without buying it
 			if args.has(k):
 				save.put(k, args[k])
@@ -122,8 +126,9 @@ func _ready() -> void:
 		await get_tree().create_timer(1.0).timeout
 		_shoot()
 	elif args.has("menu") and args.has("shot"):
+		menu._board = String(args.get("board", "mine"))
 		menu.open(args["menu"])
-		await get_tree().create_timer(1.0).timeout
+		await get_tree().create_timer(2.5).timeout
 		_shoot()
 	elif args.has("shot"): # an unattended check starts at once
 		_start()
@@ -445,6 +450,8 @@ func _finish_run() -> void:
 	recorded = true
 	prog.mission("run_dist", sim.s)
 	prog.record_run(int(sim.score), int(sim.s), sim.bread)
+	if prog.should_send(int(sim.score)): # a new best goes to the online board (if one is set up)
+		online.submit(prog.player_id(), prog.nick(), int(sim.score), int(sim.s), world.city)
 
 
 func _set_paused(on: bool) -> void:
@@ -669,6 +676,14 @@ func _build_hud() -> void:
 	om.pressed.connect(_to_menu)
 	over_panel.visible = false
 	menu = Menu.new(prog)
+	online = Online.new()
+	add_child(online)
+	if args.has("leaderboard"): # developer flag: a test server for the online board
+		online.base_url = args["leaderboard"]
+	menu.online = online
+	online.loaded.connect(menu.board_loaded)
+	online.failed.connect(menu.board_failed)
+	online.submitted.connect(func(score: int, _rank: int) -> void: prog.sent(score))
 	root.add_child(menu)
 	menu.play.connect(_on_play)
 	menu.look_changed.connect(_apply_look)

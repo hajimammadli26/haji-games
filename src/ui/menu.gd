@@ -34,6 +34,10 @@ const GOLD_BTN := Color("#d89a1a")
 const CREAM := Color("#fff4dc")
 
 var prog: Progress
+var online: Online ## the online board (set by the game; may have no server address yet)
+var _board := "mine" ## Liderlər tab: mine, all, week
+var _board_data := {} ## scope -> the last top list fetched
+var _board_state := {} ## scope -> "loading", "failed" or "ok"
 var screen := "home"
 var _confirm_key := "" ## the purchase waiting for its second tap
 var _confirm_t := 0.0
@@ -392,13 +396,114 @@ func _screen_missions() -> void:
 func _screen_leaders() -> void:
 	var best := int(prog.save.get_value("best"))
 	_sub.text = "%s · Rekord: %d" % [prog.league(best), best]
-	var runs: Array = prog.save.get_value("runs")
-	if runs.is_empty():
-		_row("Hələ qaçış yoxdur", "Oyna və ilk rekordunu qoy!", "", false, Callable())
-	for i in runs.size():
-		var r: Dictionary = runs[i]
-		_row("%d. %d xal" % [i + 1, int(r["score"])], "%d m · %d çörək · %s" % [int(r["m"]), int(r["bread"]), r.get("date", "")],
-			"", false, Callable())
+	var tabs := HBoxContainer.new()
+	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
+	tabs.add_theme_constant_override("separation", 8)
+	_rows.add_child(tabs)
+	for b in [["mine", "Mənim"], ["all", "Hamı"], ["week", "Bu həftə"]]:
+		var k := UiKit.button(tabs, b[1], GOLD_BTN if _board == b[0] else BROWN, 26)
+		k.custom_minimum_size = Vector2(150, 80)
+		var scope: String = b[0]
+		k.pressed.connect(func() -> void:
+			_board = scope
+			if scope != "mine":
+				_load_board(scope)
+			sfx.emit("tap")
+			_refresh())
+	if _board == "mine":
+		var runs: Array = prog.save.get_value("runs")
+		if runs.is_empty():
+			_row("Hələ qaçış yoxdur", "Oyna və ilk rekordunu qoy!", "", false, Callable())
+		for i in runs.size():
+			var r: Dictionary = runs[i]
+			_row("%d. %d xal" % [i + 1, int(r["score"])], "%d m · %d çörək · %s" % [int(r["m"]), int(r["bread"]), r.get("date", "")],
+				"", false, Callable())
+		return
+	_nick_rows()
+	if not bool(prog.save.get_value("online")):
+		_row("Onlayn liderlər bağlıdır", "Ayarlardan aça bilərsən", "", false, Callable())
+		return
+	if online == null or not online.enabled():
+		_row("Onlayn liderlər tezliklə", "Server qoşulanda burada hamının rekordları görünəcək", "", false, Callable())
+		return
+	var state := String(_board_state.get(_board, ""))
+	if state == "loading" or state == "":
+		_row("Yüklənir…", "", "", false, Callable())
+		if state == "":
+			_load_board(_board)
+		return
+	if state == "failed":
+		_row("İnternet yoxdur", "Bir az sonra yenə yoxla", "Yenə", true, func() -> void:
+			_load_board(_board)
+			_refresh())
+		return
+	var data: Dictionary = _board_data.get(_board, {})
+	var rows: Array = data.get("rows", [])
+	if rows.is_empty():
+		_row("Hələ heç kim yoxdur", "İlk sən ol!", "", false, Callable())
+	for r in rows:
+		_row(("%d. %s (sən)" if r.get("you", false) else "%d. %s") % [int(r["rank"]), r["nick"]], "%d xal · %d m" % [int(r["score"]), int(r["metres"])], "", false, Callable())
+	var mine: Variant = data.get("me")
+	if mine is Dictionary and int(mine.get("rank", 0)) > rows.size():
+		_row("Sənin yerin: %d" % int(mine["rank"]), "%d xal" % int(mine["score"]), "", false, Callable())
+
+
+## The nickname shown on the online board, chosen from fixed words (never typed).
+func _nick_rows() -> void:
+	var n := prog.nick()
+	var na := Catalog.NICK_ADJ.size()
+	var nh := Catalog.NICK_HERO.size()
+	var a := n / nh if n >= 0 else 0
+	var h := n % nh if n >= 0 else 0
+	var line := HBoxContainer.new()
+	line.alignment = BoxContainer.ALIGNMENT_CENTER
+	line.add_theme_constant_override("separation", 8)
+	_rows.add_child(line)
+	var cap := UiKit.label(line, 28, GOLD)
+	cap.text = "Ləqəbin: %s" % Catalog.nick_name(a * nh + h) if n >= 0 else "Ləqəb seç"
+	for part in [["adj", na], ["hero", nh]]:
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		row.add_theme_constant_override("separation", 10)
+		_rows.add_child(row)
+		var is_adj: bool = part[0] == "adj"
+		for step in [-1, 1]:
+			var b := UiKit.button(row, "◀" if step < 0 else "▶", BROWN, 30)
+			b.custom_minimum_size = Vector2(96, 80)
+			b.pressed.connect(func() -> void:
+				if is_adj:
+					prog.set_nick(a + step, h)
+				else:
+					prog.set_nick(a, h + step)
+				sfx.emit("tap")
+				_refresh())
+			if step < 0:
+				var w := UiKit.label(row, 30, CREAM)
+				w.text = Catalog.NICK_ADJ[a] if is_adj else Catalog.NICK_HERO[h]
+				w.custom_minimum_size = Vector2(220, 0)
+				w.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+
+func _load_board(scope: String) -> void:
+	if online == null or not online.enabled():
+		return
+	_board_state[scope] = "loading"
+	online.fetch_top(scope, prog.player_id())
+
+
+## The game's Online answered: show the list (or that it failed).
+func board_loaded(scope: String, data: Dictionary) -> void:
+	_board_data[scope] = data
+	_board_state[scope] = "ok"
+	if screen == "leaders":
+		_refresh()
+
+
+## The top list could not be fetched.
+func board_failed(scope: String) -> void:
+	_board_state[scope] = "failed"
+	if screen == "leaders":
+		_refresh()
 
 
 func _screen_settings() -> void:
@@ -410,6 +515,10 @@ func _screen_settings() -> void:
 			prog.toggle(key)
 			settings_changed.emit()
 			_refresh(), GREEN if on else BROWN)
+	var ol := bool(prog.save.get_value("online"))
+	_row("Onlayn liderlər", "Ancaq ləqəb və xal göndərilir, ad yox", "Açıq" if ol else "Bağlı", true, func() -> void:
+		prog.toggle("online")
+		_refresh(), GREEN if ol else BROWN)
 	var cur := String(prog.save.get_value("lang"))
 	var head := UiKit.label(_rows, 34, GOLD)
 	head.text = "Dil"

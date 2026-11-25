@@ -72,6 +72,17 @@ const MISSIONS := [
 ]
 
 
+## Online nicknames: an adjective and a hero, chosen from these lists only (no free text, nothing
+## personal). The same lists, in the same order, are in server/leaderboard/worker.js.
+const NICK_ADJ := ["Cəld", "Qoçaq", "Bic", "Şən", "Ağıllı", "Sürətli", "Cəsur", "Zirək"]
+const NICK_HERO := ["Cırtdan", "Simurq", "Kəndirbaz", "Pəri", "Keçəl", "Tıq-Tıq", "Məlik", "Kosa", "Dəvə", "Buta"]
+
+
+## The nickname for a number (adjective × hero), as the server shows it.
+static func nick_name(n: int) -> String:
+	return "%s %s" % [NICK_ADJ[n / NICK_HERO.size()], NICK_HERO[n % NICK_HERO.size()]]
+
+
 ## The day's words: their letters lie in the street in order; spelling one gives Nənə's bundle.
 const WORDS := ["NOVRUZ", "XALÇA", "TƏNDİR", "QALA", "TAR", "PAXLAVA", "ŞƏKƏRBURA", "NAR", "BUTA", "KAMANÇA",
 	"BALABAN", "SƏMƏNİ", "PAPAQ", "ÇARIQ", "NAĞARA", "SİMURQ"]
