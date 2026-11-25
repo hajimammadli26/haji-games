@@ -23,6 +23,7 @@ var simurqs := 0
 var reserved := [0.0, 0.0, 0.0] ## a caravan's lane stays clear up to this s
 var hunt_open := false ## the week's buta hunt is on: buta stones lie in the street
 var letters := true ## the day's word: its letters lie in the street, one at a time
+var treats := false ## this city has its own treat: some bread lines are made of it
 
 
 func _init(run: RunSim, seed_value: int) -> void:
@@ -157,9 +158,10 @@ func _row() -> void:
 				taken[mini(1, count - 1)] = true
 				sim.add_pickup("letter", l, s - 4.0 + mini(1, count - 1) * 2.2, 1.1)
 		if rng.randf() < 0.7:
+			var kind := "treat" if treats and rng.randf() < tune.treat_share else "bread"
 			for i in count:
 				if not taken.has(i):
-					sim.add_pickup("bread", l, s - 4.0 + i * 2.2, 0.6)
+					sim.add_pickup(kind, l, s - 4.0 + i * 2.2, 0.6)
 	rows += 1
 	next_s = maxf(s + gap_dist, end + 3.0 + v * 0.35)
 

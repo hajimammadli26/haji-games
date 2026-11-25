@@ -37,13 +37,11 @@ var div_fig: Node3D
 var bird: Node3D
 var fly_carpet: Node3D
 var camera: Camera3D
-var world_env: Environment
-var sky_mat: ProceduralSkyMaterial
-var wall_color := Color("#d9a95f")
-var street: MeshInstance3D
-var houses: Array = [] ## [node, far end s]
-var house_next := {-1: -20.0, 1: -20.0}
-var house_rng := RandomNumberGenerator.new()
+var world: World
+var fx: Fx
+var anim := Animator.new()
+var shake := 0.0 ## seconds of camera shake left (a stumble, a crash)
+var escaped_now := false ## the Div was just shaken off (Cırtdan sticks out his tongue)
 var anim_t := 0.0
 var started := false
 var paused := false
@@ -127,79 +125,42 @@ func _ready() -> void:
 # --- world -------------------------------------------------------------------------------------
 
 func _build_world() -> void:
-	var env := WorldEnvironment.new()
-	var e := Environment.new()
-	e.background_mode = Environment.BG_SKY
-	var sky := Sky.new()
-	var sm := ProceduralSkyMaterial.new()
-	sm.sky_top_color = Color("#3d8fd6")
-	sm.sky_horizon_color = Color("#f6dfae")
-	sm.ground_horizon_color = Color("#f3d6a4")
-	sm.ground_bottom_color = Color("#c98a4a")
-	sky.sky_material = sm
-	e.sky = sky
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	e.ambient_light_energy = 0.9
-	e.fog_enabled = true
-	e.fog_light_color = Color("#f3d6a4")
-	e.fog_density = 0.004
-	env.environment = e
-	add_child(env)
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-50, -30, 0)
-	sun.light_energy = 1.2
-	sun.light_color = Color("#fff1d6")
-	add_child(sun)
-	street = MeshInstance3D.new()
-	var pm := PlaneMesh.new()
-	pm.size = Vector2(8, 400)
-	street.mesh = pm
-	street.material_override = Figures.mat(Color("#bfa27a"))
-	add_child(street)
-	for sx in [-1.1, 1.1]: # lane grooves
-		var gr := MeshInstance3D.new()
-		var gb := BoxMesh.new()
-		gb.size = Vector3(0.08, 0.02, 400)
-		gr.mesh = gb
-		gr.material_override = Figures.mat(Color("#7d6a4f"))
-		gr.position.x = sx * tune.lane_width / 2.2
-		gr.set_meta("follow", true)
-		add_child(gr)
-	fly_carpet = Figures.flying_carpet()
+	world = World.new(tune)
+	add_child(world)
+	world.letter_text = func() -> String:
+		var dw := prog.day_word()
+		return String(dw["word"])[dw["got"]]
+	fx = Fx.new()
+	add_child(fx)
+	fly_carpet = Characters.flying_carpet()
 	fly_carpet.position.y = 0.08
 	fly_carpet.visible = false
-	div_fig = Figures.div()
+	div_fig = Characters.div()
 	div_fig.scale = Vector3.ONE * 0.85
 	div_fig.rotation.y = PI # runs toward -z, his back to the camera
 	add_child(div_fig)
-	bird = Figures.simurq()
+	bird = Characters.simurq()
 	bird.visible = false
 	add_child(bird)
-	world_env = e
-	sky_mat = sm
 	camera = Camera3D.new()
 	camera.fov = 60
-	camera.far = 400
+	camera.far = 500
 	add_child(camera)
 
 
-## Draws Cırtdan as the chosen character and costume, and the street in the chosen city's colours.
+## Draws Cırtdan as the chosen character and costume, and the street as the chosen city.
 func _apply_look() -> void:
 	if runner != null:
 		runner.remove_child(fly_carpet)
 		runner.queue_free()
-	runner = Figures.cirtdan(prog.look())
+	runner = Characters.runner(prog.look())
 	add_child(runner)
 	runner.add_child(fly_carpet)
-	var city := Catalog.find(Catalog.CITIES, String(save.get_value("city")))
-	street.material_override = Figures.mat(Color(city["street"]))
-	world_env.fog_light_color = Color(city["fog"])
-	sky_mat.sky_horizon_color = Color(city["fog"]).lightened(0.2)
-	sky_mat.ground_horizon_color = Color(city["fog"])
-	if wall_color != Color(city["wall"]):
-		wall_color = Color(city["wall"])
+	var city := String(save.get_value("city"))
+	if city != world.city:
+		world.set_city(city)
 		if sim != null and not started:
-			_new_run() # rebuild the houses in the new colour
+			_new_run() # the new city's street
 
 
 func _new_run() -> void:
@@ -209,12 +170,8 @@ func _new_run() -> void:
 	for p in (sim.pickups if sim else []):
 		if p.node:
 			p.node.queue_free()
-	for h in houses:
-		h[0].queue_free()
-	houses.clear()
-	house_next = {-1: -20.0, 1: -20.0}
 	var seed_value := int(args.get("seed", str(Time.get_ticks_usec() % 100000)))
-	house_rng.seed = seed_value + 17
+	world.reset(seed_value)
 	sim = RunSim.new(tune)
 	sim.levels = save.get_value("levels")
 	sim.carpets += int(save.get_value("carpets"))
@@ -222,22 +179,28 @@ func _new_run() -> void:
 	sim.base_mult = int(save.get_value("mmult"))
 	sim.bread_taken.connect(func(total: int) -> void:
 		snd.play("bread", 0.96 + 0.08 * float(total % 5) / 4.0)
+		fx.burst(runner.position + Vector3(0, 0.9, -0.4), Color("#ffd34a"), 8)
 		prog.mission("run_bread", total)
 		prog.mission("bread", 1))
 	sim.passed.connect(func(kind: String) -> void:
 		if kind == "basket" or kind == "carpet":
 			prog.mission(kind, 1))
-	sim.escaped.connect(prog.mission.bind("escape", 1))
+	sim.escaped.connect(func() -> void:
+		prog.mission("escape", 1)
+		escaped_now = true)
 	sim.item_taken.connect(_on_item)
 	sim.stumbled.connect(func() -> void:
 		_banner("Ay Cırtdaaan!")
 		snd.play("stumble")
-		snd.play("ay_cirtdan"))
+		snd.play("ay_cirtdan")
+		shake = 0.35)
 	sim.crashed.connect(func(k: String) -> void:
 		snd.play("crash")
+		shake = 0.6
 		_on_dead(k))
 	sim.caught.connect(func() -> void:
 		snd.play("hamm")
+		shake = 0.4
 		_on_dead(""))
 	sim.jumped.connect(snd.play.bind("jump"))
 	sim.slid.connect(snd.play.bind("slide"))
@@ -248,27 +211,12 @@ func _new_run() -> void:
 	sim.landed_from_flight.connect(_banner.bind("Yerə endin"))
 	gen = TrackGen.new(sim, seed_value)
 	gen.hunt_open = prog.hunt()["open"]
+	gen.treats = Props.TREATS.has(world.city)
 	gen.fill()
-	_fill_houses()
 	banked = 0
 	over_panel.visible = false
-	_sync()
-
-
-func _fill_houses() -> void:
-	for side in [-1, 1]:
-		while house_next[side] < sim.s + tune.view_ahead + 20.0:
-			var made: Array = Figures.house(side, house_rng, wall_color)
-			var node: Node3D = made[0]
-			var w: float = made[1]
-			node.position = Vector3(side * 4.3, 0, -(house_next[side] + w * 0.5))
-			add_child(node)
-			houses.append([node, house_next[side] + w])
-			house_next[side] += w + (2.5 if house_rng.randf() < 0.15 else 0.05)
-	for i in range(houses.size() - 1, -1, -1):
-		if houses[i][1] < sim.s - 25.0:
-			houses[i][0].queue_free()
-			houses.remove_at(i)
+	anim = Animator.new()
+	_sync(0.0)
 
 
 # --- the step ----------------------------------------------------------------------------------
@@ -294,6 +242,7 @@ func _physics_process(dt: float) -> void:
 	input.clear()
 	if sim.grounded and not _was_grounded and sim.dead == "":
 		snd.play("land")
+		fx.burst(Vector3(sim.x, sim.y + 0.05, -sim.s), Color(0.85, 0.72, 0.52, 0.8), 10)
 	if sim.lane != _was_lane:
 		snd.play("lane")
 	_was_grounded = sim.grounded
@@ -312,7 +261,6 @@ func _physics_process(dt: float) -> void:
 		dist_t = 0.0
 		prog.mission("run_dist", sim.s)
 	gen.fill()
-	_fill_houses()
 	if args.has("shot") and sim.time >= float(args.get("shot_at", "3")) and not shooting:
 		shooting = true
 		_shoot()
@@ -327,7 +275,7 @@ func _process(dt: float) -> void:
 	word_box.modulate.a = minf(1.0, word_t / 0.5)
 	count_t = maxf(0.0, count_t - dt)
 	count_label.visible = count_t > 0.0 and started
-	_sync()
+	_sync(dt)
 	_update_hud()
 	if not started or (sim.dead != "" and over_panel.visible) or story != null:
 		snd.music("menu")
@@ -336,93 +284,51 @@ func _process(dt: float) -> void:
 		snd.set_speed_ratio(1.0 + (sim.speed - tune.speed_start) * tune.music_bpm_gain / tune.music_bpm)
 
 
-## Places every drawing where the run says it is, between the last two steps so the view never judders.
-func _sync() -> void:
+## Places every drawing where the run says it is, between the last two steps so the view never judders,
+## and poses the figures.
+func _sync(dt: float) -> void:
 	var a := Engine.get_physics_interpolation_fraction() if started and not paused else 1.0
 	var s := lerpf(sim.prev_s, sim.s, a)
 	var x := lerpf(sim.prev_x, sim.x, a)
 	var y := lerpf(sim.prev_y, sim.y, a)
 	runner.position = Vector3(x, y, -s)
 	runner.visible = sim.invuln <= 0.0 or int(anim_t * 12.0) % 2 == 0
-	_pose_runner()
+	var flying := sim.is_flying() or sim.carpet_t > 0.0
+	anim.runner(runner, {"t": anim_t, "dt": dt, "speed": sim.speed, "x": x, "grounded": sim.grounded or not started,
+		"vy": sim.vy, "sliding": sim.is_sliding(), "flying": sim.is_flying(), "stumbling": sim.stumble_t > 0.0,
+		"dead": sim.dead, "idle": not started, "escaped": escaped_now})
+	escaped_now = false
 	fly_carpet.visible = sim.carpet_t > 0.0 or sim.power["fly"] > 0.0
+	if fly_carpet.visible:
+		fly_carpet.rotation.z = sin(anim_t * 2.0) * 0.05
+		fly_carpet.rotation.x = sin(anim_t * 1.6) * 0.04
 	bird.visible = sim.power["simurq"] > 0.0 and sim.dead == ""
 	if bird.visible: # Cırtdan hangs from its talons
 		bird.position = Vector3(x, y + 1.6, -s)
-		var flap := sin(anim_t * 9.0) * 0.5
-		var wings: Array = bird.get_meta("parts")["wings"]
-		wings[0].rotation.z = flap
-		wings[1].rotation.z = -flap
+		Animator.simurq(bird, anim_t)
 	var gap := sim.div_gap
 	if sim.intro_t > 0.0 and sim.div_t <= 0.0:
 		gap = maxf(gap, 4.5) # the opening chase: further back and to the side
+	if not started:
+		gap = 30.0 # behind the menu he is out of sight
 	div_fig.position = Vector3(x * 0.6 - (1.9 if sim.intro_t > 0.0 else 0.9), 0, -(s - gap))
 	div_fig.visible = gap < tune.div_far_gap - 1.0
-	_pose_div()
-	for o in sim.obstacles:
-		if o.node == null:
-			o.node = Figures.obstacle(o.kind, o.length)
-			add_child(o.node)
-		o.node.visible = not o.cleared
-		o.node.position = Vector3(sim.lane_x(o.lane), 0, -(o.s0 + o.length * 0.5))
-	for p in sim.pickups:
-		if p.node == null:
-			var dw := prog.day_word() if p.kind == "letter" else {}
-			p.node = Figures.pickup(p.kind, String(dw["word"])[dw["got"]] if p.kind == "letter" else "")
-			add_child(p.node)
-		if p.taken:
-			p.node.scale = p.node.scale * 0.8
-			p.node.position.y += 0.1
-			p.node.visible = p.node.scale.x > 0.05
-		else:
-			var bob := 0.0 if p.kind == "bread" else sin(anim_t * 3.0 + p.s) * 0.12
-			p.node.position = Vector3(p.x, p.y + bob, -p.s)
-			p.node.rotation.y = anim_t * 3.0 + p.s
-	street.position = Vector3(0, 0, -s - 150.0)
-	for c in get_children():
-		if c.has_meta("follow"):
-			c.position.z = -s - 150.0
+	anim.div(div_fig, anim_t, sim.speed, sim.div_t > 0.0, sim.dead == "caught")
+	world.update(sim, s, anim_t)
+	fx.follow(runner.position, started and sim.grounded and sim.dead == "" and not flying and not sim.is_sliding(), started and flying)
 	var tall := get_viewport().get_visible_rect().size.aspect() < 1.0 # a phone held upright: closer, lower
 	var follow := 0.85 if tall else 0.55
-	camera.fov = 75.0 if tall else 60.0
-	camera.position = Vector3(x * follow, (4.3 if tall else 3.7) + y * 0.6, -s + (4.9 if tall else 6.2))
+	var boost_kick := 6.0 if sim.power["fly"] > 0.0 else 0.0
+	camera.fov = lerpf(camera.fov, (75.0 if tall else 60.0) + boost_kick + (sim.speed - tune.speed_start) * 0.4, minf(1.0, dt * 3.0))
+	shake = maxf(0.0, shake - dt)
+	var jolt := Vector3(sin(anim_t * 60.0), cos(anim_t * 47.0), 0) * shake * 0.25
+	if not started: # the menu: a slow turn around Cırtdan dancing
+		var a2 := sin(anim_t * 0.3) * 0.5
+		camera.position = Vector3(x + sin(a2) * 3.5, 1.9, -s - cos(a2) * 3.8) # in front: he faces -z
+		camera.look_at(Vector3(x, 1.75, -s)) # he stands low in the picture, under the menu
+		return
+	camera.position = Vector3(x * follow, (4.3 if tall else 3.7) + y * 0.6, -s + (4.9 if tall else 6.2)) + jolt
 	camera.look_at(Vector3(x * (0.75 if tall else 0.3), (0.9 if tall else 1.0) + y * 0.55, -s - (8.0 if tall else 7.0)))
-
-
-func _pose_runner() -> void:
-	var parts: Dictionary = runner.get_meta("parts")
-	var rig: Node3D = parts["rig"]
-	var run := sin(anim_t * minf(18.0, 6.0 + sim.speed * 0.5))
-	rig.rotation.x = 0.0
-	rig.position.y = 0.0
-	if sim.is_sliding() and sim.grounded: # slide: lean back
-		rig.rotation.x = -1.15
-		rig.position.y = 0.18
-	elif not sim.grounded: # jump or flight: knees up, arms up
-		parts["leg_l"].rotation.x = -0.9
-		parts["leg_r"].rotation.x = -0.3
-		parts["arm_l"].rotation.x = -2.6
-		parts["arm_r"].rotation.x = -2.4
-	else:
-		parts["leg_l"].rotation.x = run * 0.9
-		parts["leg_r"].rotation.x = -run * 0.9
-		parts["arm_l"].rotation.x = -run * 0.9
-		parts["arm_r"].rotation.x = run * 0.9
-		rig.position.y = absf(run) * 0.06
-	if sim.dead == "crash":
-		runner.rotation.x = minf(1.4, runner.rotation.x + 0.1)
-	elif sim.dead == "":
-		runner.rotation.x = 0.0
-
-
-func _pose_div() -> void:
-	var parts: Dictionary = div_fig.get_meta("parts")
-	var run := sin(anim_t * (4.0 + sim.speed * 0.3))
-	parts["leg_l"].rotation.x = run * 0.7
-	parts["leg_r"].rotation.x = -run * 0.7
-	parts["arm_l"].rotation.x = -run * 0.8 - 0.3
-	parts["arm_r"].rotation.x = run * 0.5 - 1.2
-	parts["rig"].position.y = absf(run) * 0.12
 
 
 # --- input: keys for development, swipes and taps on the phone ------------------------------------

@@ -78,6 +78,10 @@ extends Resource
 @export var league_gold: int = 15000
 @export var league_div: int = 40000
 
+@export_group("City treats")
+@export var treat_share: float = 0.25 ## share of bread lines made of the city's own treat (halva, fındıq ...)
+@export var treat_worth: int = 3 ## bread one treat is worth
+
 @export_group("Hunts and gifts")
 @export var letter_chance: float = 0.16 ## chance per row of the next letter of the day's word
 @export var hunt_target: int = 40 ## buta stones to find in a week's hunt

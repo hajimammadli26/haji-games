@@ -106,62 +106,61 @@ func _show(i: int) -> void:
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(40, 40)
 	ground.mesh = pm
-	ground.material_override = Figures.mat(Color("#bfa27a"))
+	ground.material_override = Kit.tex("cobble", Vector2(6, 6))
 	_stage.add_child(ground)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3
 	for side in [-1, 1]:
-		var h: Node3D = Figures.house(side, rng)[0]
+		var h: Node3D = Scenery.house("baku", side, rng)[0]
 		h.rotation.y = PI / 2
 		h.position = Vector3(side * 2.5, 0, -7.5)
 		_stage.add_child(h)
 	if night:
-		var moon := Figures._part(_stage, Figures._ball(1.2), Color("#fff6d8"), Vector3(6, 9, -20))
-		moon.material_override = Figures.mat(Color("#fff0c0"), true)
+		Kit.part(_stage, Kit.ball(1.2), Kit.mat("#fff0c0", true), Vector3(6, 9, -20))
 	match p["stage"]:
 		"home":
-			_at(Figures.cirtdan(look), -0.4, 0, PI - 0.3, 1.3)
-			_at(Figures.nene(), 1.1, -0.3, -0.3, 1.1)
+			_at(Characters.runner(look), -0.4, 0, PI - 0.3, 1.3)
+			_at(Characters.nene(), 1.1, -0.3, -0.3, 1.1)
 		"bake":
-			_at(Figures.nene(), -0.9, -0.2, 0.4, 1.1)
-			_at(Figures.tendir(), 0.5, -0.6, 0, 1.4)
+			_at(Characters.nene(), -0.9, -0.2, 0.4, 1.1)
+			_at(Props.tendir(), 0.5, -0.6, 0, 1.4)
 			for k in 5:
-				var b := Figures.bread()
+				var b := Props.pickup("bread")
 				b.position = Vector3(1.4 + (k % 3) * 0.35, 0.3 + (k / 3) * 0.2, 0.2)
 				_stage.add_child(b)
-			_at(Figures.cirtdan(look), 2.4, 0.4, PI - 0.6, 1.3)
+			_at(Characters.runner(look), 2.4, 0.4, PI - 0.6, 1.3)
 		"steal":
-			var d := _at(Figures.div(), 0, -0.5, 0.5, 1.0)
+			var d := _at(Characters.div(), 0, -0.5, 0.5, 1.0)
 			d.get_meta("parts")["arm_l"].rotation.x = -2.2
 			d.get_meta("parts")["arm_r"].rotation.x = -2.2
-			_at(Figures.tendir(), 1.6, 0.6, 0, 1.0).position.y = 1.7
+			_at(Props.tendir(), 1.6, 0.6, 0, 1.0).position.y = 1.7
 			for k in 4:
-				var b := Figures.bread()
+				var b := Props.pickup("bread")
 				b.position = Vector3(-1.6 + (k % 2) * 0.4, 1.4 + k * 0.25, 0.7)
 				_stage.add_child(b)
 		"cave":
 			for k in 9:
-				var r := Figures._part(_stage, Figures._ball(1.2), Color("#4a4552"), Vector3(-6 + k * 1.6, 1.0, -3.0 - (k % 2)))
+				var r := Kit.part(_stage, Kit.ball(1.2, -1, 7), Kit.mat("#4a4552"), Vector3(-6 + k * 1.6, 1.0, -3.0 - (k % 2)))
 				r.scale = Vector3(1.0, 1.3, 0.9)
-			var d := _at(Figures.div(), -0.6, -0.8, 0.3, 1.0)
+			var d := _at(Characters.div(), -0.6, -0.8, 0.3, 1.0)
 			d.rotation.z = PI / 2 - 0.15
 			d.position.y = 0.9
-			var c := _at(Figures.cirtdan(look), 1.8, 0.6, PI + 0.9, 1.3)
+			var c := _at(Characters.runner(look), 1.8, 0.6, PI + 0.9, 1.3)
 			c.get_meta("parts")["leg_l"].rotation.x = 0.7
 			c.get_meta("parts")["leg_r"].rotation.x = -0.5
-			Figures._part(_stage, Figures._ball(0.45, 0.8), Color("#c9a46a"), Vector3(2.7, 0.45, 0.5))
+			Kit.part(_stage, Kit.ball(0.45, 0.8), Kit.mat("#c9a46a"), Vector3(2.7, 0.45, 0.5))
 		_:
-			var d := _at(Figures.div(), -1.8, -1.0, 0.7, 1.0)
+			var d := _at(Characters.div(), -1.8, -1.0, 0.7, 1.0)
 			d.get_meta("parts")["arm_l"].rotation.x = -2.4
 			d.get_meta("parts")["arm_r"].rotation.x = -1.6
-			var c := _at(Figures.cirtdan(look), 1.6, 0.6, PI / 2 + 0.2, 1.3)
+			var c := _at(Characters.runner(look), 1.6, 0.6, PI / 2 + 0.2, 1.3)
 			var parts: Dictionary = c.get_meta("parts")
 			parts["leg_l"].rotation.x = 0.9
 			parts["leg_r"].rotation.x = -0.9
 			parts["arm_l"].rotation.x = -0.9
 			parts["arm_r"].rotation.x = 0.9
 			for k in 8:
-				var b := Figures.bread()
+				var b := Props.pickup("bread")
 				b.position = Vector3(0.6 + k * 0.45, 0.25 + absf(sin(k)) * 0.8, 0.3 + (k % 3) * 0.4)
 				b.rotation = Vector3(k, k * 2, 0)
 				_stage.add_child(b)

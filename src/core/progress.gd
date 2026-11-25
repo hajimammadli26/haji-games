@@ -164,7 +164,7 @@ func choose_city(id: String) -> bool:
 	return true
 
 
-## The look for Figures.cirtdan(): the character's colours with the costume on top (costumes are Cırtdan's).
+## The look for Characters.runner(): the character's colours with the costume on top (costumes are Cırtdan's).
 func look() -> Dictionary:
 	var id := String(save.get_value("char"))
 	var l: Dictionary = (Catalog.find(Catalog.CHARS, id)["look"] as Dictionary).duplicate()

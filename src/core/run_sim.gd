@@ -502,7 +502,7 @@ func _take_pickups() -> void:
 	for p in pickups:
 		if p.taken:
 			continue
-		if p.kind == "bread" and (power["magnet"] > 0.0 or (flying and p.y > 3.0)): # the tray, or the sky line in flight
+		if (p.kind == "bread" or p.kind == "treat") and (power["magnet"] > 0.0 or (flying and p.y > 3.0)): # the tray, or the sky line in flight
 			var ds := p.s - s
 			var dxp := p.x - x
 			if absf(ds) < tune.magnet_radius and absf(dxp) < tune.magnet_radius:
@@ -514,6 +514,9 @@ func _take_pickups() -> void:
 			p.taken = true
 			if p.kind == "bread":
 				bread += 1
+				bread_taken.emit(bread)
+			elif p.kind == "treat": # the city's own treat counts as several bread
+				bread += tune.treat_worth
 				bread_taken.emit(bread)
 			elif p.kind == "nar":
 				nar_got += 1
