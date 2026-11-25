@@ -1,0 +1,162 @@
+# DRAFT: NOT ENABLED. GitHub runs only files in .github/workflows/*.yml.
+# To enable: review it, add the secrets below, then copy it to .github/workflows/android-release.yml.
+#
+# Builds a signed Android App Bundle (.aab) of Cırtdan with Godot 4.7.2 and keeps it as a run artifact.
+# Upload the .aab to Play Console by hand (internal testing first). This workflow never publishes.
+#
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   ANDROID_UPLOAD_KEYSTORE_BASE64  the upload keystore, base64:  base64 -w0 cirtdan-upload.jks
+#                                   (macOS: base64 -i cirtdan-upload.jks)
+#   ANDROID_UPLOAD_KEY_ALIAS        e.g. cirtdan
+#   ANDROID_UPLOAD_KEY_PASSWORD     the keystore/key password
+# The keystore is never committed. It exists only in the runner's temp folder during the job.
+#
+# The preset in export_presets.cfg is APK-only (gradle_build/use_gradle_build=false, export_format=0).
+# The job switches it to Gradle + AAB on the runner only. Better: make the same change in the editor once
+# and commit it (see release-checklist.md), then delete the "Patch preset" lines that do it.
+#
+# Assumptions to check on the first run: the Android SDK, build-tools and NDK versions Godot 4.7 needs
+# (Godot docs: "Exporting for Android"). Gradle installs any missing platform/build-tools by itself,
+# because setup-android accepts the licences.
+
+name: Android release (AAB)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: "versionName shown to players (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+      version_code:
+        description: "versionCode, a whole number that must be higher than every upload before it"
+        required: true
+        default: "1"
+      leaderboard_url:
+        description: "Leaderboard Worker URL (https://...). Empty = leaderboard off and no data collected"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release
+  cancel-in-progress: false
+
+jobs:
+  aab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      GODOT_VERSION: "4.7.2"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: android-actions/setup-android@v3
+
+      - name: Download Godot and export templates (checked against SHA512-SUMS)
+        run: |
+          set -euo pipefail
+          B="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          E="Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          T="Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          mkdir -p "$RUNNER_TEMP/godot" && cd "$RUNNER_TEMP/godot"
+          curl -fsSLO "$B/$E"; curl -fsSLO "$B/$T"; curl -fsSLO "$B/SHA512-SUMS.txt"
+          grep -E " ($E|$T)\$" SHA512-SUMS.txt | sha512sum -c -
+          unzip -q "$E" && mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" godot
+          D="$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$D" && unzip -q "$T" && mv templates/* "$D"/
+          echo "GODOT=$RUNNER_TEMP/godot/godot" >> "$GITHUB_ENV"
+
+      - name: Point the Godot editor at the Android SDK and Java
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.config/godot"
+          for f in editor_settings-4.7.tres editor_settings-4.tres; do
+            cat > "$HOME/.config/godot/$f" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          EOF
+          done
+
+      - name: Signing keys (upload key from secrets, throwaway debug key)
+        env:
+          KS_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$KS_B64" || { echo "secret ANDROID_UPLOAD_KEYSTORE_BASE64 is missing"; exit 1; }
+          echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          # Godot may also look for a debug keystore. This throwaway one never leaves the runner.
+          keytool -genkeypair -keystore "$RUNNER_TEMP/debug.keystore" -alias androiddebugkey \
+            -storepass android -keypass android -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US" -noprompt
+
+      - name: Import the project and install the Android build template
+        run: |
+          set -euo pipefail
+          "$GODOT" --headless --path . --import || true   # the first import may exit non-zero; the export step is the real check
+          "$GODOT" --headless --path . --install-android-build-template
+
+      - name: Patch preset (runner only, not committed)
+        env:
+          VNAME: ${{ inputs.version_name }}
+          VCODE: ${{ inputs.version_code }}
+          LB_URL: ${{ inputs.leaderboard_url }}
+        run: |
+          set -euo pipefail
+          [[ "$VCODE" =~ ^[0-9]+$ ]] || { echo "version_code must be a whole number"; exit 1; }
+          [[ "$VNAME" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "version_name must be MAJOR.MINOR.PATCH"; exit 1; }
+          P=export_presets.cfg
+          sed -i 's|^gradle_build/use_gradle_build=.*|gradle_build/use_gradle_build=true|' "$P"
+          sed -i 's|^gradle_build/export_format=.*|gradle_build/export_format=1|' "$P"
+          sed -i "s|^version/code=.*|version/code=$VCODE|" "$P"
+          sed -i "s|^version/name=.*|version/name=\"$VNAME\"|" "$P"
+          if [ -n "$LB_URL" ]; then
+            [[ "$LB_URL" =~ ^https://[A-Za-z0-9./_-]+$ ]] || { echo "leaderboard_url must be an https URL"; exit 1; }
+            sed -i "s|^online/leaderboard_url=.*|online/leaderboard_url=\"$LB_URL\"|" project.godot
+            grep -q '^permissions/internet=' "$P" \
+              && sed -i 's|^permissions/internet=.*|permissions/internet=true|' "$P" \
+              || sed -i 's|^permissions/custom_permissions=|permissions/internet=true\npermissions/custom_permissions=|' "$P"
+          fi
+          grep -E '^(gradle_build|version|permissions/internet)' "$P"
+
+      - name: Export the signed AAB
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ runner.temp }}/upload.jks
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          GODOT_ANDROID_KEYSTORE_DEBUG_PATH: ${{ runner.temp }}/debug.keystore
+          GODOT_ANDROID_KEYSTORE_DEBUG_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD: android
+          VNAME: ${{ inputs.version_name }}
+          VCODE: ${{ inputs.version_code }}
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          OUT="build/cirtdan-${VNAME}-${VCODE}.aab"
+          "$GODOT" --headless --path . --export-release "Android" "$OUT"
+          test -s "$OUT"
+          # Check the signature: the certificate must be the upload key's
+          keytool -printcert -jarfile "$OUT" | head -n 12
+          ls -l "$OUT"
+
+      - name: Remove the keys from the runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/debug.keystore"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cirtdan-aab-${{ inputs.version_name }}-${{ inputs.version_code }}
+          path: build/*.aab
+          retention-days: 14
+          if-no-files-found: error

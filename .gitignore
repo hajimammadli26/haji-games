@@ -180,3 +180,7 @@ dist/
 build/
 .env
 .env.*
+
+# Android signing keys: never commit
+*.jks
+*.keystore
