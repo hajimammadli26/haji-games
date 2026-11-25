@@ -81,6 +81,10 @@ window.CONFIG = {
   nut_share: { value: 0.25, min: 0, max: 1, step: 0.05 },    // share of bread lines that are fındıq (hazelnuts) in Qəbələ
   nut_worth: { value: 3, min: 1, max: 20, step: 1 },          // bread a handful of fındıq is worth
 
+  treat_share: { value: 0.25, min: 0, max: 1, step: 0.05 },  // share of bread lines that are the city's own treat (duz, naringi, alma)
+  treat_worth: { value: 3, min: 1, max: 20, step: 1 },        // bread each of those treats is worth
+  rain_count: { value: 700, min: 0, max: 3000, step: 50 },    // raindrops around the camera in Lənkəran
+
   // --- Score -----------------------------------------------------------------------------
   mult_every: { value: 500, min: 100, max: 2000, step: 50 },  // m per +1 multiplier (stand-in for missions)
   mult_cap: { value: 10, min: 1, max: 30, step: 1 },
