@@ -13,6 +13,8 @@ extends RefCounted
 ## A mission was finished in a run (the reward waits in Tapşırıqlar).
 signal mission_done(text: String)
 
+var day_override := -1 ## a fixed day number for checks (otherwise today's local date)
+
 var save: SaveData
 var tune: Tuning
 var rng := RandomNumberGenerator.new()
@@ -94,19 +96,9 @@ func buy_boost() -> bool:
 func open_box() -> String:
 	if not spend(tune.box_cost):
 		return ""
-	var r := rng.randf()
-	if r < 0.4:
-		var n := 300 + rng.randi_range(0, 12) * 100
-		_add("bread", n)
-		return "Bağlamadan %d yağ çörəyi çıxdı!" % n
-	if r < 0.7:
-		_add("nar", 1)
-		return "Bağlamadan nar çıxdı!"
-	if r < 0.9:
-		_add("carpets", 1)
-		return "Bağlamadan uçan xalça çıxdı!"
-	_add("nar", 2)
-	return "Bağlamadan iki nar çıxdı!"
+	var g := gift()
+	save.flush()
+	return "Bağlamadan çıxdı: " + g
 
 
 # ---- Characters, costumes, cities -------------------------------------------------------------
@@ -127,7 +119,9 @@ func has_char(id: String) -> bool:
 	if _owns("chars", id):
 		return true
 	var c := Catalog.find(Catalog.CHARS, id)
-	return c.get("claims", false) and int(save.get_value("claims")) >= tune.kecel_claims
+	if c.get("claims", false) and int(save.get_value("claims")) >= tune.kecel_claims:
+		return true
+	return c.get("stones", false) and int(save.get_value("stones")) >= tune.peri_stones
 
 
 ## Chooses a character, buying it first if needed. Returns false if it cannot be had.
@@ -254,6 +248,120 @@ func claim(i: int) -> int:
 ## Turns a setting on or off (music, sound).
 func toggle(key: String) -> void:
 	save.set_value(key, not bool(save.get_value(key)))
+
+
+# ---- The day's word, the weekly buta hunt, magic stones, Nənə's gifts ---------------------------
+
+## Today as a day number (days since 1970 in local time).
+func day() -> int:
+	if day_override >= 0:
+		return day_override
+	var bias := int(Time.get_time_zone_from_system().get("bias", 0)) * 60
+	return int((Time.get_unix_time_from_system() + bias) / 86400.0)
+
+
+## An integer from the save (dflt when it was never set).
+func get_int(key: String, dflt: int = 0) -> int:
+	var v: Variant = save.get_value(key)
+	return dflt if v == null else int(v)
+
+
+## The word being hunted: {word, got}. The day picks where the list starts; each word spelled moves on.
+func day_word() -> Dictionary:
+	var w: String = Catalog.WORDS[(day() + get_int("wordN")) % Catalog.WORDS.size()]
+	if save.get_value("wordKey") != w: # a new word (a new day) starts empty
+		save.put("wordKey", w)
+		save.put("wordGot", 0)
+	return {"word": w, "got": mini(get_int("wordGot"), w.length() - 1)}
+
+
+## The next letter was picked up. Returns {word, got, gifts}; gifts is non-empty when the word is spelled
+## (the day's first word gives one gift per day of the streak, up to tune.word_streak_cap).
+func take_letter() -> Dictionary:
+	var dw := day_word()
+	var w: String = dw["word"]
+	var got: int = dw["got"] + 1
+	save.put("wordGot", got)
+	var out := {"word": w, "got": got, "gifts": []}
+	if got >= w.length():
+		var d := day()
+		var first := get_int("wordDone", -1) != d
+		if first:
+			save.put("wordStreak", get_int("wordStreak") + 1 if get_int("wordDone", -1) == d - 1 else 1)
+			save.put("wordDone", d)
+		var n := mini(tune.word_streak_cap, get_int("wordStreak")) if first else 1
+		for i in n:
+			out["gifts"].append(gift())
+		save.put("wordN", get_int("wordN") + 1) # straight on to the next word
+		save.put("wordGot", 0)
+	save.flush()
+	return out
+
+
+## The week's buta hunt: {got, need, open}.
+func hunt() -> Dictionary:
+	var week := day() / 7
+	if get_int("huntWeek", -1) != week:
+		save.put("huntWeek", week)
+		save.put("huntGot", 0)
+	return {"got": get_int("huntGot"), "need": tune.hunt_target, "open": get_int("huntDone", -1) != week}
+
+
+## A buta stone was picked up. Returns a message when the hunt is won ("" otherwise): the first win opens
+## Məlikməmməd, later wins give three bundles and tune.hunt_bread.
+func take_buta() -> String:
+	var h := hunt()
+	if not h["open"]:
+		return ""
+	save.put("huntGot", h["got"] + 1)
+	var msg := ""
+	if h["got"] + 1 >= h["need"]:
+		save.put("huntDone", day() / 7)
+		if not _owns("chars", "melik"):
+			_own("chars", "melik")
+			msg = "Həftəlik ov bitdi! Məlikməmməd açıldı!"
+		else:
+			var g := [gift(), gift(), gift()]
+			save.put("bread", bread() + tune.hunt_bread)
+			msg = "Həftəlik ov bitdi! %s, %d çörək" % [", ".join(g), tune.hunt_bread]
+	save.flush()
+	return msg
+
+
+## A magic stone was picked up. Returns a message when Pəri qız opens.
+func take_stone() -> String:
+	save.put("stones", get_int("stones") + 1)
+	save.flush()
+	if get_int("stones") == tune.peri_stones and not _owns("chars", "peri"):
+		return "Sehrli daşlar: Pəri qız açıldı!"
+	return ""
+
+
+## Once a day: Nənə's bundle. Returns what was in it, or "" if today's gift was already given.
+func daily_gift() -> String:
+	if get_int("giftDay", -1) == day():
+		return ""
+	save.put("giftDay", day())
+	var g := gift()
+	save.flush()
+	return g
+
+
+## A free Nənənin bağlaması; returns what was in it.
+func gift() -> String:
+	var r := rng.randf()
+	if r < 0.4:
+		var n := 300 + rng.randi_range(0, 12) * 100
+		save.put("bread", bread() + n)
+		return "%d yağ çörəyi" % n
+	if r < 0.7:
+		save.put("nar", get_int("nar") + 1)
+		return "nar"
+	if r < 0.9:
+		save.put("carpets", get_int("carpets") + 1)
+		return "uçan xalça"
+	save.put("nar", get_int("nar") + 2)
+	return "iki nar"
 
 
 # ---- Runs and the leaderboard -----------------------------------------------------------------

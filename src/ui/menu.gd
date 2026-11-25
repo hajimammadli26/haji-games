@@ -15,6 +15,8 @@ extends Control
 signal play
 ## The character, costume or city changed (the game redraws Cırtdan and the street).
 signal look_changed
+## Nağıl was tapped in Ayarlar: show the story again.
+signal story
 
 const SCREENS := {
 	"shop": "Nənənin dükanı", "costumes": "Geyim dükanı", "chars": "Personajlar", "cities": "Şəhərlər",
@@ -89,11 +91,11 @@ func open(which: String) -> void:
 	_refresh()
 
 
-## A short message at the bottom.
-func toast(t: String) -> void:
+## A short message at the bottom (secs: how long it stays).
+func toast(t: String, secs: float = 2.2) -> void:
 	_toast.text = t
 	_toast.visible = true
-	_toast_t = 2.2
+	_toast_t = secs
 
 
 # --- building --------------------------------------------------------------------------------------
@@ -284,6 +286,11 @@ func _screen_chars() -> void:
 		var own := prog.has_char(id)
 		var price: int = c["price"]
 		var sub: String = c["desc"]
+		if c.get("stones", false) and not own:
+			sub += " · pulsuz: sehrli daşlar %d/%d" % [mini(int(prog.save.get_value("stones")), prog.tune.peri_stones), prog.tune.peri_stones]
+		if c.get("hunt", false) and not own:
+			var h := prog.hunt()
+			sub += " · pulsuz: həftəlik ov, buta daşları %d/%d" % [mini(h["got"], h["need"]), h["need"]]
 		if c.get("claims", false) and not own:
 			sub += " · pulsuz: %d/%d tapşırıq" % [mini(int(prog.save.get_value("claims")), prog.tune.kecel_claims), prog.tune.kecel_claims]
 		var btn := "Seçilib" if cur == id else ("Seç" if own else _price_btn("ch_" + id, price))
@@ -322,6 +329,17 @@ func _screen_missions() -> void:
 				_refresh(), RED)
 		else:
 			_row(m["txt"], "%s · mükafat %d çörək" % [p, m["reward"]], "", false, Callable())
+	var dw := prog.day_word()
+	var w: String = dw["word"]
+	var shown := ""
+	for i in w.length():
+		shown += (w[i] if i < dw["got"] else "_") + " "
+	_row("Günün sözü: " + shown.strip_edges(), "Hərfləri küçədə sırayla tap · hər gün ilk söz: ardıcıl günlər üçün daha çox hədiyyə (seriya %d)" % int(prog.get_int("wordStreak")), "", false, Callable())
+	var h := prog.hunt()
+	_row("Həftəlik ov: buta daşlarını tap", ("%d / %d · mükafat: %s" % [mini(h["got"], h["need"]), h["need"],
+		"3 bağlama və %d çörək" % prog.tune.hunt_bread if prog.has_char("melik") else "Məlikməmməd"]) if h["open"] else "Bu həftənin ovu bitdi! Gələn həftə yenisi",
+		"", false, Callable())
+	_row("Sehrli daşlar: %d" % int(prog.save.get_value("stones")), "%d daş Pəri qızı açır" % prog.tune.peri_stones, "", false, Callable())
 
 
 func _screen_leaders() -> void:
@@ -346,3 +364,4 @@ func _screen_settings() -> void:
 			prog.toggle(key)
 			_refresh(), GREEN if on else BROWN)
 	_row("Dil", "Azərbaycan dili (türk, ingilis, rus dilləri tezliklə)", "", false, Callable())
+	_row("Nağıl", "Cırtdanın hekayəsinə yenidən bax", "Bax", true, func() -> void: story.emit())

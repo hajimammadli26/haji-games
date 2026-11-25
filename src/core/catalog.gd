@@ -16,9 +16,9 @@ const CHARS := [
 		"look": {"hat": "tall", "hat_color": "#f3ecd8", "vest": "#c8322c", "shirt": "#f2b632", "pants": "#1d4f9a"}},
 	{"id": "kosa", "name": "Kosa", "desc": "Novruz bayramının obrazı", "price": 8000,
 		"look": {"hat": "kosa", "hat_color": "#3b2414", "vest": "#8a6a44", "shirt": "#c9a46a", "pants": "#5a3a22"}},
-	{"id": "peri", "name": "Pəri qız", "desc": "Sehrli qanadlı qız", "price": 12000,
+	{"id": "peri", "name": "Pəri qız", "desc": "Sehrli qanadlı qız", "price": 12000, "stones": true,
 		"look": {"hat": "peri", "hat_color": "#e8c27a", "vest": "#8ec9e8", "shirt": "#f7f0ff", "pants": "#b48ad8"}},
-	{"id": "melik", "name": "Məlikməmməd", "desc": "Cəsur şahzadə, qılınclı", "price": 15000,
+	{"id": "melik", "name": "Məlikməmməd", "desc": "Cəsur şahzadə, qılınclı", "price": 15000, "hunt": true,
 		"look": {"hat": "crown", "hat_color": "#d8a53a", "vest": "#1d3f8a", "shirt": "#f3ecd8", "pants": "#2a2a3a"}},
 ]
 
@@ -70,6 +70,11 @@ const MISSIONS := [
 	{"k": "powers", "t": 3, "txt": "%d güclənmə topla"},
 	{"k": "bread", "t": 400, "txt": "Cəmi %d yağ çörəyi topla"},
 ]
+
+
+## The day's words: their letters lie in the street in order; spelling one gives Nənə's bundle.
+const WORDS := ["NOVRUZ", "XALÇA", "TƏNDİR", "QALA", "TAR", "PAXLAVA", "ŞƏKƏRBURA", "NAR", "BUTA", "KAMANÇA",
+	"BALABAN", "SƏMƏNİ", "PAPAQ", "ÇARIQ", "NAĞARA", "SİMURQ"]
 
 
 ## The entry with this id in a list (or the first one).

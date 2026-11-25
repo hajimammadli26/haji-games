@@ -77,3 +77,12 @@ extends Resource
 @export var league_silver: int = 5000
 @export var league_gold: int = 15000
 @export var league_div: int = 40000
+
+@export_group("Hunts and gifts")
+@export var letter_chance: float = 0.16 ## chance per row of the next letter of the day's word
+@export var hunt_target: int = 40 ## buta stones to find in a week's hunt
+@export var hunt_chance: float = 0.12 ## chance per row of a buta stone while the week's hunt is open
+@export var hunt_bread: int = 1000 ## bread for a finished hunt once Məlikməmməd is already open
+@export var stone_chance: float = 0.03 ## chance per row of a magic stone (sehrli daş)
+@export var peri_stones: int = 25 ## magic stones that open Pəri qız for free
+@export var word_streak_cap: int = 3 ## the most gifts a streak of days gives for the day's first word

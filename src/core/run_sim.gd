@@ -30,6 +30,8 @@ signal nar_taken
 signal shield_used
 ## The Simurq or the boost put Cırtdan back on the ground.
 signal landed_from_flight
+## A letter of the day's word, a buta stone or a magic stone was picked up (kind: letter, buta, stone).
+signal item_taken(kind: String)
 ## Cırtdan got past an obstacle in his own lane without touching it (over a basket, under a carpet).
 signal passed(kind: String)
 ## The Div had come close after a stumble and Cırtdan got away again.
@@ -521,6 +523,8 @@ func _take_pickups() -> void:
 				if p.kind == "simurq":
 					sky_bread(power_time("simurq"))
 				power_taken.emit(p.kind)
+			else:
+				item_taken.emit(p.kind)
 
 
 ## Things more than 25 m behind are dropped (the game frees their drawings first: see Game).

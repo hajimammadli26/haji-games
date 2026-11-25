@@ -21,6 +21,8 @@ var rows := 0
 var caravans := 0
 var simurqs := 0
 var reserved := [0.0, 0.0, 0.0] ## a caravan's lane stays clear up to this s
+var hunt_open := false ## the week's buta hunt is on: buta stones lie in the street
+var letters := true ## the day's word: its letters lie in the street, one at a time
 
 
 func _init(run: RunSim, seed_value: int) -> void:
@@ -132,12 +134,31 @@ func _row() -> void:
 			special = "simurq" if rng.randf() < tune.simurq_share else ["magnet", "shoe", "double", "pole"][rng.randi() % 4]
 		if special == "simurq":
 			simurqs += 1
-		var slot := mini(3, count - 1)
+		var taken := {}
 		if special != "":
-			sim.add_pickup(special, l, s - 4.0 + slot * 2.2, 1.0)
+			var k := mini(3, count - 1)
+			sim.add_pickup(special, l, s - 4.0 + k * 2.2, 1.0)
+			taken[k] = true
+		if hunt_open and rows > INTRO.size() and rng.randf() < tune.hunt_chance and not taken.has(count - 1):
+			sim.add_pickup("buta", l, s - 4.0 + (count - 1) * 2.2, 0.8)
+			taken[count - 1] = true
+		var ks := mini(2, count - 1)
+		if rows > INTRO.size() and rng.randf() < tune.stone_chance and not taken.has(ks):
+			sim.add_pickup("stone", l, s - 4.0 + ks * 2.2, 1.0)
+			taken[ks] = true
+		if letters and rows > 3 and rng.randf() < tune.letter_chance and not _letter_waiting():
+			var other: Array[int] = []
+			for x in free_l:
+				if x != l:
+					other.append(x)
+			if not other.is_empty(): # a lane of its own
+				sim.add_pickup("letter", other[rng.randi() % other.size()], s + 1.0, 1.1)
+			elif not taken.has(mini(1, count - 1)):
+				taken[mini(1, count - 1)] = true
+				sim.add_pickup("letter", l, s - 4.0 + mini(1, count - 1) * 2.2, 1.1)
 		if rng.randf() < 0.7:
 			for i in count:
-				if special == "" or i != slot:
+				if not taken.has(i):
 					sim.add_pickup("bread", l, s - 4.0 + i * 2.2, 0.6)
 	rows += 1
 	next_s = maxf(s + gap_dist, end + 3.0 + v * 0.35)
@@ -188,6 +209,13 @@ func _shuffle(a: Array[int]) -> void: # seeded, so the same seed gives the same 
 		var tmp := a[i]
 		a[i] = a[j]
 		a[j] = tmp
+
+
+func _letter_waiting() -> bool:
+	for p in sim.pickups:
+		if p.kind == "letter" and not p.taken:
+			return true
+	return false
 
 
 func _row_has(row: Array, kind: String) -> bool:

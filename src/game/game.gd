@@ -14,6 +14,7 @@
 ##   --menu=SCREEN    with --shot: open that menu screen (home, shop, chars ...) and shoot it instead of a run
 ##   --bread=N        that throwaway save starts with N bread
 ##   --char=ID --costume=ID --city=ID   that throwaway save wears this look
+##   --story=N        with --shot: show the story at picture N (0-4) and shoot it
 extends Node3D
 
 const TUNING_PATH := "res://src/data/tuning.tres"
@@ -54,11 +55,17 @@ var shooting := false
 var dead_t := 0.0
 # HUD
 var hud_root: Control
+var hud_layer: CanvasLayer
+var story: Story
 var hud_score: Label
 var hud_bread: Label
 var hud_nar: Label
 var hud_banner: Label
 var banner_t := 0.0
+var word_box: HBoxContainer ## the day's word as tiles, shown for a moment when a letter is taken
+var word_t := 0.0
+var count_label: Label ## buta stones or magic stones, shown for a moment
+var count_t := 0.0
 var power_box: VBoxContainer
 var power_rows := {} ## kind -> [row, bar]
 var carpet_btn: Button
@@ -91,7 +98,16 @@ func _ready() -> void:
 	_build_hud()
 	_apply_look()
 	_new_run()
-	if args.has("menu") and args.has("shot"):
+	var g := prog.daily_gift() if not args.has("shot") else ""
+	if g != "":
+		menu.toast("Nənənin bu günkü hədiyyəsi: " + g, 4.0)
+	if args.has("story") and args.has("shot"):
+		_show_story(false)
+		for i in int(args["story"]):
+			story._advance()
+		await get_tree().create_timer(1.0).timeout
+		_shoot()
+	elif args.has("menu") and args.has("shot"):
 		menu.open(args["menu"])
 		await get_tree().create_timer(1.0).timeout
 		_shoot()
@@ -202,6 +218,7 @@ func _new_run() -> void:
 		if kind == "basket" or kind == "carpet":
 			prog.mission(kind, 1))
 	sim.escaped.connect(prog.mission.bind("escape", 1))
+	sim.item_taken.connect(_on_item)
 	sim.stumbled.connect(_banner.bind("Ay Cırtdaaan!"))
 	sim.crashed.connect(_on_dead)
 	sim.caught.connect(_on_dead.bind(""))
@@ -210,6 +227,7 @@ func _new_run() -> void:
 	sim.shield_used.connect(_banner.bind("Uçan xalça səni qorudu!"))
 	sim.landed_from_flight.connect(_banner.bind("Yerə endin"))
 	gen = TrackGen.new(sim, seed_value)
+	gen.hunt_open = prog.hunt()["open"]
 	gen.fill()
 	_fill_houses()
 	banked = 0
@@ -278,6 +296,11 @@ func _process(dt: float) -> void:
 	anim_t += dt
 	banner_t = maxf(0.0, banner_t - dt)
 	hud_banner.visible = banner_t > 0.0
+	word_t = maxf(0.0, word_t - dt)
+	word_box.visible = word_t > 0.0 and started
+	word_box.modulate.a = minf(1.0, word_t / 0.5)
+	count_t = maxf(0.0, count_t - dt)
+	count_label.visible = count_t > 0.0 and started
 	_sync()
 	_update_hud()
 
@@ -313,7 +336,8 @@ func _sync() -> void:
 		o.node.position = Vector3(sim.lane_x(o.lane), 0, -(o.s0 + o.length * 0.5))
 	for p in sim.pickups:
 		if p.node == null:
-			p.node = Figures.pickup(p.kind)
+			var dw := prog.day_word() if p.kind == "letter" else {}
+			p.node = Figures.pickup(p.kind, String(dw["word"])[dw["got"]] if p.kind == "letter" else "")
 			add_child(p.node)
 		if p.taken:
 			p.node.scale = p.node.scale * 0.8
@@ -426,6 +450,26 @@ func _start() -> void:
 	recorded = false
 
 
+## Oyna: the first time, the story comes first.
+func _on_play() -> void:
+	if not bool(save.get_value("story")):
+		_show_story(true)
+	else:
+		_start()
+
+
+## Shows the story over everything; then starts a run (then_play) or returns to the menu.
+func _show_story(then_play: bool) -> void:
+	story = Story.new(prog.look())
+	hud_layer.add_child(story)
+	story.finished.connect(func() -> void:
+		story.queue_free()
+		story = null
+		save.set_value("story", true)
+		if then_play:
+			_start())
+
+
 ## Back to the menu: the run so far is banked and recorded, and a fresh street waits behind the menu.
 func _to_menu() -> void:
 	_bank()
@@ -487,6 +531,47 @@ func _on_power(kind: String) -> void:
 	_banner(POWER_NAMES.get(kind, kind) + "!")
 
 
+## A letter, a buta stone or a magic stone.
+func _on_item(kind: String) -> void:
+	match kind:
+		"letter":
+			var r := prog.take_letter()
+			_show_word(r["word"], r["got"])
+			if not (r["gifts"] as Array).is_empty():
+				_banner("%s! Hədiyyə: %s" % [r["word"], ", ".join(r["gifts"])], 3.0)
+		"buta":
+			var msg := prog.take_buta()
+			var h := prog.hunt()
+			_show_count("buta %d/%d" % [mini(h["got"], h["need"]), h["need"]], Color("#7fe0dc"))
+			if msg != "":
+				_banner(msg, 3.5)
+				gen.hunt_open = false
+		"stone":
+			var msg := prog.take_stone()
+			_show_count("sehrli daş %d" % int(save.get_value("stones")), Color("#d9b8ff"))
+			if msg != "":
+				_banner(msg, 3.0)
+
+
+func _show_word(word: String, got: int) -> void:
+	for c in word_box.get_children():
+		c.queue_free()
+	for i in word.length():
+		var l := _label(word_box, 34, Color("#4a2a0c") if i < got else Color(1, 0.96, 0.86, 0.5))
+		l.text = word[i]
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.custom_minimum_size = Vector2(46, 52)
+		l.add_theme_stylebox_override("normal", UiKit.box(Color("#e0b06a") if i < got else Color(0.3, 0.12, 0.05, 0.6), 8, 2))
+		l.add_theme_constant_override("outline_size", 0 if i < got else 6)
+	word_t = 2.5
+
+
+func _show_count(t: String, c: Color) -> void:
+	count_label.text = t
+	count_label.add_theme_color_override("font_color", c)
+	count_t = 1.5
+
+
 func _on_nar() -> void:
 	save.set_value("nar", int(save.get_value("nar")) + 1)
 	_banner("Nar!")
@@ -510,9 +595,9 @@ func _bank() -> void: # adds this run's new bread to the save, once
 		banked = sim.bread
 
 
-func _banner(t: String) -> void:
+func _banner(t: String, secs: float = 1.6) -> void:
 	hud_banner.text = t
-	banner_t = 1.6
+	banner_t = secs
 
 
 # --- HUD ----------------------------------------------------------------------------------------
@@ -582,6 +667,19 @@ func _build_hud() -> void:
 	hud_banner.position.y = 300
 	hud_banner.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hud_banner.visible = false
+	word_box = HBoxContainer.new()
+	word_box.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	word_box.position.y = 420
+	word_box.alignment = BoxContainer.ALIGNMENT_CENTER
+	word_box.add_theme_constant_override("separation", 4)
+	word_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	word_box.visible = false
+	root.add_child(word_box)
+	count_label = _label(root, 32, Color("#7fe0dc"))
+	count_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 24)
+	count_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	count_label.position.y += 180
+	count_label.visible = false
 	pause_panel = _panel(root, "Fasilə")
 	var go := _button(pause_panel.get_child(1), "Davam", Color("#2b7a48"), 44)
 	go.pressed.connect(_set_paused.bind(false))
@@ -600,8 +698,10 @@ func _build_hud() -> void:
 	over_panel.visible = false
 	menu = Menu.new(prog)
 	root.add_child(menu)
-	menu.play.connect(_start)
+	menu.play.connect(_on_play)
 	menu.look_changed.connect(_apply_look)
+	menu.story.connect(_show_story.bind(false))
+	hud_layer = layer
 
 
 ## A full-screen shaded panel: text in the upper half, a column of buttons (its child 1) under it.

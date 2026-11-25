@@ -279,8 +279,9 @@ static func house(side: int, rng: RandomNumberGenerator, wall := Color("#d9a95f"
 
 
 ## A pickup's figure by kind: bread, nar, magnet (Nənə's tray), shoe (magic çarıq), double (two ovens),
-## pole (the rope-walker's pole), simurq (a great feather).
-static func pickup(kind: String) -> Node3D:
+## pole (the rope-walker's pole), simurq (a great feather), letter (a carved wooden tile showing text),
+## buta (the weekly hunt's turquoise buta stone), stone (a violet magic stone).
+static func pickup(kind: String, text: String = "") -> Node3D:
 	if kind == "bread":
 		return bread()
 	var g := Node3D.new()
@@ -314,6 +315,60 @@ static func pickup(kind: String) -> Node3D:
 			_part(g, _ball(0.2, 0.84), Color("#1f9e9a"), Vector3(0, 0.18, 0))
 			_part(g, _ball(0.12, 0.5), Color("#f2b632"), Vector3(0, 0.26, 0.02))
 			_part(g, _ball(0.07, 0.18), Color("#2c4fa0"), Vector3(0, 0.3, 0.05))
+		"letter": # a wooden tile with the letter carved on both faces
+			_part(g, _box(0.7, 0.7, 0.14), Color("#c48a3e"), Vector3.ZERO)
+			_part(g, _box(0.6, 0.6, 0.16), Color("#e0b06a"), Vector3.ZERO)
+			for face in [1.0, -1.0]:
+				var l := Label3D.new()
+				l.text = text
+				l.font_size = 96
+				l.pixel_size = 0.005
+				l.modulate = Color("#4a2a0c")
+				l.outline_size = 0
+				l.position.z = 0.09 * face
+				l.rotation.y = 0.0 if face > 0 else PI
+				g.add_child(l)
+		"buta": # a turquoise stone disc with a golden buta
+			_part(g, _cyl(0.32, 0.32, 0.12), Color("#1f9e9a"), Vector3.ZERO, Vector3(PI / 2, 0, 0))
+			_part(g, _ball(0.12, 0.2), Color("#f2d16b"), Vector3(0, -0.04, 0.07))
+			_part(g, _cyl(0.0, 0.07, 0.18), Color("#f2d16b"), Vector3(0.05, 0.1, 0.07), Vector3(0, 0, -0.5))
+		"stone": # a glowing violet crystal
+			var m := SphereMesh.new()
+			m.radius = 0.28
+			m.height = 0.7
+			m.radial_segments = 6
+			m.rings = 2
+			var c := _part(g, m, Color("#b48ad8"), Vector3.ZERO)
+			c.material_override = mat(Color("#c9a0f0"), true)
+	return g
+
+
+## Nənə: Cırtdan's grandmother in a kəlağayı headscarf, floury hands. Faces +z.
+static func nene() -> Node3D:
+	var g := Node3D.new()
+	_part(g, _cyl(0.12, 0.42, 1.0), Color("#7a2c3e"), Vector3(0, 0.5, 0))
+	_part(g, _box(0.5, 0.6, 0.05), Color("#efe6cf"), Vector3(0, 0.45, 0.25))
+	_part(g, _ball(0.22, 0.44), Color("#f2c08f"), Vector3(0, 1.18, 0))
+	_part(g, _ball(0.26, 0.5), Color("#e8e0d0"), Vector3(0, 1.24, -0.06))
+	_part(g, _cyl(0.0, 0.3, 0.45), Color("#e8e0d0"), Vector3(0, 0.98, -0.14))
+	_part(g, _cyl(0.25, 0.25, 0.05), Color("#b3262a"), Vector3(0, 1.33, -0.02))
+	for sx in [-0.07, 0.07]:
+		_part(g, _ball(0.025, 0.05), Color("#2a1a10"), Vector3(sx, 1.2, 0.2))
+	for sx in [-1.0, 1.0]:
+		_part(g, _cyl(0.07, 0.07, 0.45), Color("#7a2c3e"), Vector3(sx * 0.3, 0.8, 0.12), Vector3(-0.9, 0, 0))
+		_part(g, _ball(0.08), Color("#fbf5e6"), Vector3(sx * 0.3, 0.66, 0.3))
+	_shadow(g, 0.45)
+	return g
+
+
+## A clay təndir oven with a glowing mouth.
+static func tendir() -> Node3D:
+	var g := Node3D.new()
+	_part(g, _ball(0.5, 0.8), Color("#b8743e"), Vector3(0, 0.38, 0))
+	_part(g, _cyl(0.2, 0.24, 0.12), Color("#8a5428"), Vector3(0, 0.8, 0))
+	var f := _part(g, _ball(0.17, 0.12), Color("#ff8a1a"), Vector3(0, 0.84, 0))
+	f.material_override = mat(Color("#ff8a1a"), true)
+	_shadow(g, 0.5)
 	return g
 
 
