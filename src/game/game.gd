@@ -110,7 +110,9 @@ func _ready() -> void:
 	if args.has("lang"):
 		save.put("lang", args["lang"])
 	Lang.install(String(save.get_value("lang")))
-	prog.mission_done.connect(func(_t: String) -> void: _banner("Tapşırıq bitdi!"))
+	prog.mission_done.connect(func(_t: String) -> void:
+		snd.play("mission")
+		_banner("Tapşırıq bitdi!"))
 	snd = Sound.new(save)
 	add_child(snd)
 	_fit_render()
@@ -220,6 +222,7 @@ func _new_run() -> void:
 		if kind == "basket" or kind == "carpet":
 			prog.mission(kind, 1))
 	sim.escaped.connect(func() -> void:
+		snd.play("escape")
 		prog.mission("escape", 1)
 		escaped_now = true)
 	sim.item_taken.connect(_on_item)
@@ -272,7 +275,10 @@ func _physics_process(dt: float) -> void:
 	var carpets_before := sim.carpets
 	var free_before := sim.free_carpets
 	var boosts_before := sim.boosts
+	var powers_before := _active_powers()
 	sim.step(dt, input)
+	if _active_powers() < powers_before and sim.dead == "": # a power-up wore off
+		snd.play("power_end")
 	input.clear()
 	if sim.grounded and not _was_grounded and sim.dead == "":
 		snd.play("land")
@@ -496,6 +502,7 @@ func _on_dead(_kind: String) -> void:
 		tr("Xal: %d" % int(sim.score)), tr("Yağ çörəyi: %d" % sim.bread), tr("Rekord: %d" % best)]
 	if int(sim.score) > int(save.get_value("best")):
 		lines.insert(1, tr("Yeni rekord!"))
+		get_tree().create_timer(0.7).timeout.connect(snd.play.bind("record")) # after the crash has rung out
 	over_text.text = "\n".join(lines)
 	continue_btn.text = "Nar ilə davam et (%d)" % cost if have >= cost else tr("Nar çatmır: %d lazımdır, səndə %d" % [cost, have])
 	continue_btn.disabled = have < cost
@@ -515,8 +522,11 @@ func _on_power(kind: String) -> void:
 func _on_item(kind: String) -> void:
 	match kind:
 		"letter":
-			snd.play("nar", 1.2)
 			var r := prog.take_letter()
+			if (r["gifts"] as Array).is_empty():
+				snd.play("nar", 1.2)
+			else: # the last letter of the word: a fanfare
+				snd.play("word")
 			_show_word(r["word"], r["got"])
 			if not (r["gifts"] as Array).is_empty():
 				_banner("%s! Hədiyyə: %s" % [r["word"], ", ".join(r["gifts"])], 3.0)
@@ -569,7 +579,17 @@ func _on_continue() -> void:
 	sim.continue_run()
 	over_panel.visible = false
 	dead_t = 0.0
+	snd.play("power", 0.9)
 	_banner("Nar ilə davam!")
+
+
+## How many power-ups (Simurq, magnet, boost flight...) are running now.
+func _active_powers() -> int:
+	var n := 0
+	for k in sim.power:
+		if float(sim.power[k]) > 0.0:
+			n += 1
+	return n
 
 
 func _bank() -> void: # adds this run's new bread to the save, once

@@ -1,6 +1,7 @@
 ## Plays the game's sounds: short effects from a small pool of players, three music loops (menu, run, fly)
 ## that crossfade, and the tempo of the run music rising with the speed. Obeys the music and sound settings.
-## The WAV files are made by tools/audio/make_audio.gd (synthesised, the web prototype's recipes).
+## The WAV files are made by tools/audio/make_audio.gd (synthesised: Şur-mode tar, balaban and nağara music);
+## the list of sounds, what plays them and their levels: design/audio/sound-list.md.
 ##
 ## Usage:
 ##   var snd := Sound.new(save); add_child(snd)
@@ -10,10 +11,12 @@ extends Node
 
 const DIR := "res://assets/audio/"
 const SFX := ["bread", "nar", "jump", "slide", "land", "lane", "stumble", "crash", "power", "shield", "buy", "tap",
-	"no", "ay_cirtdan", "hamm", "yene_sensen", "hi_hi"]
+	"no", "ay_cirtdan", "hamm", "yene_sensen", "hi_hi", "word", "mission", "power_end", "escape", "record"]
+## Effects heard over and over get a small random pitch change, so repeats do not sound mechanical.
+const VARY := {"jump": 0.04, "slide": 0.04, "land": 0.06, "lane": 0.06, "tap": 0.03, "stumble": 0.03}
 const MUSIC := ["menu", "run", "fly"]
 const POOL := 8
-const MUSIC_DB := -6.0
+const MUSIC_DB := -8.0 ## the loops are mastered at -16 dBFS RMS: about 8 dB under the effects
 const FADE := 0.6 ## seconds of a music crossfade
 
 var save: SaveData
@@ -23,6 +26,7 @@ var _next := 0
 var _music := {} ## mode -> AudioStreamPlayer
 var _mode := ""
 var _rate := 1.0
+var _rng := RandomNumberGenerator.new()
 
 
 func _init(save_data: SaveData) -> void:
@@ -48,14 +52,14 @@ func _ready() -> void:
 		_music[m] = p
 
 
-## Plays an effect (a name in SFX); pitch varies it slightly so repeats do not sound mechanical.
+## Plays an effect (a name in SFX) at a pitch (1.0 = as made); effects in VARY are varied a little more.
 func play(name: String, pitch: float = 1.0) -> void:
 	if not bool(save.get_value("sound")) or not _streams.has(name):
 		return
 	var p := _pool[_next]
 	_next = (_next + 1) % POOL
 	p.stream = _streams[name]
-	p.pitch_scale = pitch
+	p.pitch_scale = pitch * (1.0 + _rng.randf_range(-1.0, 1.0) * float(VARY.get(name, 0.0)))
 	p.play()
 
 
