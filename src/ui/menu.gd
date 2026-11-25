@@ -26,14 +26,17 @@ const SCREENS := {
 	"shop": "Nənənin dükanı", "costumes": "Geyim dükanı", "chars": "Personajlar", "cities": "Şəhərlər",
 	"missions": "Tapşırıqlar", "leaders": "Liderlər", "settings": "Ayarlar",
 }
-const GREEN := Color("#2b7a48")
 const RED := Color("#7e2227") ## Madder
-const BROWN := Color(0.27, 0.1, 0.06, 0.85)
 const GOLD := Color("#ffd77a")
 const GOLD_BTN := Color("#c89b45") ## Antique Gold: bright gold belongs to bread (art bible §4)
 const CREAM := Color("#fff4dc")
 const TURQUOISE := Color("#19b3a6") ## primary action (art bible §4: Power-up Turquoise)
 const INK := Color("#2a1e24") ## outlines (art bible §4)
+const ICONS := { ## the home buttons' pictures (assets/textures/icon_*.png, painted by tools/art/make_textures.gd)
+	"shop": "sini", "costumes": "vest", "chars": "face", "cities": "tower", "missions": "scroll", "leaders": "cup",
+	"settings": "gear",
+}
+const CHOSEN := ["Seçilib", "Geyinib", "Buradasan", "Tam ✓"] ## button texts that mean "this one is already yours/on"
 
 var prog: Progress
 var online: Online ## the online board (set by the game; may have no server address yet)
@@ -111,7 +114,7 @@ func open(which: String) -> void:
 	if _home == null:
 		return
 	_home.visible = which == "home"
-	_shade.color.a = 0.15 if which == "home" else 0.55
+	_shade.color.a = 0.15 if which == "home" else 0.35
 	_list.visible = which != "home"
 	_scroll.scroll_vertical = 0
 	_refresh()
@@ -180,13 +183,17 @@ func _build_home() -> void:
 	for side in 2:
 		var col := VBoxContainer.new()
 		col.alignment = BoxContainer.ALIGNMENT_CENTER
-		col.add_theme_constant_override("separation", 18)
+		col.add_theme_constant_override("separation", 12)
 		col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		mid.add_child(col)
 		for i in 3:
 			var k: String = keys[side * 3 + i]
-			var b := _home_btn(col, SCREENS[k], 26)
-			b.custom_minimum_size = Vector2(196, 104)
+			var b := _home_btn(col, SCREENS[k], 26, ICONS[k])
+			b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+			b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			b.add_theme_constant_override("icon_max_width", 60)
+			b.add_theme_constant_override("h_separation", 2)
+			b.custom_minimum_size = Vector2(204, 188)
 			b.pressed.connect(open.bind(k))
 		if side == 0:
 			var gap := Control.new() # Cırtdan stands here
@@ -228,29 +235,54 @@ func _build_home() -> void:
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size = Vector2(600, 0)
 	# Ayarlar, top left
-	var st := _home_btn(self, SCREENS["settings"], 26)
-	st.custom_minimum_size = Vector2(180, 96)
+	var st := _home_btn(self, SCREENS["settings"], 26, ICONS["settings"])
+	st.add_theme_constant_override("icon_max_width", 48)
+	st.add_theme_constant_override("h_separation", 8)
+	st.autowrap_mode = TextServer.AUTOWRAP_OFF # one line; the button grows for long names
+	st.custom_minimum_size = Vector2(200, 96)
 	st.position = Vector2(24, 16)
 	_home.visibility_changed.connect(func() -> void: st.visible = _home.visible)
 	st.pressed.connect(open.bind("settings"))
 
 
-## A secondary home button: a plain Madder plate with a thin Antique Gold line (art bible §7), cream text.
-func _home_btn(parent: Control, t: String, size: int) -> Button:
+## A secondary button: a plain Madder plate with a thin Antique Gold line (art bible §7), cream text,
+## and a picture (icon: a name from ICONS' values) so beginning readers find it.
+func _home_btn(parent: Control, t: String, size: int, icon := "") -> Button:
 	var b := UiKit.button(parent, t, RED, size)
-	var sb := _flat(Color(RED, 0.94), GOLD_BTN, 3, 22)
+	_skin(b, "plain")
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	if icon != "":
+		b.icon = Kit.texture("icon_" + icon)
+		b.expand_icon = false
+	return b
+
+
+## Dresses a button in one of the menu's looks (art bible §4, §7):
+## "primary" Turquoise with an Antique Gold rim (buy, select, on); "plain" Madder with a thin gold line;
+## "chosen" a dark plate with a thick gold outline (already yours: Seçilib, Geyinib ...);
+## "confirm" a cream medallion with a gold rim (the second tap of a purchase).
+func _skin(b: Button, kind: String) -> void:
+	var bg := {"primary": TURQUOISE, "plain": Color(RED, 0.94), "chosen": Color(INK, 0.88), "confirm": Color("#f0dfb4")}[kind] as Color
+	var rim_w := 3 if kind == "plain" else 4
+	var text := INK if kind == "confirm" else (Color.WHITE if kind == "primary" else CREAM)
+	var sb := _flat(bg, GOLD_BTN, rim_w, 22)
 	for st in ["normal", "hover", "focus"]:
 		b.add_theme_stylebox_override(st, sb)
 	var pr := sb.duplicate() as StyleBoxFlat
-	pr.bg_color = RED.darkened(0.25)
+	pr.bg_color = bg.darkened(0.2)
 	pr.shadow_offset = Vector2(0, 1)
 	b.add_theme_stylebox_override("pressed", pr)
-	b.add_theme_color_override("font_color", CREAM)
-	b.add_theme_color_override("font_pressed_color", CREAM)
-	b.add_theme_color_override("font_hover_color", CREAM)
-	b.add_theme_color_override("font_outline_color", INK)
-	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	return b
+	var dis := sb.duplicate() as StyleBoxFlat
+	if kind != "chosen": # a chosen button is disabled but must not look faded
+		dis.bg_color = Color(bg, 0.45)
+		dis.border_color = Color(GOLD_BTN, 0.45)
+		dis.shadow_color = Color(INK, 0.2)
+	b.add_theme_stylebox_override("disabled", dis)
+	for c in ["font_color", "font_pressed_color", "font_hover_color", "font_focus_color", "font_hover_pressed_color"]:
+		b.add_theme_color_override(c, text)
+	b.add_theme_color_override("font_disabled_color", text if kind == "chosen" else Color(text, 0.6))
+	b.add_theme_color_override("font_outline_color", Color("#f0dfb4") if kind == "confirm" else INK)
+	b.add_theme_constant_override("outline_size", 0 if kind == "confirm" else maxi(4, b.get_theme_font_size("font_size") / 6))
 
 
 ## A flat rounded box with a rim and a soft Ink drop shadow.
@@ -276,19 +308,24 @@ func _build_list() -> void:
 	_list.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_list.offset_left = 24
 	_list.offset_right = -24
-	_list.offset_top = 110
+	_list.offset_top = 124
 	_list.offset_bottom = -24
 	_list.add_theme_constant_override("separation", 12)
 	add_child(_list)
-	var back := UiKit.button(self, "←", BROWN, 40)
-	back.position = Vector2(24, 20)
+	var back := _home_btn(self, "←", 44) # where Ayarlar sits on home
 	back.custom_minimum_size = Vector2(120, 96)
-	back.position = Vector2(16, 8)
+	back.position = Vector2(24, 16)
 	back.pressed.connect(open.bind("home"))
 	_list.visibility_changed.connect(func() -> void: back.visible = _list.visible)
-	_title = UiKit.label(_list, 50, GOLD)
+	var head := PanelContainer.new() # the screen's carpet frame: the one ornamented piece (art bible §7)
+	head.add_theme_stylebox_override("panel", UiKit.carpet(18))
+	_list.add_child(head)
+	var hv := VBoxContainer.new()
+	hv.add_theme_constant_override("separation", 0)
+	head.add_child(hv)
+	_title = UiKit.label(hv, 50, GOLD)
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_sub = UiKit.label(_list, 24, CREAM)
+	_sub = UiKit.label(hv, 24, CREAM)
 	_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_scroll = ScrollContainer.new()
@@ -302,26 +339,37 @@ func _build_list() -> void:
 
 
 ## One row: a title, a line under it, and a button on the right (or none when btn is "").
-func _row(title: String, sub: String, btn: String, can: bool, act: Callable, color := GREEN, icon := "") -> void:
+## kind: the button's look (see _skin); a CHOSEN text gets the "chosen" look and a tick, and its row a thick gold line.
+func _row(title: String, sub: String, btn: String, can: bool, act: Callable, kind := "primary", icon := "") -> void:
+	var chosen := btn in CHOSEN
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UiKit.box(Color(0.22, 0.08, 0.04, 0.82), 18, 16))
+	var psb := _flat(Color(RED, 0.92), Color(GOLD_BTN, 0.85), 4 if chosen else 2, 16)
+	psb.shadow_offset = Vector2(0, 3)
+	psb.set_content_margin_all(14)
+	panel.add_theme_stylebox_override("panel", psb)
 	_rows.add_child(panel)
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 12)
 	panel.add_child(h)
 	var v := VBoxContainer.new()
 	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	h.add_child(v)
-	var a := UiKit.label(v, 32, GOLD)
+	var a := UiKit.label(v, 32, CREAM)
 	a.text = title
 	a.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	var b := UiKit.label(v, 22, CREAM)
+	var b := UiKit.label(v, 22, Color(CREAM, 0.88))
 	b.text = sub
 	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.visible = sub != ""
 	if btn == "":
 		return
 	var confirming := btn == "Təsdiq?"
-	var k := UiKit.button(h, ("✓ " + tr(btn)) if confirming else btn, GOLD_BTN if confirming else color, 26)
+	var t := btn
+	if confirming or (chosen and not btn.contains("✓")):
+		t = "✓ " + tr(btn)
+	var k := UiKit.button(h, t, TURQUOISE, 26)
+	_skin(k, "confirm" if confirming else ("chosen" if chosen else kind))
 	k.custom_minimum_size = Vector2(190, 96)
 	if icon != "" and not confirming:
 		k.icon = Kit.texture("icon_" + icon)
@@ -386,6 +434,7 @@ func _refresh() -> void:
 		c.queue_free()
 	_title.text = SCREENS[screen]
 	call("_screen_" + screen)
+	_sub.visible = _sub.text != ""
 
 
 func _screen_shop() -> void:
@@ -397,26 +446,26 @@ func _screen_shop() -> void:
 		var marks := "●".repeat(lv) + "○".repeat(mx - lv)
 		var sub := "%s\n%s  %s" % [tr(p["what"]), marks, tr("səviyyə %d/%d" % [lv, mx])]
 		if lv >= mx:
-			_row(p["name"], sub, "Tam ✓", false, Callable(), GOLD_BTN)
+			_row(p["name"], sub, "Tam ✓", false, Callable())
 			continue
 		var cost := prog.level_cost(k)
 		_row(p["name"], sub, _price_btn("lv_" + k, cost), true, _buy("lv_" + k, cost, func() -> void:
 			if prog.buy_level(k):
-				toast("%s: səviyyə %d" % [p["name"], prog.level(k)])), GREEN, "bread")
+				toast("%s: səviyyə %d" % [p["name"], prog.level(k)])), "primary", "bread")
 	var t := prog.tune
 	_row("Uçan xalça", "Qaçışda bir dəfə: səni bir zərbədən qoruyur · var: %d" % int(prog.save.get_value("carpets")),
 		_price_btn("carpet", t.carpet_cost), true, _buy("carpet", t.carpet_cost, func() -> void:
 			if prog.buy_carpet():
-				toast("Uçan xalça alındı")), GREEN, "bread")
+				toast("Uçan xalça alındı")), "primary", "bread")
 	_row("Xalça ilə uçuş", "Qaçışın əvvəlində bas: uçub irəli get, çörəkləri yığ · var: %d" % int(prog.save.get_value("boosts")),
 		_price_btn("boost", t.boost_cost), true, _buy("boost", t.boost_cost, func() -> void:
 			if prog.buy_boost():
-				toast("Xalça ilə uçuş alındı")), GREEN, "bread")
+				toast("Xalça ilə uçuş alındı")), "primary", "bread")
 	_row("Nənənin bağlaması", "İçində nə var? Çörək, nar və ya uçan xalça",
 		_price_btn("box", t.box_cost), true, _buy("box", t.box_cost, func() -> void:
 			var got := prog.open_box()
 			if got != "":
-				toast(got)), GREEN, "bread")
+				toast(got)), "primary", "bread")
 
 
 func _screen_costumes() -> void:
@@ -430,7 +479,7 @@ func _screen_costumes() -> void:
 		_row(c["name"], c["desc"], btn, cur != id, _buy("cos_" + id, 0 if own else cost, func() -> void:
 			if prog.choose_costume(id):
 				toast("Cırtdan: %s" % c["name"])
-				look_changed.emit()), GREEN, "" if own else "bread")
+				look_changed.emit()), "primary", "" if own else "bread")
 
 
 func _screen_chars() -> void:
@@ -452,7 +501,7 @@ func _screen_chars() -> void:
 		_row(c["name"], sub, btn, cur != id, _buy("ch_" + id, 0 if own else price, func() -> void:
 			if prog.choose_char(id):
 				toast("Personaj: %s" % c["name"])
-				look_changed.emit()), GREEN, "" if own else "bread")
+				look_changed.emit()), "primary", "" if own else "bread")
 
 
 func _screen_cities() -> void:
@@ -466,7 +515,7 @@ func _screen_cities() -> void:
 		_row(c["name"], c["desc"], btn, cur != id, _buy("ci_" + id, 0 if own else price, func() -> void:
 			if prog.choose_city(id):
 				toast("Şəhər: %s" % c["name"])
-				look_changed.emit()), GREEN, "" if own else "bread")
+				look_changed.emit()), "primary", "" if own else "bread")
 
 
 func _screen_missions() -> void:
@@ -480,7 +529,7 @@ func _screen_missions() -> void:
 				var got := prog.claim(i)
 				sfx.emit("buy")
 				toast("+%d çörək! Yeni tapşırıq" % got)
-				_refresh(), RED, "bread")
+				_refresh(), "primary", "bread")
 		else:
 			_row(m["txt"], "%s · mükafat %d çörək" % [p, m["reward"]], "", false, Callable())
 	var dw := prog.day_word()
@@ -504,8 +553,9 @@ func _screen_leaders() -> void:
 	tabs.add_theme_constant_override("separation", 8)
 	_rows.add_child(tabs)
 	for b in [["mine", "Mənim"], ["all", "Hamı"], ["week", "Bu həftə"]]:
-		var k := UiKit.button(tabs, b[1], GOLD_BTN if _board == b[0] else BROWN, 26)
-		k.custom_minimum_size = Vector2(150, 80)
+		var k := UiKit.button(tabs, b[1], TURQUOISE, 26)
+		_skin(k, "primary" if _board == b[0] else "plain")
+		k.custom_minimum_size = Vector2(190, 96)
 		var scope: String = b[0]
 		k.pressed.connect(func() -> void:
 			_board = scope
@@ -571,8 +621,9 @@ func _nick_rows() -> void:
 		_rows.add_child(row)
 		var is_adj: bool = part[0] == "adj"
 		for step in [-1, 1]:
-			var b := UiKit.button(row, "◀" if step < 0 else "▶", BROWN, 30)
-			b.custom_minimum_size = Vector2(96, 80)
+			var b := UiKit.button(row, "◀" if step < 0 else "▶", RED, 30)
+			_skin(b, "plain")
+			b.custom_minimum_size = Vector2(96, 96)
 			b.pressed.connect(func() -> void:
 				if is_adj:
 					prog.set_nick(a + step, h)
@@ -617,13 +668,22 @@ func _screen_settings() -> void:
 		_row(k[1], k[2], "Açıq" if on else "Bağlı", true, func() -> void:
 			prog.toggle(key)
 			settings_changed.emit()
-			_refresh(), GREEN if on else BROWN)
+			_refresh(), "primary" if on else "plain")
 	var ol := bool(prog.save.get_value("online"))
 	_row("Onlayn liderlər", "Ancaq ləqəb və xal göndərilir, ad yox", "Açıq" if ol else "Bağlı", true, func() -> void:
 		prog.toggle("online")
-		_refresh(), GREEN if ol else BROWN)
+		_refresh(), "primary" if ol else "plain")
 	var cur := String(prog.save.get_value("lang"))
-	var head := UiKit.label(_rows, 34, GOLD)
+	var dp := PanelContainer.new() # a small dark plate so the heading reads over the street
+	var dsb := _flat(Color(INK, 0.85), GOLD_BTN, 2, 16)
+	dsb.content_margin_left = 40
+	dsb.content_margin_right = 40
+	dsb.content_margin_top = 4
+	dsb.content_margin_bottom = 6
+	dp.add_theme_stylebox_override("panel", dsb)
+	dp.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_rows.add_child(dp)
+	var head := UiKit.label(dp, 34, GOLD)
 	head.text = "Dil"
 	head.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for c in Lang.choices():

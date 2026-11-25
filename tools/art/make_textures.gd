@@ -5,6 +5,8 @@
 ## Needs a renderer (not --headless):
 ##   godot --path . -s res://tools/art/make_textures.gd            (on a desktop)
 ##   xvfb-run godot --path . --rendering-driver opengl3 -s res://tools/art/make_textures.gd   (on a server)
+## Add `-- --only=PREFIX` to paint only the textures whose names start with PREFIX (e.g. --only=icon_),
+## then `godot --headless --path . --import` so new PNGs get their .import files.
 extends SceneTree
 
 const OUT := "res://assets/textures/"
@@ -13,9 +15,17 @@ var _vp: SubViewport
 var _cv: Node2D
 var _job: Callable
 var _seed := 1
+var _only := "" ## paint only names starting with this (--only=PREFIX)
+
+const INK := Color("#2a1e24") ## art bible §4: outlines, warm, never pure black
+const AGOLD := Color("#c89b45") ## Antique Gold
+const PCREAM := Color("#f0dfb4") ## the UI's cream plates
 
 
 func _initialize() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--only="):
+			_only = a.trim_prefix("--only=")
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
 	_vp = SubViewport.new()
 	_vp.transparent_bg = true
@@ -71,6 +81,14 @@ func _all() -> void:
 		g.draw_colored_polygon(PackedVector2Array([Vector2(32, 4), Vector2(52, 30), Vector2(32, 60), Vector2(12, 30)]), Color("#b48ad8"))
 		g.draw_colored_polygon(PackedVector2Array([Vector2(32, 4), Vector2(52, 30), Vector2(32, 30)]), Color("#e2ccff"))
 		g.draw_polyline(PackedVector2Array([Vector2(32, 4), Vector2(52, 30), Vector2(32, 60), Vector2(12, 30), Vector2(32, 4)]), Color("#5a2a8a"), 3.0))
+	# the home buttons' icons: flat, Ink-outlined, on transparent (art bible §7)
+	await _tex("icon_sini", 96, 96, _icon_sini)
+	await _tex("icon_vest", 96, 96, _icon_vest)
+	await _tex("icon_face", 96, 96, _icon_face)
+	await _tex("icon_tower", 96, 96, _icon_tower)
+	await _tex("icon_scroll", 96, 96, _icon_scroll)
+	await _tex("icon_cup", 96, 96, _icon_cup)
+	await _tex("icon_gear", 96, 96, _icon_gear)
 	await _tex("logo_buta", 256, 256, func(g: Node2D) -> void:
 		_buta(g, Vector2(128, 140), 9.0, 0.35, Color("#f2b632"), Color("#8e1d22")))
 	# the app icon: a red carpet with a golden buta (full square; Android's adaptive icon in two layers)
@@ -85,6 +103,8 @@ func _all() -> void:
 
 ## Renders one texture: draw(canvas) on a w×h transparent canvas, saved as OUT/name.png.
 func _tex(name: String, w: int, h: int, draw: Callable) -> void:
+	if not name.begins_with(_only):
+		return
 	_seed = name.hash() & 0xffff | 1
 	_vp.size = Vector2i(w, h)
 	_job = draw
@@ -447,3 +467,114 @@ func _icon_nar(g: Node2D) -> void:
 	for i in 5:
 		var x := 22 + i * 5.0
 		g.draw_colored_polygon(PackedVector2Array([Vector2(x - 3, 16), Vector2(x, 4), Vector2(x + 3, 16)]), Color("#7a0f1c"))
+
+
+# --- home button icons (96 px): a shape filled over its own Ink outline -----------------------------
+
+## Fills the polygon pts over an Ink outline w px wide.
+func _ol(g: Node2D, pts: PackedVector2Array, fill: Color, w := 4.0) -> void:
+	for o in Geometry2D.offset_polygon(pts, w, Geometry2D.JOIN_ROUND):
+		g.draw_colored_polygon(o, INK)
+	g.draw_colored_polygon(pts, fill)
+
+
+func _olc(g: Node2D, c: Vector2, r: float, fill: Color, w := 4.0) -> void:
+	g.draw_circle(c, r + w, INK)
+	g.draw_circle(c, r, fill)
+
+
+func _oval(c: Vector2, rx: float, ry: float, n := 32) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in n:
+		var a := i * TAU / n
+		pts.append(c + Vector2(cos(a) * rx, sin(a) * ry))
+	return pts
+
+
+func _rect_pts(r: Rect2) -> PackedVector2Array:
+	return PackedVector2Array([r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)])
+
+
+func _icon_sini(g: Node2D) -> void: # Nənə's copper tray (sini) heaped with yağ çörəyi
+	_ol(g, _oval(Vector2(48, 66), 42, 20), AGOLD)
+	g.draw_colored_polygon(_oval(Vector2(48, 64), 33, 13), Color("#a87a30"))
+	for c in [Vector2(30, 56), Vector2(66, 56), Vector2(48, 44)]:
+		_olc(g, c, 15, Color("#e59a2f"), 3)
+		g.draw_circle(c + Vector2(-3, -4), 9, Color("#ffd77a"))
+		g.draw_arc(c, 8, 0, TAU, 20, Color("#a8601b"), 2.5)
+
+
+func _icon_vest(g: Node2D) -> void: # Cırtdan's vest with its Antique Gold trim
+	var vest := PackedVector2Array([Vector2(28, 12), Vector2(40, 12), Vector2(48, 40), Vector2(56, 12), Vector2(68, 12),
+		Vector2(86, 30), Vector2(78, 46), Vector2(72, 42), Vector2(72, 86), Vector2(24, 86), Vector2(24, 42),
+		Vector2(18, 46), Vector2(10, 30)])
+	_ol(g, vest, Color("#1d4f9a"))
+	g.draw_polyline(PackedVector2Array([Vector2(40, 13), Vector2(48, 40), Vector2(56, 13)]), AGOLD, 5)
+	g.draw_line(Vector2(48, 40), Vector2(48, 85), INK, 3)
+	g.draw_line(Vector2(25, 80), Vector2(71, 80), AGOLD, 5)
+	for y in [52, 64]:
+		g.draw_circle(Vector2(41, y), 3.5, AGOLD)
+		g.draw_circle(Vector2(55, y), 3.5, AGOLD)
+	_buta(g, Vector2(32, 62), 0.7, 0.4, PCREAM, INK)
+
+
+func _icon_face(g: Node2D) -> void: # a smiling face under a papaq (a character portrait)
+	_olc(g, Vector2(48, 58), 28, Color("#f2c8a0"))
+	_ol(g, PackedVector2Array([Vector2(20, 40), Vector2(24, 12), Vector2(72, 12), Vector2(76, 40)]), Color("#c8221d"))
+	g.draw_line(Vector2(21, 36), Vector2(75, 36), AGOLD, 5)
+	for x in [38, 58]:
+		g.draw_colored_polygon(_oval(Vector2(x, 56), 5, 7, 16), INK)
+		g.draw_circle(Vector2(x + 2, 53), 2, Color.WHITE)
+	g.draw_arc(Vector2(48, 66), 10, 0.3, PI - 0.3, 16, INK, 3.5)
+	g.draw_circle(Vector2(28, 66), 5, Color(0.95, 0.5, 0.5, 0.6))
+	g.draw_circle(Vector2(68, 66), 5, Color(0.95, 0.5, 0.5, 0.6))
+
+
+func _icon_tower(g: Node2D) -> void: # Qız Qalası: the round tower with its buttress
+	var sand := Color("#d9a95f")
+	_ol(g, PackedVector2Array([Vector2(62, 34), Vector2(80, 44), Vector2(80, 88), Vector2(62, 88)]), Color("#b98a48"))
+	_ol(g, _rect_pts(Rect2(22, 14, 42, 74)), sand)
+	for y in [30, 46, 62, 78]:
+		g.draw_line(Vector2(23, y), Vector2(63, y), Color("#a87a40"), 2.5)
+	_ol(g, _rect_pts(Rect2(19, 10, 48, 8)), sand, 3)
+	_ol(g, PackedVector2Array([Vector2(37, 88), Vector2(37, 74), Vector2(43, 68), Vector2(49, 74), Vector2(49, 88)]), INK, 0.5)
+	g.draw_colored_polygon(_oval(Vector2(43, 40), 4, 6, 12), INK)
+	g.draw_line(Vector2(6, 89), Vector2(90, 89), INK, 4)
+
+
+func _icon_scroll(g: Node2D) -> void: # a task scroll with a turquoise tick
+	_ol(g, _rect_pts(Rect2(22, 18, 48, 62)), PCREAM)
+	_ol(g, _oval(Vector2(46, 18), 30, 7, 20), AGOLD, 3)
+	_ol(g, _oval(Vector2(46, 80), 30, 7, 20), AGOLD, 3)
+	for y in [32, 42, 52]:
+		g.draw_line(Vector2(30, y), Vector2(62, y), Color("#a88a6a"), 3)
+	var tick := PackedVector2Array([Vector2(50, 66), Vector2(62, 80), Vector2(88, 48)])
+	g.draw_polyline(tick, INK, 15)
+	g.draw_polyline(tick, Color("#19b3a6"), 8)
+
+
+func _icon_cup(g: Node2D) -> void: # the leaders' cup, Antique Gold
+	for side in [-1, 1]:
+		g.draw_arc(Vector2(48 + side * 26, 30), 12, -PI / 2 if side > 0 else PI / 2, PI / 2 if side > 0 else PI * 1.5, 16, INK, 10)
+		g.draw_arc(Vector2(48 + side * 26, 30), 12, -PI / 2 if side > 0 else PI / 2, PI / 2 if side > 0 else PI * 1.5, 16, AGOLD, 4)
+	var bowl := PackedVector2Array([Vector2(22, 14), Vector2(74, 14)])
+	for i in 13:
+		var a := i * PI / 12
+		bowl.append(Vector2(48 + cos(a) * 26, 30 + sin(a) * 26))
+	_ol(g, bowl, AGOLD)
+	_ol(g, _rect_pts(Rect2(43, 56, 10, 14)), Color("#a87a30"), 3)
+	_ol(g, _rect_pts(Rect2(28, 70, 40, 14)), Color("#a87a30"))
+	g.draw_line(Vector2(32, 22), Vector2(34, 40), Color(1, 1, 1, 0.55), 5)
+	_diamond(g, Vector2(48, 33), 7, 9, Color("#7e2227"))
+
+
+func _icon_gear(g: Node2D) -> void: # Ayarlar: a cream gear
+	var pts := PackedVector2Array()
+	for i in 8:
+		var a := i * TAU / 8
+		pts.append(Vector2(48, 48) + Vector2.from_angle(a - 0.26) * 31)
+		pts.append(Vector2(48, 48) + Vector2.from_angle(a - 0.17) * 41)
+		pts.append(Vector2(48, 48) + Vector2.from_angle(a + 0.17) * 41)
+		pts.append(Vector2(48, 48) + Vector2.from_angle(a + 0.26) * 31)
+	_ol(g, pts, PCREAM)
+	_olc(g, Vector2(48, 48), 11, Color("#7e2227"))
