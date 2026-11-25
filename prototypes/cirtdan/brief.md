@@ -17,6 +17,8 @@ After play: "Şəhərlərin hamisini birdən aç və davam ele  birde nağara s�
 After play: "Oyunda bug var yagli corekden basqa nese ekranda var ve oyunda gelir oni yigirsan . Sonram herf yiqmaq ekranda gorunmesin daimi herfi gpturdukce görsensin ve itsin oynanamaqa mane olur oyundaki buglari aradan qaldir hamisini . ( google play ve app store saxla en axira hele isimiz çoxdu oyun tam duzelden sonraç keçeçeyik dizaym merhelesin personojıarin yerlerin ayri ayri duzeldecik her sheyi animasiyalar elave edeceyik ) telesme)"
 After play: "Senedde olan her sheyi duzelt sonram men oynadiqca gelub sene belli bir yerini duzeldeceç birde men qoşdumqum agentlerden istifade edirsen?"
 
+After play: "Demek  bu versoyada qaliriq oyun mexanizmlerini oynu tam hazir veziyyete getirenden sonram godota keçirik animasiya dizayn personajlar üçün onuda edenden sonram oynu esl mobil oyna çevirib qoyuruq app store ve goog storeye okey?"
+
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
 **Genre:** endless runner, 3 lanes, seen from behind
@@ -123,9 +125,9 @@ The street is safe for the first 8 seconds; the first real trouble, two lanes bl
 1. The slice: an endless run on 3 lanes in old Baku with the Div behind, bread, the obstacle set, speed ramp, score and best, ending on a crash or the Div catching you, with continue-with-nar and restart.
 2. Power-ups to full strength and the remaining two (Simurq flight, kəndirbaz çubuğu).
 3. Grandma's shop, characters, missions.
-4. Fix every bug until the game is fully right *(you said)*.
-5. The design stage: each character and each place made properly one by one, with animations *(you said)*.
-6. Google Play and App Store last *(you said)*.
+4. Here, in this web version: every mechanic and bug until the game is fully right *(you said)*.
+5. Then move to Godot (/setup-engine godot): characters, places, animations and design made properly one by one; this prototype is the spec *(you said)*.
+6. Last: export from Godot to Android and iOS, then Google Play and App Store (store accounts, a Mac or cloud build for iOS, the stores' rules for children's games) *(you said)*.
 
 ---
 **Kill condition:** if lane changes and the Div's threat still don't read at speed on a phone after two tuning rounds.
