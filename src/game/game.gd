@@ -275,7 +275,7 @@ func _physics_process(dt: float) -> void:
 	input.clear()
 	if sim.grounded and not _was_grounded and sim.dead == "":
 		snd.play("land")
-		fx.burst(Vector3(sim.x, sim.y + 0.05, -sim.s), Color(0.85, 0.72, 0.52, 0.8), 10)
+		fx.burst(Vector3(sim.x, sim.y + 0.05, -sim.s), Color(0.62, 0.62, 0.64, 0.45), 5) # a small puff, the road's grey
 	if sim.lane != _was_lane:
 		snd.play("lane")
 	_was_grounded = sim.grounded
@@ -351,7 +351,7 @@ func _sync(dt: float) -> void:
 	div_fig.visible = gap < tune.div_far_gap - 1.0
 	anim.div(div_fig, anim_t, sim.speed, sim.div_t > 0.0, sim.dead == "caught")
 	world.update(sim, s, anim_t)
-	fx.follow(runner.position, started and sim.grounded and sim.dead == "" and not flying and not sim.is_sliding(), started and flying)
+	fx.follow(runner.position, false, started and flying) # no running dust: on the grey road it looked like smoke
 	var tall := get_viewport().get_visible_rect().size.aspect() < 1.0 # a phone held upright: closer, lower
 	var follow := 0.85 if tall else 0.55
 	var boost_kick := 6.0 if sim.power["fly"] > 0.0 else 0.0
