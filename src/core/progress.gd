@@ -245,6 +245,12 @@ func claim(i: int) -> int:
 	return m["reward"]
 
 
+## Sets the game's language (az, tr, en, ru) and makes it the drawn language.
+func set_lang(code: String) -> void:
+	save.set_value("lang", code)
+	Lang.install(code)
+
+
 ## Turns a setting on or off (music, sound).
 func toggle(key: String) -> void:
 	save.set_value(key, not bool(save.get_value(key)))

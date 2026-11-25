@@ -14,6 +14,7 @@
 ##   --menu=SCREEN    with --shot: open that menu screen (home, shop, chars ...) and shoot it instead of a run
 ##   --bread=N        that throwaway save starts with N bread
 ##   --char=ID --costume=ID --city=ID   that throwaway save wears this look
+##   --lang=CODE      that save's language (az, tr, en, ru); --untranslated prints untranslated texts at the shot
 ##   --story=N        with --shot: show the story at picture N (0-4) and shoot it
 extends Node3D
 
@@ -93,6 +94,9 @@ func _ready() -> void:
 	else:
 		save = SaveData.new(SaveData.PATH, tune.start_nar)
 	prog = Progress.new(save, tune)
+	if args.has("lang"):
+		save.put("lang", args["lang"])
+	Lang.install(String(save.get_value("lang")))
 	prog.mission_done.connect(func(_t: String) -> void: _banner("Tapşırıq bitdi!"))
 	_build_world()
 	_build_hud()
@@ -100,7 +104,7 @@ func _ready() -> void:
 	_new_run()
 	var g := prog.daily_gift() if not args.has("shot") else ""
 	if g != "":
-		menu.toast("Nənənin bu günkü hədiyyəsi: " + g, 4.0)
+		menu.toast("Nənənin bu günkü hədiyyəsi: %s" % g, 4.0)
 	if args.has("story") and args.has("shot"):
 		_show_story(false)
 		for i in int(args["story"]):
@@ -515,9 +519,8 @@ func _on_dead(_kind: String) -> void:
 	var best := maxi(int(sim.score), int(save.get_value("best")))
 	var cost := sim.continue_cost()
 	var have := int(save.get_value("nar"))
-	over_text.text = "%s\n\nXal: %d\nYağ çörəyi: %d\nRekord: %d" % [
-		"Hamm! Div səni tutdu!" if sim.dead == "caught" else "Bam! Div səni tutdu!",
-		int(sim.score), sim.bread, best]
+	over_text.text = "\n".join([tr("Hamm! Div səni tutdu!" if sim.dead == "caught" else "Bam! Div səni tutdu!"), "",
+		tr("Xal: %d" % int(sim.score)), tr("Yağ çörəyi: %d" % sim.bread), tr("Rekord: %d" % best)])
 	continue_btn.text = "Nar ilə davam et (%d)" % cost
 	continue_btn.disabled = have < cost
 	over_panel.visible = true
@@ -548,7 +551,7 @@ func _on_item(kind: String) -> void:
 				gen.hunt_open = false
 		"stone":
 			var msg := prog.take_stone()
-			_show_count("sehrli daş %d" % int(save.get_value("stones")), Color("#d9b8ff"))
+			_show_count("sehrli daş %d" % prog.get_int("stones"), Color("#d9b8ff"))
 			if msg != "":
 				_banner(msg, 3.0)
 
@@ -774,7 +777,21 @@ func _lane_clear(l: int) -> bool:
 	return true
 
 
+## Prints every shown text that has no translation (developer flag --untranslated).
+func _dump_untranslated(n: Node) -> void:
+	for c in n.get_children():
+		_dump_untranslated(c)
+	var s := ""
+	if n is Label or n is Button or n is Label3D:
+		s = n.text
+	if s != "" and n.is_visible_in_tree() if n is CanvasItem else s != "":
+		if tr(s) == s and RegEx.create_from_string("[a-zA-ZəıöüşçğƏİÖÜŞÇĞ]{2}").search(s) != null:
+			print("UNTR ", s.replace("\n", "\\n"))
+
+
 func _shoot() -> void:
+	if args.has("untranslated"):
+		_dump_untranslated(self)
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(args["shot"])
 	print("SHOT %s time=%.1f s=%.0f bread=%d dead=%s save_bread=%d nar=%d" % [args["shot"], sim.time, sim.s, sim.bread,

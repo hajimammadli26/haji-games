@@ -17,6 +17,8 @@ signal play
 signal look_changed
 ## Nağıl was tapped in Ayarlar: show the story again.
 signal story
+## Music or sound was turned on or off.
+signal settings_changed
 
 const SCREENS := {
 	"shop": "Nənənin dükanı", "costumes": "Geyim dükanı", "chars": "Personajlar", "cities": "Şəhərlər",
@@ -42,6 +44,7 @@ var _scroll: ScrollContainer
 var _wallet: Label
 var _toast: Label
 var _home_info: Label
+var _hint: Label
 
 
 func _init(progress: Progress) -> void:
@@ -136,7 +139,8 @@ func _build_home() -> void:
 	st.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	st.pressed.connect(open.bind("settings"))
 	var hint := UiKit.label(_home, 24, CREAM)
-	hint.text = "Sürüşdür: ← → zolaq, ↑ tullan, ↓ sürüş\nİki dəfə toxun: uçan xalça"
+	hint.set_meta("lines", ["Sürüşdür: ← → zolaq, ↑ tullan, ↓ sürüş", "İki dəfə toxun: uçan xalça"])
+	_hint = hint
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 
@@ -222,8 +226,9 @@ func _refresh() -> void:
 	for m in prog.missions():
 		if m["done"]:
 			md += 1
-	_home_info.text = "Rekord: %d · %s\nTapşırıqlar: %d/3 bitib · vurğu x%d" % [int(prog.save.get_value("best")),
-		prog.league(int(prog.save.get_value("best"))), md, int(prog.save.get_value("mmult"))]
+	_home_info.text = tr("Rekord: %d · %s" % [int(prog.save.get_value("best")), prog.league(int(prog.save.get_value("best")))]) \
+		+ "\n" + tr("Tapşırıqlar: %d/3 bitib · vurğu x%d" % [md, int(prog.save.get_value("mmult"))])
+	_hint.text = "\n".join((_hint.get_meta("lines") as Array).map(func(x): return tr(x)))
 	if screen == "home":
 		return
 	for c in _rows.get_children():
@@ -239,9 +244,9 @@ func _screen_shop() -> void:
 		var k: String = p["id"]
 		var lv := prog.level(k)
 		var marks := "●".repeat(lv) + "○".repeat(mx - lv)
-		var sub := "%s\n%s  səviyyə %d/%d" % [p["what"], marks, lv, mx]
+		var sub := "%s\n%s  %s" % [tr(p["what"]), marks, tr("səviyyə %d/%d" % [lv, mx])]
 		if lv >= mx:
-			_row(p["name"], sub + " · tam", "", false, Callable())
+			_row(p["name"], sub, "", false, Callable())
 			continue
 		var cost := prog.level_cost(k)
 		_row(p["name"], sub, _price_btn("lv_" + k, cost), prog.bread() >= cost, _buy("lv_" + k, cost, func() -> void:
@@ -274,7 +279,7 @@ func _screen_costumes() -> void:
 		var can := cur != id and (own or prog.bread() >= cost)
 		_row(c["name"], c["desc"], btn, can, _buy("cos_" + id, 0 if own else cost, func() -> void:
 			if prog.choose_costume(id):
-				toast("Cırtdan: " + c["name"])
+				toast("Cırtdan: %s" % c["name"])
 				look_changed.emit()))
 
 
@@ -285,19 +290,19 @@ func _screen_chars() -> void:
 		var id: String = c["id"]
 		var own := prog.has_char(id)
 		var price: int = c["price"]
-		var sub: String = c["desc"]
+		var sub: String = tr(c["desc"])
 		if c.get("stones", false) and not own:
-			sub += " · pulsuz: sehrli daşlar %d/%d" % [mini(int(prog.save.get_value("stones")), prog.tune.peri_stones), prog.tune.peri_stones]
+			sub += " · " + tr("pulsuz: sehrli daşlar %d/%d" % [mini(prog.get_int("stones"), prog.tune.peri_stones), prog.tune.peri_stones])
 		if c.get("hunt", false) and not own:
 			var h := prog.hunt()
-			sub += " · pulsuz: həftəlik ov, buta daşları %d/%d" % [mini(h["got"], h["need"]), h["need"]]
+			sub += " · " + tr("pulsuz: həftəlik ov, buta daşları %d/%d" % [mini(h["got"], h["need"]), h["need"]])
 		if c.get("claims", false) and not own:
-			sub += " · pulsuz: %d/%d tapşırıq" % [mini(int(prog.save.get_value("claims")), prog.tune.kecel_claims), prog.tune.kecel_claims]
+			sub += " · " + tr("pulsuz: %d/%d tapşırıq" % [mini(int(prog.save.get_value("claims")), prog.tune.kecel_claims), prog.tune.kecel_claims])
 		var btn := "Seçilib" if cur == id else ("Seç" if own else _price_btn("ch_" + id, price))
 		var can := cur != id and (own or prog.bread() >= price)
 		_row(c["name"], sub, btn, can, _buy("ch_" + id, 0 if own else price, func() -> void:
 			if prog.choose_char(id):
-				toast("Personaj: " + c["name"])
+				toast("Personaj: %s" % c["name"])
 				look_changed.emit()))
 
 
@@ -312,7 +317,7 @@ func _screen_cities() -> void:
 		var can := cur != id and (own or prog.bread() >= price)
 		_row(c["name"], c["desc"], btn, can, _buy("ci_" + id, 0 if own else price, func() -> void:
 			if prog.choose_city(id):
-				toast("Şəhər: " + c["name"])
+				toast("Şəhər: %s" % c["name"])
 				look_changed.emit()))
 
 
@@ -323,7 +328,7 @@ func _screen_missions() -> void:
 		var m: Dictionary = ms[i]
 		var p := "%d/%d" % [int(m["prog"]), int(m["target"])]
 		if m["done"]:
-			_row(m["txt"], "Bitdi! " + p, "+%d" % m["reward"], true, func() -> void:
+			_row(m["txt"], "Bitdi! %s" % p, "+%d" % m["reward"], true, func() -> void:
 				var got := prog.claim(i)
 				toast("+%d çörək! Yeni tapşırıq" % got)
 				_refresh(), RED)
@@ -334,12 +339,12 @@ func _screen_missions() -> void:
 	var shown := ""
 	for i in w.length():
 		shown += (w[i] if i < dw["got"] else "_") + " "
-	_row("Günün sözü: " + shown.strip_edges(), "Hərfləri küçədə sırayla tap · hər gün ilk söz: ardıcıl günlər üçün daha çox hədiyyə (seriya %d)" % int(prog.get_int("wordStreak")), "", false, Callable())
+	_row("Günün sözü: %s" % shown.strip_edges(), "Hərfləri küçədə sırayla tap · hər gün ilk söz: ardıcıl günlər üçün daha çox hədiyyə (seriya %d)" % int(prog.get_int("wordStreak")), "", false, Callable())
 	var h := prog.hunt()
-	_row("Həftəlik ov: buta daşlarını tap", ("%d / %d · mükafat: %s" % [mini(h["got"], h["need"]), h["need"],
-		"3 bağlama və %d çörək" % prog.tune.hunt_bread if prog.has_char("melik") else "Məlikməmməd"]) if h["open"] else "Bu həftənin ovu bitdi! Gələn həftə yenisi",
+	_row("Həftəlik ov: buta daşlarını tap", ("%d / %d · %s" % [mini(h["got"], h["need"]), h["need"],
+		tr("mükafat: %s" % tr("3 bağlama və %d çörək" % prog.tune.hunt_bread if prog.has_char("melik") else "Məlikməmməd"))]) if h["open"] else "Bu həftənin ovu bitdi! Gələn həftə yenisi",
 		"", false, Callable())
-	_row("Sehrli daşlar: %d" % int(prog.save.get_value("stones")), "%d daş Pəri qızı açır" % prog.tune.peri_stones, "", false, Callable())
+	_row("Sehrli daşlar: %d" % prog.get_int("stones"), "%d daş Pəri qızı açır" % prog.tune.peri_stones, "", false, Callable())
 
 
 func _screen_leaders() -> void:
@@ -356,12 +361,17 @@ func _screen_leaders() -> void:
 
 func _screen_settings() -> void:
 	_sub.text = ""
-	var s := prog.save
-	for k in [["music", "Musiqi"], ["sound", "Səs effektləri"]]:
+	for k in [["music", "Musiqi", "Fon musiqisi"], ["sound", "Səs effektləri", "Tullanma, çörək və güclənmə səsləri"]]:
 		var key: String = k[0]
-		var on := bool(s.get_value(key))
-		_row(k[1], "Səs hissəsi tezliklə gəlir", "Açıq" if on else "Bağlı", true, func() -> void:
+		var on := bool(prog.save.get_value(key))
+		_row(k[1], k[2], "Açıq" if on else "Bağlı", true, func() -> void:
 			prog.toggle(key)
+			settings_changed.emit()
 			_refresh(), GREEN if on else BROWN)
-	_row("Dil", "Azərbaycan dili (türk, ingilis, rus dilləri tezliklə)", "", false, Callable())
+	var cur := String(prog.save.get_value("lang"))
+	for c in Lang.choices():
+		var code: String = c[0]
+		_row(c[1], "Dil" if code == "az" else "", "Seçilib" if cur == code else "Seç", cur != code, func() -> void:
+			prog.set_lang(code)
+			_refresh())
 	_row("Nağıl", "Cırtdanın hekayəsinə yenidən bax", "Bax", true, func() -> void: story.emit())

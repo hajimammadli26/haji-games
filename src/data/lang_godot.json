@@ -1,0 +1,322 @@
+{
+ "Qoşa təndir: x2": {
+  "tr": "Çift tandır: x2",
+  "en": "Double tandir: x2",
+  "ru": "Двойной тендир: x2"
+ },
+ "Tapşırıq bitdi!": {
+  "tr": "Görev tamam!",
+  "en": "Mission done!",
+  "ru": "Задание выполнено!"
+ },
+ "Nənənin bu günkü hədiyyəsi: {s}": {
+  "tr": "Nene'nin bugünkü hediyesi: {s}",
+  "en": "Grandma's gift today: {s}",
+  "ru": "Подарок бабушки на сегодня: {s}"
+ },
+ "Yerə endin": {
+  "tr": "Yere indin",
+  "en": "Landed",
+  "ru": "Приземлился"
+ },
+ "Hamm! Div səni tutdu!": {
+  "tr": "Hamm! Dev seni yakaladı!",
+  "en": "Chomp! The Div caught you!",
+  "ru": "Ам! Див тебя поймал!"
+ },
+ "Yağ çörəyi: {n}": {
+  "tr": "Yağlı çörek: {n}",
+  "en": "Butter bread: {n}",
+  "ru": "Сдобный хлеб: {n}"
+ },
+ "{s}! Hədiyyə: {t}": {
+  "tr": "{s}! Hediye: {t}",
+  "en": "{s}! Gift: {t}",
+  "ru": "{s}! Подарок: {t}"
+ },
+ "buta {n}/{m}": {
+  "tr": "buta {n}/{m}",
+  "en": "buta {n}/{m}",
+  "ru": "бута {n}/{m}"
+ },
+ "sehrli daş {n}": {
+  "tr": "sihirli taş {n}",
+  "en": "magic stones {n}",
+  "ru": "волшебные камни: {n}"
+ },
+ "Uçuş!": {
+  "tr": "Uç!",
+  "en": "Fly!",
+  "ru": "Полёт!"
+ },
+ "Nar ilə davam et": {
+  "tr": "Nar ile devam et",
+  "en": "Continue with a pomegranate",
+  "ru": "Продолжить за гранат"
+ },
+ "çörək {n}": {
+  "tr": "çörek {n}",
+  "en": "bread {n}",
+  "ru": "хлеб: {n}"
+ },
+ "nar {n}": {
+  "tr": "nar {n}",
+  "en": "pomegranates {n}",
+  "ru": "гранаты: {n}"
+ },
+ "Xalça x{n}": {
+  "tr": "Halı x{n}",
+  "en": "Carpet x{n}",
+  "ru": "Ковёр ×{n}"
+ },
+ "Oyna!": {
+  "tr": "Oyna!",
+  "en": "Play!",
+  "ru": "Играть!"
+ },
+ "Sürüşdür: ← → zolaq, ↑ tullan, ↓ sürüş": {
+  "tr": "Kaydır: ← → şerit, ↑ zıpla, ↓ kay",
+  "en": "Swipe: ← → lane, ↑ jump, ↓ slide",
+  "ru": "Свайп: ← → полоса, ↑ прыжок, ↓ подкат"
+ },
+ "İki dəfə toxun: uçan xalça": {
+  "tr": "İki kez dokun: uçan halı",
+  "en": "Double tap: flying carpet",
+  "ru": "Двойное касание: ковёр-самолёт"
+ },
+ "{n} çörək": {
+  "tr": "{n} çörek",
+  "en": "{n} bread",
+  "ru": "{n} хлеба"
+ },
+ "çörək {n} · nar {m}": {
+  "tr": "çörek {n} · nar {m}",
+  "en": "bread {n} · pomegranates {m}",
+  "ru": "хлеб: {n} · гранаты: {m}"
+ },
+ "Rekord: {n} · {s}": {
+  "tr": "Rekor: {n} · {s}",
+  "en": "Best: {n} · {s}",
+  "ru": "Рекорд: {n} · {s}"
+ },
+ "Tapşırıqlar: {n}/3 bitib · vurğu x{m}": {
+  "tr": "Görevler: {n}/3 bitti · çarpan x{m}",
+  "en": "Missions: {n}/3 done · multiplier x{m}",
+  "ru": "Задания: {n}/3 выполнено · множитель ×{m}"
+ },
+ "Səviyyə artdıqca güclənmə daha uzun sürür": {
+  "tr": "Seviye arttıkça güç daha uzun sürer",
+  "en": "Higher levels make power-ups last longer",
+  "ru": "Чем выше уровень, тем дольше действует усиление"
+ },
+ "səviyyə {n}/{m}": {
+  "tr": "seviye {n}/{m}",
+  "en": "level {n}/{m}",
+  "ru": "уровень {n}/{m}"
+ },
+ "{s}: səviyyə {n}": {
+  "tr": "{s}: seviye {n}",
+  "en": "{s}: level {n}",
+  "ru": "{s}: уровень {n}"
+ },
+ "Qaçışda bir dəfə: səni bir zərbədən qoruyur · var: {n}": {
+  "tr": "Koşuda bir kez: seni bir darbeden korur · var: {n}",
+  "en": "Once per run: saves you from one hit · owned: {n}",
+  "ru": "Раз за забег: спасает от одного удара · есть: {n}"
+ },
+ "Uçan xalça alındı": {
+  "tr": "Uçan halı alındı",
+  "en": "Flying carpet bought",
+  "ru": "Ковёр-самолёт куплен"
+ },
+ "Qaçışın əvvəlində bas: uçub irəli get, çörəkləri yığ · var: {n}": {
+  "tr": "Koşunun başında bas: uçup ileri git, çörekleri topla · var: {n}",
+  "en": "Tap at the start of a run: fly ahead and gather bread · owned: {n}",
+  "ru": "Нажми в начале забега: улети вперёд и собери хлеб · есть: {n}"
+ },
+ "Xalça ilə uçuş alındı": {
+  "tr": "Halıyla uçuş alındı",
+  "en": "Carpet flight bought",
+  "ru": "Полёт на ковре куплен"
+ },
+ "İçində nə var? Çörək, nar və ya uçan xalça": {
+  "tr": "İçinde ne var? Çörek, nar ya da uçan halı",
+  "en": "What's inside? Bread, a pomegranate or a flying carpet",
+  "ru": "Что внутри? Хлеб, гранат или ковёр-самолёт"
+ },
+ "Cırtdanın geyimləri": {
+  "tr": "Cırtdan'ın kıyafetleri",
+  "en": "Jirtdan's outfits",
+  "ru": "Наряды Джыртдана"
+ },
+ "Cırtdan: {s}": {
+  "tr": "Cırtdan: {s}",
+  "en": "Jirtdan: {s}",
+  "ru": "Джыртдан: {s}"
+ },
+ "Personaj seç": {
+  "tr": "Karakter seç",
+  "en": "Choose a character",
+  "ru": "Выбери героя"
+ },
+ "pulsuz: sehrli daşlar {n}/{m}": {
+  "tr": "ücretsiz: sihirli taşlar {n}/{m}",
+  "en": "free: magic stones {n}/{m}",
+  "ru": "бесплатно: волшебные камни {n}/{m}"
+ },
+ "pulsuz: həftəlik ov, buta daşları {n}/{m}": {
+  "tr": "ücretsiz: haftalık av, buta taşları {n}/{m}",
+  "en": "free: weekly hunt, buta stones {n}/{m}",
+  "ru": "бесплатно: охота недели, камни-бута {n}/{m}"
+ },
+ "pulsuz: {n}/{m} tapşırıq": {
+  "tr": "ücretsiz: {n}/{m} görev",
+  "en": "free: {n}/{m} missions",
+  "ru": "бесплатно: заданий {n}/{m}"
+ },
+ "Personaj: {s}": {
+  "tr": "Karakter: {s}",
+  "en": "Character: {s}",
+  "ru": "Герой: {s}"
+ },
+ "Azərbaycan turu: hər şəhər öz küçəsi ilə": {
+  "tr": "Azerbaycan turu: her şehir kendi sokağıyla",
+  "en": "Azerbaijan tour: every city has its own street",
+  "ru": "Тур по Азербайджану: у каждого города своя улица"
+ },
+ "Buradasan": {
+  "tr": "Buradasın",
+  "en": "You're here",
+  "ru": "Ты здесь"
+ },
+ "Get": {
+  "tr": "Git",
+  "en": "Go",
+  "ru": "Ехать"
+ },
+ "Şəhər: {s}": {
+  "tr": "Şehir: {s}",
+  "en": "City: {s}",
+  "ru": "Город: {s}"
+ },
+ "Bitdi! {s}": {
+  "tr": "Bitti! {s}",
+  "en": "Done! {s}",
+  "ru": "Готово! {s}"
+ },
+ "{s} · mükafat {n} çörək": {
+  "tr": "{s} · ödül {n} çörek",
+  "en": "{s} · reward {n} bread",
+  "ru": "{s} · награда {n} хлеба"
+ },
+ "Günün sözü: {s}": {
+  "tr": "Günün kelimesi: {s}",
+  "en": "Word of the day: {s}",
+  "ru": "Слово дня: {s}"
+ },
+ "Hərfləri küçədə sırayla tap · hər gün ilk söz: ardıcıl günlər üçün daha çox hədiyyə (seriya {n})": {
+  "tr": "Harfleri sokakta sırayla bul · her günün ilk kelimesi: art arda günler için daha çok hediye (seri {n})",
+  "en": "Find the letters in the street in order · each day's first word: more gifts for days in a row (streak {n})",
+  "ru": "Находи буквы на улице по порядку · первое слово дня: больше подарков за дни подряд (серия {n})"
+ },
+ "mükafat: {s}": {
+  "tr": "ödül: {s}",
+  "en": "reward: {s}",
+  "ru": "награда: {s}"
+ },
+ "3 bağlama və {n} çörək": {
+  "tr": "3 bohça ve {n} çörek",
+  "en": "3 bundles and {n} bread",
+  "ru": "3 узелка и {n} хлеба"
+ },
+ "Bu həftənin ovu bitdi! Gələn həftə yenisi": {
+  "tr": "Bu haftanın avı bitti! Gelecek hafta yenisi",
+  "en": "This week's hunt is done! A new one next week",
+  "ru": "Охота этой недели окончена! Новая — на следующей неделе"
+ },
+ "Sehrli daşlar: {n}": {
+  "tr": "Sihirli taşlar: {n}",
+  "en": "Magic stones: {n}",
+  "ru": "Волшебные камни: {n}"
+ },
+ "{n} daş Pəri qızı açır": {
+  "tr": "{n} taş Peri kızı açar",
+  "en": "{n} stones unlock the Fairy Girl",
+  "ru": "{n} камней открывают Пери"
+ },
+ "{s} · Rekord: {n} · onlayn reytinq server tələb edir (sonra)": {
+  "tr": "{s} · Rekor: {n} · çevrimiçi sıralama sunucu ister (sonra)",
+  "en": "{s} · Best: {n} · online rankings need a server (later)",
+  "ru": "{s} · Рекорд: {n} · онлайн-рейтинг требует сервера (позже)"
+ },
+ "Oyna və ilk rekordunu qoy!": {
+  "tr": "Oyna ve ilk rekorunu kır!",
+  "en": "Play and set your first record!",
+  "ru": "Играй и поставь первый рекорд!"
+ },
+ "{n}. {m} xal": {
+  "tr": "{n}. {m} puan",
+  "en": "{n}. {m} points",
+  "ru": "{n}. очки: {m}"
+ },
+ "{n} m · {m} çörək · {s}": {
+  "tr": "{n} m · {m} çörek · {s}",
+  "en": "{n} m · {m} bread · {s}",
+  "ru": "{n} м · хлеб: {m} · {s}"
+ },
+ "Səs effektləri": {
+  "tr": "Ses efektleri",
+  "en": "Sound effects",
+  "ru": "Звуковые эффекты"
+ },
+ "Fon musiqisi": {
+  "tr": "Arka plan müziği",
+  "en": "Background music",
+  "ru": "Фоновая музыка"
+ },
+ "Tullanma, çörək və güclənmə səsləri": {
+  "tr": "Zıplama, çörek ve güç sesleri",
+  "en": "Jump, bread and power-up sounds",
+  "ru": "Звуки прыжков, хлеба и усилений"
+ },
+ "Açıq": {
+  "tr": "Açık",
+  "en": "On",
+  "ru": "Вкл"
+ },
+ "Bağlı": {
+  "tr": "Kapalı",
+  "en": "Off",
+  "ru": "Выкл"
+ },
+ "Bağlamadan çıxdı: {s}": {
+  "tr": "Bohçadan çıktı: {s}",
+  "en": "Out of the bundle: {s}",
+  "ru": "Из узелка: {s}"
+ },
+ "Həftəlik ov bitdi! {s}, {n} çörək": {
+  "tr": "Haftalık av bitti! {s}, {n} çörek",
+  "en": "Weekly hunt complete! {s}, {n} bread",
+  "ru": "Охота недели окончена! {s}, {n} хлеба"
+ },
+ "Sehrli daşlar: Pəri qız açıldı!": {
+  "tr": "Sihirli taşlar: Peri kız açıldı!",
+  "en": "Magic stones: the Fairy Girl is unlocked!",
+  "ru": "Волшебные камни: Пери открыта!"
+ },
+ "Növbəti →": {
+  "tr": "Sonraki →",
+  "en": "Next →",
+  "ru": "Дальше →"
+ },
+ "Qaç!": {
+  "tr": "Kaç!",
+  "en": "Run!",
+  "ru": "Беги!"
+ },
+ "Bağlamadan çıxdı": {
+  "tr": "Bohçadan çıktı",
+  "en": "Out of the bundle",
+  "ru": "Из узелка"
+ }
+}
