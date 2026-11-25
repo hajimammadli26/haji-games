@@ -23,6 +23,8 @@ After play: "Tedbirleri yigisdir umumen / Geyim ayri mağazaya çıxar geyim dü
 
 After play: "İphone du ses gelmir  hee yağ çöreyo deyirdim bidene agent skili varsa test eden ona de oynu iynasin çoxlu test elesin her bir sheyini ve sene ne duzelmelidi desin"
 
+After play: "Yoxladim her şey işleyir" (iPhone sound included)
+
 **Pitch:** Little, clever Cırtdan sprints through the narrow stone streets of old Baku with a huge, clumsy Div on his heels, dodging phaetons and camel caravans and scooping up grandma's yağ çörəkləri.
 
 **Genre:** endless runner, 3 lanes, seen from behind
