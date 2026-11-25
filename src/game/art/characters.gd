@@ -29,157 +29,336 @@ static func _box(parent: Node3D, color: Variant, sx: float, sy: float, sz: float
 	return Kit.part(parent, Kit.box(sx, sy, sz), m, pos, rot)
 
 
+## Proportions per hat (the hat names the character): [leg length, body width, torso height], 1 = Cırtdan.
+## Each playable gets its own outline class at phone size; Cırtdan's costumes keep his (art bible §5).
+const BODY := {
+	"tall": [1.32, 0.84, 1.12], # Kəndirbaz: tall and slim, a rope-walker
+	"crown": [1.16, 1.1, 1.1], # Məlikməmməd: taller and broad, the hero
+	"scarf": [1.0, 0.94, 0.96], # Tıq-Tıq: a little slighter, a skirt
+	"kosa": [0.96, 1.1, 1.0], # Kosa: a round old fellow
+}
+const AGOLD := "#c89b45" ## Antique Gold: trims (art bible §4)
+const MADDER := "#8f2b2b" ## the dye red of belts and capes, clearly apart from Player Red
+const WOOL := "#efe6cf"
+
+
 ## A playable character from a look (Catalog look plus costume): hat, hat_color, vest, trim, shirt, pants,
-## braids, sprig. Faces -z. Parts: rig, hip, torso, head, leg_l, leg_r, arm_l, arm_r, sack, hat, tongue, brow_l, brow_r.
+## braids, sprig. Faces -z. Parts: rig, hip, torso, head, leg_l, leg_r, arm_l, arm_r, sack, hat, tongue, brow_l, brow_r,
+## knee_l/r, elbow_l/r, eye_l/r, smile, gasp. The hat picks the body (BODY) and the face (_face).
 static func runner(look: Dictionary = {}) -> Node3D:
 	var vest := String(look.get("vest", "#1f4f8f"))
-	var trim := String(look.get("trim", "#f1c34a"))
+	var trim := String(look.get("trim", AGOLD))
 	var shirt := String(look.get("shirt", "#f3ecd8"))
 	var pants := String(look.get("pants", "#4b3221"))
 	var hat := String(look.get("hat", "papaq"))
-	var hat_c := String(look.get("hat_color", "#c8221d"))
+	var hat_c := String(look.get("hat_color", PLAYER_RED))
+	var body: Array = BODY.get(hat, [1.0, 1.0, 1.0])
+	var ll: float = body[0]
+	var w: float = body[1]
+	var th: float = body[2]
+	var face := _face(hat)
 	var g := Node3D.new()
 	var rig := Kit.joint(g)
-	var hip := Kit.joint(rig, Vector3(0, 0.52, 0))
+	var hip_y := 0.1 + 0.42 * ll
+	var hip := Kit.joint(rig, Vector3(0, hip_y, 0))
 	var legs := []
 	var knees := []
-	for sx in [-0.12, 0.12]: # two-bone legs: thigh, knee, shin, a çarıq with a turned-up toe
+	for sx in [-0.12 * w, 0.12 * w]: # two-bone legs: thigh, knee, shin, a çarıq with a turned-up toe
 		var leg := Kit.joint(hip, Vector3(sx, 0, 0))
-		Kit.part(leg, Kit.capsule(0.085, 0.24), Kit.mat(pants), Vector3(0, -0.1, 0))
-		var knee := Kit.joint(leg, Vector3(0, -0.2, 0))
-		Kit.part(knee, Kit.capsule(0.075, 0.24), Kit.mat(pants), Vector3(0, -0.1, 0))
-		_egg(knee, "#7a3b16", 0.1, 0.07, 0.16, Vector3(0, -0.22, -0.04)) # çarıq, toe forward
-		_cyl(knee, "#7a3b16", 0.03, 0.08, Vector3(0, -0.2, -0.2), Vector3(-1.0, 0, 0), 0.0) # the turned-up toe
-		_cyl(knee, "#c0302a", 0.075, 0.03, Vector3(0, -0.17, 0)) # the çarıq's red tie
+		Kit.part(leg, Kit.capsule(0.085, 0.24 * ll), Kit.mat(pants), Vector3(0, -0.1 * ll, 0))
+		var knee := Kit.joint(leg, Vector3(0, -0.2 * ll, 0))
+		Kit.part(knee, Kit.capsule(0.075, 0.24 * ll), Kit.mat(pants), Vector3(0, -0.1 * ll, 0))
+		var foot := -0.22 * ll
+		_egg(knee, "#7a3b16", 0.1, 0.07, 0.16, Vector3(0, foot, -0.04)) # çarıq, toe forward
+		_ink(_cyl(knee, "#7a3b16", 0.03, 0.08, Vector3(0, foot + 0.02, -0.2), Vector3(-1.0, 0, 0), 0.0)) # the turned-up toe
+		_ink(_cyl(knee, MADDER, 0.075, 0.03, Vector3(0, foot + 0.05, 0))) # the çarıq's tie
 		legs.append(leg)
 		knees.append(knee)
-	var torso := Kit.joint(rig, Vector3(0, 0.52, 0))
-	_cyl(torso, shirt, 0.2, 0.42, Vector3(0, 0.21, 0), Vector3.ZERO, 0.17)
+	var torso := Kit.joint(rig, Vector3(0, hip_y, 0))
+	# a rounded body in the shirt, and the vest wrapped round it, open down the front so the shirt shows;
+	# the vest texture's border becomes the trim along the opening, the hem and the armholes
+	Kit.part(torso, Kit.shell(_prof([[0.19, -0.04], [0.205, 0.1], [0.2, 0.26], [0.175, 0.37], [0.12, 0.45], [0.01, 0.48]], w, th), 0.0, TAU, 0.08, 14), Kit.mat(shirt))
 	var vm := Kit.tex("vest_%s_%s" % [vest.trim_prefix("#"), trim.trim_prefix("#")])
-	_box(torso, vm, 0.42, 0.36, 0.34, Vector3(0, 0.24, 0))
-	_cyl(torso, "#c0302a", 0.215, 0.07, Vector3(0, 0.04, 0)) # belt
-	_egg(torso, "#d8a53a", 0.04, 0.04, 0.02, Vector3(0, 0.04, -0.21)) # buckle
-	var sack := Kit.joint(torso, Vector3(0, 0.26, 0.22))
+	var gap := 0.42 # half the front opening, radians
+	Kit.part(torso, Kit.shell(_prof([[0.226, -0.1], [0.236, 0.05], [0.232, 0.22], [0.205, 0.35], [0.158, 0.43], [0.118, 0.47]], w, th),
+		-PI / 2 + gap, PI * 1.5 - gap, 0.03, 18), vm)
+	_cyl(torso, MADDER, 0.25 * w, 0.075, Vector3(0, 0.03, 0)) # belt
+	_ink(_egg(torso, AGOLD, 0.045, 0.04, 0.02, Vector3(0, 0.03, -0.252 * w))) # buckle
+	var sash := 0.6 # the sack's strap, diagonal round the body
+	Kit.part(torso, Kit.ring(0.255 * w, 0.022), Kit.mat("#8a6a44"), Vector3(0, 0.24 * th, 0), Vector3(0, 0, sash), Vector3(1.0 / cos(sash), 1, 1))
+	if hat == "scarf": # Tıq-Tıq's skirt, flared, with a gold hem
+		var sk := String(look.get("skirt", pants))
+		Kit.part(torso, Kit.shell(_prof([[0.38, -0.3], [0.31, -0.17], [0.255, -0.03], [0.238, 0.05]], w, 1.0), 0.0, TAU, 0.025, 16), Kit.mat(sk))
+		Kit.part(torso, Kit.ring(0.37 * w, 0.025), Kit.mat(AGOLD), Vector3(0, -0.29, 0))
+	var sack := Kit.joint(torso, Vector3(0, 0.26 * th, 0.22 * w))
 	_egg(sack, "#c9a46a", 0.24, 0.27, 0.16, Vector3.ZERO)
-	_box(sack, "#7d5a9b", 0.12, 0.12, 0.02, Vector3(0.06, 0.05, 0.155)) # a patch
-	_cyl(sack, "#8a6a44", 0.04, 0.06, Vector3(0, 0.27, 0)) # the knot
-	_box(torso, "#8a6a44", 0.04, 0.5, 0.03, Vector3(0.14, 0.22, -0.16), Vector3(0, 0, 0.55)) # the strap across the chest
+	_ink(_box(sack, "#7d5a9b", 0.12, 0.12, 0.02, Vector3(0.06, 0.05, 0.155))) # a patch
+	_ink(_cyl(sack, "#8a6a44", 0.04, 0.06, Vector3(0, 0.27, 0))) # the knot
 	var arms := []
 	var elbows := []
-	for sx in [-0.25, 0.25]: # two-bone arms: puffed sleeve, elbow, forearm, a hand with a thumb
-		var arm := Kit.joint(torso, Vector3(sx, 0.38, 0))
+	for sx in [-0.25 * w, 0.25 * w]: # two-bone arms: puffed sleeve, elbow, forearm, a hand with a thumb
+		var arm := Kit.joint(torso, Vector3(sx, 0.38 * th, 0))
 		Kit.part(arm, Kit.capsule(0.07, 0.2), Kit.mat(shirt), Vector3(0, -0.07, 0))
 		var elbow := Kit.joint(arm, Vector3(0, -0.15, 0))
 		Kit.part(elbow, Kit.capsule(0.058, 0.18), Kit.mat(shirt), Vector3(0, -0.07, 0))
-		_egg(elbow, SKIN, 0.07, 0.07, 0.07, Vector3(0, -0.18, 0))
-		_egg(elbow, SKIN, 0.03, 0.03, 0.03, Vector3(-signf(sx) * 0.05, -0.16, -0.03))
+		_ink(_egg(elbow, SKIN, 0.07, 0.07, 0.07, Vector3(0, -0.18, 0)))
+		_ink(_egg(elbow, SKIN, 0.03, 0.03, 0.03, Vector3(-signf(sx) * 0.05, -0.16, -0.03)))
 		arms.append(arm)
 		elbows.append(elbow)
-	var head := Kit.joint(torso, Vector3(0, 0.62, 0))
+	var head := Kit.joint(torso, Vector3(0, 0.2 + 0.42 * th, 0))
 	_egg(head, SKIN, 0.3, 0.29, 0.28, Vector3(0, 0.18, 0), Vector3.ZERO, 24)
+	var ear: float = face["ear"]
 	for sx in [-0.29, 0.29]:
-		_egg(head, SKIN, 0.05, 0.08, 0.05, Vector3(sx, 0.17, 0))
+		_egg(head, SKIN, 0.05 * ear, 0.08 * ear, 0.05 * ear, Vector3(sx * (0.7 + ear * 0.3), 0.17, 0))
 	var eyes := []
 	for sx in [-0.11, 0.11]: # big eyes, facing where he runs (-z); each in a joint that squashes to blink
 		var eye := Kit.joint(head, Vector3(sx, 0.2, -0.24))
 		_egg(eye, "#ffffff", 0.085, 0.1, 0.06, Vector3.ZERO)
-		_egg(eye, "#2a1a10", 0.045, 0.055, 0.03, Vector3(0, 0, -0.05))
-		_egg(eye, "#ffffff", 0.014, 0.014, 0.01, Vector3(0.015, 0.02, -0.075)) # a glint
-		_egg(head, "#f08a8a", 0.05, 0.03, 0.02, Vector3(sx * 1.6, 0.08, -0.24)) # rosy cheeks
+		_egg(eye, "#2a1a10", 0.045, 0.055, 0.03, Vector3(0, -0.01, -0.05))
+		_egg(eye, "#ffffff", 0.014, 0.014, 0.01, Vector3(0.015, 0.01, -0.075)) # a glint
+		var lid: float = face["lid"]
+		if lid > 0.0: # a lazy lid: a cheeky or kindly look
+			_egg(eye, SKIN, 0.098, 0.07, 0.085, Vector3(0, 0.17 - lid * 0.2, -0.005), Vector3(0, 0, signf(sx) * 0.12))
+		if face["lashes"]: # three lashes at the outer corner
+			var so: float = signf(sx)
+			for a in [1.05, 0.7, 0.35]:
+				var rim := Vector2(0.085 * cos(a) * so, 0.1 * sin(a))
+				_box(eye, "#2a1a10", 0.05, 0.016, 0.016, Vector3(rim.x + 0.02 * cos(a) * so, rim.y + 0.02 * sin(a), -0.03), Vector3(0, 0, a * so))
+		var ck: Array = face["cheek"]
+		_egg(head, ck[0], ck[1], ck[1] * 0.6, 0.02, Vector3(sx * 1.6, 0.08, -0.24)) # rosy cheeks
 		eyes.append(eye)
-	for sx in [-0.2, 0.2]: # tufts of hair at the temples
-		_egg(head, "#3b2414", 0.06, 0.08, 0.06, Vector3(sx, 0.26, -0.12))
+	if face["tufts"] != "": # tufts of hair at the temples
+		for sx in [-0.2, 0.2]:
+			_egg(head, face["tufts"], 0.06, 0.08, 0.06, Vector3(sx, 0.26, -0.12))
 	var brows := []
-	for sx in [-0.11, 0.11]:
-		brows.append(_box(head, "#3b2414", 0.1, 0.022, 0.02, Vector3(sx, 0.32, -0.27), Vector3(0, 0, -signf(sx) * 0.15)))
+	var bt: Array = face["brow_tilt"]
+	var bs: Array = face["brow_size"]
+	for i in 2:
+		var at := Vector3([-0.11, 0.11][i], 0.32, -0.27)
+		var b: MeshInstance3D
+		if face["bushy"]:
+			b = _egg(head, face["brow"], bs[0] * 0.5, bs[1] * 0.5, 0.03, at, Vector3(0, 0, bt[i]))
+		else:
+			b = _box(head, face["brow"], bs[0], bs[1], 0.02, at, Vector3(0, 0, bt[i]))
+		brows.append(b)
 	_egg(head, "#e9a776", 0.05, 0.04, 0.04, Vector3(0, 0.12, -0.28))
-	var smile := _egg(head, "#8a2a1c", 0.07, 0.025, 0.02, Vector3(0, 0.03, -0.265))
-	if hat == "bald":
-		smile.scale.x = 1.4 # Keçəl's cheeky grin
-	var gasp := _egg(head, "#5a1410", 0.04, 0.05, 0.02, Vector3(0, 0.03, -0.27)) # an "O" for jumps and frights
+	var m: Array = face["mouth"] # kind, half width, depth, thickness, teeth, tilt, height
+	var smile := _mouth(head, m[0], m[1], m[2], m[3], m[4], m[5], m[6], "#6a1a14" if m[0] == "grin" else "#8a2a1c")
+	var gasp := _mouth(head, "o", 0.04, 0.05, 0.0, 0.0, 0.0, m[6], "#5a1410") # an "O" for jumps and frights
 	gasp.visible = false
-	var tongue := _box(head, "#e05a6a", 0.08, 0.03, 0.12, Vector3(0, 0.02, -0.32))
+	var tongue := _box(head, "#e05a6a", 0.08, 0.03, 0.12, Vector3(0, m[6] - 0.01, -0.32))
 	tongue.visible = false
 	for k in brows + [smile, gasp, tongue]: # the animator moves these: they stay separate pieces
 		k.set_meta("keep", true)
 	var hatn := Kit.joint(head)
-	_hat(hatn, head, torso, hat, hat_c, look)
-	for c in torso.get_children(): # Pəri's wings flutter on their own
-		if c.has_meta("wing"):
-			c.set_meta("keep", true)
+	_hat(hatn, head, torso, hat, hat_c, look, w, th)
 	g.set_meta("parts", {"rig": rig, "hip": hip, "torso": torso, "head": head, "leg_l": legs[0], "leg_r": legs[1],
 		"arm_l": arms[0], "arm_r": arms[1], "sack": sack, "hat": hatn, "tongue": tongue, "brow_l": brows[0], "brow_r": brows[1],
 		"knee_l": knees[0], "knee_r": knees[1], "elbow_l": elbows[0], "elbow_r": elbows[1], "eye_l": eyes[0], "eye_r": eyes[1],
 		"smile": smile, "gasp": gasp})
 	Kit.ink(g)
-	Kit.shadow(g, 0.34)
+	Kit.shadow(g, 0.34 * w)
 	Kit.merge_joints(g)
 	return g
 
 
-static func _hat(h: Node3D, head: Node3D, torso: Node3D, hat: String, c: String, look: Dictionary) -> void:
+## The face for a hat: brows (colour, tilt left/right, size, bushy), lids, lashes, cheeks, ears, temple tufts and the
+## mouth [kind, half width, depth, thickness, teeth, tilt, height]. Brows stay at y 0.32 (the animator lifts them).
+static func _face(hat: String) -> Dictionary:
+	var f := {"brow": "#3b2414", "brow_tilt": [0.15, -0.15], "brow_size": [0.1, 0.022], "bushy": false, "lid": 0.0,
+		"lashes": false, "cheek": ["#f08a8a", 0.05], "ear": 1.0, "tufts": "#3b2414",
+		"mouth": ["smile", 0.07, 0.03, 0.026, 0.0, 0.0, 0.03]}
+	match hat:
+		"scarf": # Tıq-Tıq: lashes, fine arched brows, pink cheeks, a small sweet smile
+			f.merge({"brow": "#2a160c", "brow_tilt": [0.28, -0.28], "brow_size": [0.09, 0.018], "lashes": true,
+				"cheek": ["#f47f97", 0.058], "tufts": "", "mouth": ["smile", 0.055, 0.03, 0.024, 0.0, 0.0, 0.03]}, true)
+		"bald": # Keçəl: big ears, a sly half-lidded look, one brow cocked, a wide toothy grin
+			f.merge({"brow": "#8a5a30", "brow_tilt": [-0.38, -0.05], "brow_size": [0.11, 0.026], "lid": 0.42, "ear": 1.4,
+				"tufts": "", "mouth": ["grin", 0.1, 0.075, 0.0, 0.024, -0.14, 0.045]}, true)
+		"tall": # Kəndirbaz: level, confident brows and a crooked smile
+			f.merge({"brow_tilt": [-0.12, 0.3], "brow_size": [0.11, 0.024], "mouth": ["smile", 0.07, 0.025, 0.026, 0.0, 0.18, 0.035]}, true)
+		"kosa": # Kosa: white bushy brows, a kindly squint, a laughing mouth inside his beard
+			f.merge({"brow": WOOL, "brow_tilt": [0.3, -0.3], "brow_size": [0.15, 0.06], "bushy": true, "lid": 0.3,
+				"tufts": WOOL, "mouth": ["grin", 0.065, 0.05, 0.0, 0.016, 0.0, 0.045]}, true)
+		"peri": # Pəri: lashes, soft light brows, a small smile
+			f.merge({"brow": "#b88a4a", "brow_tilt": [0.22, -0.22], "brow_size": [0.09, 0.018], "lashes": true,
+				"cheek": ["#f59ac0", 0.055], "tufts": "", "mouth": ["smile", 0.05, 0.028, 0.022, 0.0, 0.0, 0.03]}, true)
+		"crown": # Məlikməmməd: brave brows (inner ends down), a bold open smile
+			f.merge({"brow": "#2a160c", "brow_tilt": [-0.28, 0.28], "brow_size": [0.115, 0.03], "tufts": "#2a160c",
+				"mouth": ["grin", 0.075, 0.045, 0.0, 0.018, 0.0, 0.04]}, true)
+	return f
+
+
+## Marks a small piece to get an ink outline anyway, so it merges into its joint's inked mesh (no extra draw).
+static func _ink(mi: MeshInstance3D) -> MeshInstance3D:
+	mi.set_meta("ink", true)
+	return mi
+
+
+## A profile [[radius, height], ...] scaled: radii by w, heights by h.
+static func _prof(pts: Array, w: float, h: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for p in pts:
+		out.append(Vector2(p[0] * w, p[1] * h))
+	return out
+
+
+## A mouth painted on the face: a thin patch hugging the head's front (the head egg: centre y 0.18, radii 0.3, 0.29,
+## 0.28), coloured in its vertices so a grin and its teeth are one piece and one draw. kind: "smile" (a crescent),
+## "grin" (an open D with a row of teeth) or "o". w: half width, h: depth, t: a smile's thickness, teeth: the teeth
+## band's height, tilt: radians (a smirk), y: the mouth's height on the head.
+static func _mouth(head: Node3D, kind: String, w: float, h: float, t: float, teeth: float, tilt: float, y: float, col: String) -> MeshInstance3D:
+	var key := "mouth%s%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%s" % [kind, w, h, t, teeth, tilt, y, col]
+	var mesh := Kit.cached(key, func() -> Mesh:
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var n := 16
+		var zero := [Vector2.ZERO, Vector2.ZERO, Vector2.ZERO, Vector2.ZERO]
+		for i in n:
+			var s := [-1.0 + 2.0 * i / n, -1.0 + 2.0 * (i + 1) / n]
+			var e0 := _mouth_edge(kind, s[0], h, t)
+			var e1 := _mouth_edge(kind, s[1], h, t)
+			var lo := [e0.x, e1.x]
+			var hi := [e0.y, e1.y]
+			var bands := [[lo, hi, Color(col)]]
+			if teeth > 0.0:
+				var mid := [maxf(lo[0], hi[0] - teeth), maxf(lo[1], hi[1] - teeth)]
+				bands = [[lo, mid, Color(col)], [mid, hi, Color("#fff8ea")]]
+			for b in bands:
+				var pts := []
+				var nrm := []
+				for c in [[0, 0], [1, 0], [1, 1], [0, 1]]:
+					var yy: float = b[0][c[0]] if c[1] == 0 else b[1][c[0]]
+					var p := Vector2(s[c[0]] * w, yy).rotated(tilt)
+					var dx := p.x / 0.3
+					var dy := (y + p.y - 0.18) / 0.29
+					var z := -0.28 * sqrt(maxf(0.04, 1.0 - dx * dx - dy * dy))
+					var nv := Vector3(p.x / 0.09, (y + p.y - 0.18) / 0.0841, z / 0.0784).normalized()
+					pts.append(Vector3(p.x, y + p.y, z) + nv * 0.007)
+					nrm.append(nv)
+				st.set_color(b[2])
+				Kit._quad(st, pts, nrm, zero)
+		return st.commit())
+	var mi := Kit.part(head, mesh, Kit.tint_mat())
+	mi.set_meta("no_ink", true)
+	return mi
+
+
+## A mouth's lower and upper edge (x, y of the result) at s, -1 to 1 across it.
+static func _mouth_edge(kind: String, s: float, h: float, t: float) -> Vector2:
+	var r := sqrt(maxf(0.0, 1.0 - s * s))
+	match kind:
+		"grin":
+			var top := h * 0.35 * s * s
+			return Vector2(top - h * r, top)
+		"o":
+			return Vector2(-h * r, h * r)
+	var mid := h * (s * s - 0.5)
+	var half := t * 0.5 * maxf(0.3, r)
+	return Vector2(mid - half, mid + half)
+
+
+## Two long braids from under the hat over the shoulders, each tied with a ribbon bow.
+static func _braids(h: Node3D, hair: String, ribbon: String) -> void:
+	for sd in [-1.0, 1.0]:
+		for k in 4:
+			var r: float = 0.068 - k * 0.006
+			_ink(_egg(h, hair, r, 0.07, r, Vector3(sd * (0.27 + k * 0.012), 0.06 - k * 0.095, 0.05 - k * 0.012)))
+		var by := 0.06 - 4 * 0.095 + 0.04
+		var bx: float = sd * 0.316
+		for d in [-1.0, 1.0]:
+			_ink(_egg(h, ribbon, 0.065, 0.042, 0.035, Vector3(bx + d * 0.05, by, 0.0), Vector3(0, 0, -d * 0.45)))
+		_ink(_egg(h, ribbon, 0.03, 0.03, 0.03, Vector3(bx, by, -0.02)))
+		_ink(_cyl(h, hair, 0.055, 0.1, Vector3(bx, by - 0.08, 0.0), Vector3.ZERO, 0.025)) # the brush end
+
+
+static func _hat(h: Node3D, head: Node3D, torso: Node3D, hat: String, c: String, look: Dictionary, w := 1.0, th := 1.0) -> void:
 	match hat:
 		"papaq": # Cırtdan's red araxçın with a fur band
 			_egg(head, "#3b2414", 0.27, 0.16, 0.2, Vector3(0, 0.3, 0.1))
 			_cyl(h, c, 0.26, 0.22, Vector3(0, 0.42, 0), Vector3.ZERO, 0.24)
 			Kit.part(h, Kit.ring(0.25, 0.06), Kit.mat("#7a1512"), Vector3(0, 0.32, 0))
 			_egg(h, c, 0.24, 0.07, 0.24, Vector3(0, 0.53, 0))
-			_egg(h, "#f1c34a", 0.035, 0.035, 0.035, Vector3(0, 0.6, 0)) # a little gold knot on top
-		"scarf": # Tıq-Tıq: a red kəlağayı tied at the back, two long braids
+			_ink(_egg(h, AGOLD, 0.035, 0.035, 0.035, Vector3(0, 0.6, 0))) # a little gold knot on top
+		"scarf": # Tıq-Tıq: a kəlağayı tied at the back, a fringe, two long braids with ribbons
 			_egg(head, "#2a160c", 0.31, 0.25, 0.29, Vector3(0, 0.27, 0.03))
 			_egg(h, c, 0.32, 0.17, 0.3, Vector3(0, 0.37, 0.02))
 			_cyl(h, c, 0.08, 0.2, Vector3(0, 0.32, 0.32), Vector3(1.9, 0, 0), 0.0)
-			for sx in [-0.17, 0.17]:
-				_cyl(h, "#2a160c", 0.05, 0.42, Vector3(sx, -0.05, 0.16))
-				_egg(h, c, 0.06, 0.05, 0.06, Vector3(sx, -0.27, 0.16))
+			_braids(h, "#2a160c", "#f48fb1")
 		"bald": # Keçəl: a shiny bald head
 			_egg(h, "#ffe7c4", 0.1, 0.06, 0.08, Vector3(-0.08, 0.44, -0.12))
 		"winter": # a white fur hat with ear flaps
 			_egg(h, c, 0.3, 0.22, 0.3, Vector3(0, 0.38, 0))
 			for sx in [-0.27, 0.27]:
 				_egg(h, c, 0.08, 0.16, 0.12, Vector3(sx, 0.16, 0))
-			_egg(h, "#c8221d", 0.07, 0.07, 0.07, Vector3(0, 0.62, 0))
+			_egg(h, MADDER, 0.07, 0.07, 0.07, Vector3(0, 0.62, 0))
 		"sailor": # a white cap with a blue band and two ribbons
 			_cyl(h, c, 0.3, 0.1, Vector3(0, 0.42, 0))
 			_cyl(h, "#1d4f9a", 0.27, 0.07, Vector3(0, 0.36, 0))
 			for sx in [-0.05, 0.05]:
-				_box(h, "#1d4f9a", 0.04, 0.2, 0.02, Vector3(sx, 0.24, 0.28))
-		"crown": # Məlikməmməd: a golden crown, a red cape, a sword
+				_ink(_box(h, "#1d4f9a", 0.04, 0.2, 0.02, Vector3(sx, 0.24, 0.28)))
+		"crown": # Məlikməmməd: a golden crown, a cape, a sword on his back
 			_cyl(h, c, 0.22, 0.16, Vector3(0, 0.45, 0), Vector3.ZERO, 0.24)
 			for i in 5:
 				var a := i / 5.0 * TAU
 				_cyl(h, c, 0.05, 0.14, Vector3(cos(a) * 0.2, 0.58, sin(a) * 0.2), Vector3.ZERO, 0.0)
-			_egg(h, "#c8221d", 0.05, 0.05, 0.03, Vector3(0, 0.46, -0.22))
+			_ink(_egg(h, "#1f6fb8", 0.05, 0.05, 0.03, Vector3(0, 0.46, -0.22))) # a jewel
 			_egg(head, "#2a160c", 0.28, 0.14, 0.2, Vector3(0, 0.3, 0.1))
-			_box(torso, "#a3241f", 0.46, 0.55, 0.04, Vector3(0, 0.12, 0.2))
-			_box(torso, "#c8d0d8", 0.04, 0.5, 0.05, Vector3(0.24, -0.1, 0.05), Vector3(0, 0, 0.3))
-			_box(torso, c, 0.14, 0.04, 0.06, Vector3(0.18, 0.13, 0.05), Vector3(0, 0, 0.3))
-		"peri": # Pəri qız: long light hair, a flower crown, glassy wings
+			Kit.part(torso, Kit.shell(_prof([[0.34, -0.44], [0.3, -0.12], [0.265, 0.2], [0.215, 0.38], [0.17, 0.46]], w, th),
+				PI / 2 - 1.1, PI / 2 + 1.1, 0.025, 14), Kit.mat(MADDER)) # the cape, round his back
+			for sx in [-0.17, 0.17]:
+				_ink(_egg(torso, AGOLD, 0.04, 0.04, 0.03, Vector3(sx * w, 0.44 * th, -0.08))) # its clasps
+			# the sword across his back, hilt over the right shoulder
+			var tilt := -0.78
+			var up := Vector3(-sin(tilt), cos(tilt), 0)
+			var base := Vector3(0.04, 0.3 * th, 0.42 * w)
+			_box(torso, "#d9e0e8", 0.075, 0.66, 0.025, base, Vector3(0, 0, tilt)) # the blade
+			_box(torso, "#6b4a2a", 0.09, 0.5, 0.04, base - up * 0.1 + Vector3(0, 0, 0.015), Vector3(0, 0, tilt)) # the scabbard
+			_box(torso, AGOLD, 0.22, 0.05, 0.06, base + up * 0.34, Vector3(0, 0, tilt)) # the cross-guard
+			_cyl(torso, "#5a3416", 0.03, 0.15, base + up * 0.43, Vector3(0, 0, tilt))
+			_ink(_egg(torso, AGOLD, 0.045, 0.045, 0.045, base + up * 0.52)) # the pommel
+		"peri": # Pəri qız: long light hair, a flower crown, wings
 			_egg(head, "#e8c27a", 0.32, 0.3, 0.3, Vector3(0, 0.25, 0.05))
-			_box(head, "#e8c27a", 0.5, 0.55, 0.12, Vector3(0, -0.05, 0.2))
+			_egg(head, "#e8c27a", 0.29, 0.4, 0.15, Vector3(0, -0.06, 0.17)) # hair down her back
 			for i in 6:
 				var a := i / 6.0 * TAU
-				_egg(h, "#f2a6c8" if i % 2 else "#ffffff", 0.06, 0.05, 0.06, Vector3(cos(a) * 0.27, 0.42, sin(a) * 0.27))
+				_ink(_egg(h, "#f2a6c8" if i % 2 else "#ffffff", 0.06, 0.05, 0.06, Vector3(cos(a) * 0.27, 0.42, sin(a) * 0.27)))
+			for sd in [-1.0, 1.0]: # each wing a joint the animator flutters: two coloured lobes, pale panels, a sparkle
+				var wj := Kit.joint(torso, Vector3(sd * 0.1, 0.36 * th, 0.24))
+				wj.set_meta("wing", sd)
+				var yaw: float = -sd * 0.72 # swept back so it sits out to the side while it flutters (rotation.y 0.05 to 0.75)
+				for lobe in [[0.34, 0.21, 0.55, 0.32, "#b9a3ec"], [0.23, 0.15, -0.5, 0.22, "#f2a9cf"]]:
+					var rot := Vector3(0, yaw, sd * float(lobe[2]))
+					var bas := Basis.from_euler(rot)
+					_egg(wj, lobe[4], lobe[0], lobe[1], 0.025, bas * Vector3(sd * lobe[3], 0, 0), rot)
+					_egg(wj, "#f6eeff", lobe[0] * 0.55, lobe[1] * 0.5, 0.032, bas * Vector3(sd * lobe[3] * 1.12, 0, 0), rot)
+				var rs := Vector3(0, yaw, float(sd) * 0.55)
+				var tip := Basis.from_euler(rs) * Vector3(float(sd) * 0.6, 0.06, 0)
+				for k in 2: # a four-point sparkle at the tip
+					_ink(_box(wj, "#fff1a0", 0.15, 0.035, 0.045, tip, Vector3(0, yaw, k * PI / 2 + 0.785)))
+		"kosa": # Kosa: a tall pointed sheepskin hat with a bell, a woolly beard shaped round his mouth
+			_cyl(h, c, 0.24, 0.8, Vector3(0, 0.71, 0), Vector3.ZERO, 0.0)
+			Kit.part(h, Kit.ring(0.24, 0.07), Kit.mat(WOOL), Vector3(0, 0.33, 0))
+			_ink(_egg(h, AGOLD, 0.065, 0.065, 0.065, Vector3(0, 1.13, 0)))
+			_egg(head, WOOL, 0.13, 0.085, 0.09, Vector3(0, -0.085, -0.2)) # the chin, under the mouth
+			_egg(head, WOOL, 0.075, 0.07, 0.07, Vector3(0, -0.19, -0.15)) # its pointed end
 			for sd in [-1.0, 1.0]:
-				var w := _egg(torso, Color(0.81, 0.91, 1.0, 0.65), 0.32, 0.45, 0.04, Vector3(sd * 0.25, 0.35, 0.3), Vector3(0, 0, sd * 0.5))
-				w.set_meta("wing", sd)
-		"kosa": # Kosa: a tall pointed sheepskin hat with a bell, a woolly beard
-			_cyl(h, c, 0.24, 0.7, Vector3(0, 0.66, 0), Vector3.ZERO, 0.0)
-			Kit.part(h, Kit.ring(0.24, 0.07), Kit.mat("#efe6cf"), Vector3(0, 0.33, 0))
-			_egg(h, "#d8a53a", 0.06, 0.06, 0.06, Vector3(0, 1.0, 0))
-			_egg(head, "#efe6cf", 0.2, 0.1, 0.1, Vector3(0, -0.04, -0.24))
-		_: # Kəndirbaz: a tall white felt hat with a tassel
+				_egg(head, WOOL, 0.075, 0.14, 0.08, Vector3(sd * 0.155, -0.01, -0.17), Vector3(0, 0, sd * 0.35)) # round the cheeks
+				_ink(_egg(head, WOOL, 0.07, 0.03, 0.035, Vector3(sd * 0.065, 0.088, -0.272), Vector3(0, 0, sd * 0.38))) # moustache
+		_: # Kəndirbaz: a tall white felt hat with a tassel, the balance pole across his shoulders
 			_cyl(h, c, 0.2, 0.42, Vector3(0, 0.5, 0), Vector3.ZERO, 0.17)
 			_cyl(h, c, 0.3, 0.04, Vector3(0, 0.32, 0))
-			_egg(h, "#c8322c", 0.07, 0.07, 0.07, Vector3(0, 0.75, 0))
+			_ink(_egg(h, "#c8322c", 0.07, 0.07, 0.07, Vector3(0, 0.75, 0)))
 			_cyl(h, "#1f9e9a", 0.205, 0.05, Vector3(0, 0.38, 0))
+			_cyl(torso, "#8a5a2e", 0.024, 1.5, Vector3(0, 0.47 * th, 0.34), Vector3(0, 0, PI / 2))
+			for sd in [-1.0, 1.0]:
+				_ink(_egg(torso, AGOLD, 0.05, 0.05, 0.05, Vector3(sd * 0.75, 0.47 * th, 0.34)))
 	if hat != "papaq": # every other hat carries a band of Player Red: the runner is always findable (art bible §4)
 		var band: Array = {"bald": [0.3, 0.295], "scarf": [0.36, 0.31], "tall": [0.34, 0.21], "kosa": [0.38, 0.23],
 			"peri": [0.4, 0.3], "crown": [0.39, 0.235], "winter": [0.3, 0.31], "sailor": [0.4, 0.3]}.get(hat, [0.34, 0.3])
 		Kit.part(h, Kit.ring(band[1], 0.03), Kit.mat(PLAYER_RED), Vector3(0, band[0], 0))
 	if look.get("braids", false) and hat != "scarf":
-		for sx in [-0.17, 0.17]:
-			_cyl(head, "#2a160c", 0.05, 0.42, Vector3(sx, -0.05, 0.16))
+		_braids(h, "#2a160c", "#f48fb1")
 	if look.get("sprig", false): # Novruz: a green səməni sprig in the hat
 		_cyl(h, "#5fbf3a", 0.04, 0.22, Vector3(0.12, 0.62, 0), Vector3.ZERO, 0.0)
 

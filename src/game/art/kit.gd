@@ -92,8 +92,9 @@ static func ink(node: Node) -> void:
 		if m is StandardMaterial3D and ((m as StandardMaterial3D).transparency != BaseMaterial3D.TRANSPARENCY_DISABLED or (m as StandardMaterial3D).emission_enabled):
 			return
 		var mi := node as MeshInstance3D
-		if mi.mesh != null and (mi.mesh.get_aabb().size * mi.scale).length() < 0.25:
-			return # eyes, glints, buttons: an outline there only muddies the face
+		if mi.mesh != null and (mi.mesh.get_aabb().size * mi.scale).length() < 0.25 and not node.has_meta("ink"):
+			return # eyes, glints, buttons: an outline there only muddies the face (meta "ink" forces one: a small
+			# piece of a bigger shape then shares that shape's merged, inked mesh instead of costing its own draw)
 		node.material_overlay = ink_mat()
 
 
@@ -218,6 +219,75 @@ static func lathe(points: PackedVector2Array, segs := 16) -> Mesh:
 					st.add_vertex(v[k])
 		st.generate_normals()
 		return st.commit())
+
+
+## A cut turned shell (a vest open at the front, a cape): the lathe profile (radius, height; bottom to top) swept
+## from angle a0 to a1 (radians; 0 is +x, PI/2 is +z), thick inward, closed at the cut edges and rims so the ink
+## outlines it cleanly. u runs along the arc (0 to 1), v down the profile, so a bordered texture trims every edge.
+static func shell(points: PackedVector2Array, a0: float, a1: float, thick: float, segs := 16) -> Mesh:
+	return _mesh("h%s%.3f,%.3f,%.3f,%d" % [points, a0, a1, thick, segs], func() -> Mesh:
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var np := points.size()
+		var nrm := PackedVector2Array() ## the profile's outward normal at each point (smooth along it)
+		for j in np:
+			var d := points[mini(j + 1, np - 1)] - points[maxi(j - 1, 0)]
+			nrm.append(Vector2(d.y, -d.x).normalized())
+		var at := func(p: Vector2, a: float, inset: float) -> Vector3:
+			return Vector3(cos(a) * maxf(0.0, p.x - inset), p.y, sin(a) * maxf(0.0, p.x - inset))
+		var turn := func(n: Vector2, a: float) -> Vector3:
+			return Vector3(cos(a) * n.x, n.y, sin(a) * n.x)
+		for i in segs:
+			var u0 := float(i) / segs
+			var u1 := float(i + 1) / segs
+			var b0 := lerpf(a0, a1, u0)
+			var b1 := lerpf(a0, a1, u1)
+			for j in np - 1:
+				var p := points[j]
+				var q := points[j + 1]
+				var v0 := 1.0 - float(j) / (np - 1)
+				var v1 := 1.0 - float(j + 1) / (np - 1)
+				var uv := [Vector2(u0, v0), Vector2(u1, v0), Vector2(u1, v1), Vector2(u0, v1)]
+				for side in [0.0, thick]: # the outside, then the inside facing in
+					var sg := 1.0 if side == 0.0 else -1.0
+					_quad(st, [at.call(p, b0, side), at.call(p, b1, side), at.call(q, b1, side), at.call(q, b0, side)],
+						[turn.call(nrm[j], b0) * sg, turn.call(nrm[j], b1) * sg, turn.call(nrm[j + 1], b1) * sg, turn.call(nrm[j + 1], b0) * sg], uv)
+			for e in [[0, -1.0], [np - 1, 1.0]]: # the bottom and top rims
+				var p := points[e[0]]
+				var t: Vector2 = (points[mini(e[0] + 1, np - 1)] - points[maxi(e[0] - 1, 0)]).normalized() * float(e[1])
+				var vv := 1.0 if e[0] == 0 else 0.0
+				var n0: Vector3 = turn.call(t, b0)
+				var n1: Vector3 = turn.call(t, b1)
+				_quad(st, [at.call(p, b0, 0.0), at.call(p, b1, 0.0), at.call(p, b1, thick), at.call(p, b0, thick)],
+					[n0, n1, n1, n0], [Vector2(u0, vv), Vector2(u1, vv), Vector2(u1, vv), Vector2(u0, vv)])
+		for e in [[a0, -1.0, 0.0], [a1, 1.0, 1.0]]: # the two cut edges (the open front of a vest)
+			var a: float = e[0]
+			var n: Vector3 = Vector3(-sin(a), 0, cos(a)) * float(e[1])
+			for j in np - 1:
+				var p := points[j]
+				var q := points[j + 1]
+				var v0 := 1.0 - float(j) / (np - 1)
+				var v1 := 1.0 - float(j + 1) / (np - 1)
+				_quad(st, [at.call(p, a, 0.0), at.call(q, a, 0.0), at.call(q, a, thick), at.call(p, a, thick)],
+					[n, n, n, n], [Vector2(e[2], v0), Vector2(e[2], v1), Vector2(e[2], v1), Vector2(e[2], v0)])
+		return st.commit())
+
+
+## Adds a quad (corners in order around it) facing along its normals, whichever way the corners wind.
+static func _quad(st: SurfaceTool, p: Array, n: Array, uv: Array) -> void:
+	var facing: Vector3 = n[0] + n[1] + n[2] + n[3]
+	var order := [0, 2, 1, 0, 3, 2]
+	if ((p[2] - p[0]) as Vector3).cross(p[1] - p[0]).dot(facing) > 0.0: # Godot's front faces wind clockwise
+		order = [0, 1, 2, 0, 2, 3]
+	for k in order:
+		st.set_normal(n[k])
+		st.set_uv(uv[k])
+		st.add_vertex(p[k])
+
+
+## A mesh made by make (a Callable returning a Mesh), built once per key and shared, like the shapes above.
+static func cached(key: String, make: Callable) -> Mesh:
+	return _mesh("u" + key, make)
 
 
 ## An extruded outline (the gate's arch): points in the xy plane, depth along z, centred.
