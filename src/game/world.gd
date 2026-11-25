@@ -31,6 +31,8 @@ const OBSTACLE_RANGE := 100.0 ## obstacles appear from this far (4.5 s ahead at 
 ## The flat colour of the far blocks, per city (wall colour; a hedge green or rock for the nature cities).
 const FAR := {"baku": "#d9a95f", "sheki": "#e9dfcc", "naxcivan": "#b5653a", "qebele": "#3f6f3f",
 	"lenkeran": "#4f8a44", "quba": "#5a8a46", "qobustan": "#8a7560"}
+## The roof band on top of a far block (cities with roofs you see from afar).
+const FAR_ROOF := {"baku": "#b88a4a", "sheki": "#a8432c", "naxcivan": "#8a4e32"}
 var _house_next := {-1: -20.0, 1: -20.0}
 var _gates: Array = [] ## [node, s]
 var _gate_next := 300.0
@@ -39,6 +41,8 @@ var _obj_rng := RandomNumberGenerator.new()
 var _street_mat: StandardMaterial3D
 var _rain: CPUParticles3D
 var _sky: Node3D ## clouds and birds, far off, travelling with the runner
+var _clouds: Array[Node3D] = [] ## the cloud band and its copy, 320 m apart
+var _cloud_mat: StandardMaterial3D ## the clouds' own fogless material, tinted per city
 var _birds: Array[Node3D] = []
 var letter_text: Callable ## returns the next letter of the day's word (for a letter tile's face)
 
@@ -118,20 +122,21 @@ func _ready() -> void:
 func _build_sky() -> void:
 	_sky = Node3D.new()
 	add_child(_sky)
-	var white := Kit.mat("#ffffff")
+	_cloud_mat = Kit.mat("#ffffff").duplicate()
+	_cloud_mat.disable_fog = true
+	var white := _cloud_mat
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 5
+	var band := Kit.joint(_sky) # the clouds as one band, drawn twice side by side so it scrolls without a seam
 	for i in 10: # puffy clouds: a few balls each
-		var c := Kit.joint(_sky, Vector3(0, 55.0 + rng.randf() * 25.0, -120.0 - rng.randf() * 160.0))
-		c.set_meta("drift", 0.8 + rng.randf() * 1.2)
-		c.set_meta("x0", -160.0 + i * 34.0)
+		var c := Kit.joint(band, Vector3(-160.0 + i * 32.0 + rng.randf() * 10.0, 55.0 + rng.randf() * 25.0, -120.0 - rng.randf() * 160.0))
 		for k in 4 + rng.randi() % 3:
 			var m := Kit.part(c, Kit.ball(4.0 + rng.randf() * 4.0, -1.0, 10), white, Vector3(k * 5.0 - 10.0, rng.randf() * 2.5, rng.randf() * 3.0))
 			m.scale.y = 0.6
-	Scenery._no_fog(_sky)
-	for c in _sky.get_children():
-		if c.has_meta("drift"):
-			Kit.merge(c) # one cloud, one draw
+	Kit.merge(band) # all clouds, one draw (two with the copy), instead of one draw per cloud
+	var copy := band.duplicate()
+	_sky.add_child(copy)
+	_clouds = [band, copy]
 	for i in 4: # birds: two flapping wings
 		var b := Kit.joint(_sky)
 		for sd in [-1.0, 1.0]:
@@ -154,12 +159,15 @@ func set_city(id: String) -> void:
 	var fog := Color(look["fog"])
 	env.fog_light_color = fog
 	sky_mat.sky_top_color = Color(look["sky"])
-	sky_mat.sky_horizon_color = fog.lightened(0.25)
+	sky_mat.sky_horizon_color = Color(look.get("hz", fog.lightened(0.25)))
+	sky_mat.sky_curve = 0.12 # a longer, softer fall from the top colour to the warm horizon
 	sky_mat.ground_horizon_color = fog
+	sun.light_color = Color(look.get("sun", "#fff1d6"))
+	sun.light_energy = float(look.get("sun_e", 1.05))
+	_cloud_mat.albedo_color = Color(look.get("cloud", "#ffffff"))
 	if _back != null:
 		_back.queue_free()
-	_back = Scenery.backdrop(id)
-	Kit.merge(_back)
+	_back = Scenery.backdrop(id) # already merged (and fogless) inside
 	add_child(_back)
 	_rain.emitting = id == "lenkeran" # Lənkəran's rain
 	_rain.visible = _rain.emitting
@@ -194,9 +202,9 @@ func update(sim: RunSim, s: float, t: float) -> void:
 				((c as MeshInstance3D).material_override as StandardMaterial3D).uv1_offset.y = -t * 0.8
 	_rain.position = Vector3(0, 12, -s - 8.0)
 	_sky.position = Vector3(0, 0, -s)
-	for c in _sky.get_children():
-		if c.has_meta("drift"):
-			c.position.x = fposmod(float(c.get_meta("x0")) + t * float(c.get_meta("drift")) + 160.0, 320.0) - 160.0
+	var off := fposmod(t * 1.2, 320.0) # the band drifts; its copy follows 320 m behind
+	_clouds[0].position.x = off
+	_clouds[1].position.x = off - 320.0
 	for i in _birds.size(): # birds circling high over the street
 		var b := _birds[i]
 		var a := t * (0.35 + i * 0.05) + i * 2.0
@@ -294,6 +302,11 @@ func _far_block(house: Node3D, far_node: Node3D) -> void:
 		house.position + box.position + Vector3(box.size.x, size.y, box.size.z) * 0.5)
 	mi.set_meta("no_ink", true)
 	_ranges(mi, NEAR - 4.0, 0.0)
+	if FAR_ROOF.has(city):
+		var top := Kit.part(far_node, Kit.box(size.x + 0.3, 0.7, size.z + 0.3), Kit.mat(FAR_ROOF[city]),
+			mi.position + Vector3(0, size.y * 0.5 + 0.35, 0))
+		top.set_meta("no_ink", true)
+		_ranges(top, NEAR - 4.0, 0.0)
 
 
 func _stream(s: float) -> void:
