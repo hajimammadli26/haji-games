@@ -19,6 +19,8 @@ signal look_changed
 signal story
 ## Music or sound was turned on or off.
 signal settings_changed
+## A sound to play for a tap: tap, buy or no.
+signal sfx(name: String)
 
 const SCREENS := {
 	"shop": "Nənənin dükanı", "costumes": "Geyim dükanı", "chars": "Personajlar", "cities": "Şəhərlər",
@@ -84,6 +86,8 @@ func _process(dt: float) -> void:
 
 ## Shows a screen: "home" or one of SCREENS.
 func open(which: String) -> void:
+	if which != screen:
+		sfx.emit("tap")
 	screen = which
 	_confirm_key = ""
 	if _home == null:
@@ -205,10 +209,13 @@ func _buy(key: String, price: int, act: Callable) -> Callable:
 		if price >= prog.tune.confirm_from and _confirm_key != key:
 			_confirm_key = key
 			_confirm_t = 2.5
+			sfx.emit("tap")
 			_refresh()
 			return
 		_confirm_key = ""
+		var before := prog.bread()
 		act.call()
+		sfx.emit("buy" if prog.bread() < before or price == 0 else "no")
 		_refresh()
 
 
@@ -330,6 +337,7 @@ func _screen_missions() -> void:
 		if m["done"]:
 			_row(m["txt"], "Bitdi! %s" % p, "+%d" % m["reward"], true, func() -> void:
 				var got := prog.claim(i)
+				sfx.emit("buy")
 				toast("+%d çörək! Yeni tapşırıq" % got)
 				_refresh(), RED)
 		else:

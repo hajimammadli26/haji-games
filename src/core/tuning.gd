@@ -86,3 +86,7 @@ extends Resource
 @export var stone_chance: float = 0.03 ## chance per row of a magic stone (sehrli daş)
 @export var peri_stones: int = 25 ## magic stones that open Pəri qız for free
 @export var word_streak_cap: int = 3 ## the most gifts a streak of days gives for the day's first word
+
+@export_group("Sound")
+@export var music_bpm: float = 132.0 ## the run music's eighth-note pulse at the start speed (as made by the audio tool)
+@export var music_bpm_gain: float = 2.5 ## bpm added per m/s of extra speed (the run music plays faster)

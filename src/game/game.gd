@@ -58,6 +58,9 @@ var dead_t := 0.0
 var hud_root: Control
 var hud_layer: CanvasLayer
 var story: Story
+var snd: Sound
+var _was_grounded := true
+var _was_lane := 1
 var hud_score: Label
 var hud_bread: Label
 var hud_nar: Label
@@ -98,6 +101,8 @@ func _ready() -> void:
 		save.put("lang", args["lang"])
 	Lang.install(String(save.get_value("lang")))
 	prog.mission_done.connect(func(_t: String) -> void: _banner("Tapşırıq bitdi!"))
+	snd = Sound.new(save)
+	add_child(snd)
 	_build_world()
 	_build_hud()
 	_apply_look()
@@ -216,6 +221,7 @@ func _new_run() -> void:
 	sim.boosts = int(save.get_value("boosts"))
 	sim.base_mult = int(save.get_value("mmult"))
 	sim.bread_taken.connect(func(total: int) -> void:
+		snd.play("bread", 0.96 + 0.08 * float(total % 5) / 4.0)
 		prog.mission("run_bread", total)
 		prog.mission("bread", 1))
 	sim.passed.connect(func(kind: String) -> void:
@@ -223,9 +229,19 @@ func _new_run() -> void:
 			prog.mission(kind, 1))
 	sim.escaped.connect(prog.mission.bind("escape", 1))
 	sim.item_taken.connect(_on_item)
-	sim.stumbled.connect(_banner.bind("Ay Cırtdaaan!"))
-	sim.crashed.connect(_on_dead)
-	sim.caught.connect(_on_dead.bind(""))
+	sim.stumbled.connect(func() -> void:
+		_banner("Ay Cırtdaaan!")
+		snd.play("stumble")
+		snd.play("ay_cirtdan"))
+	sim.crashed.connect(func(k: String) -> void:
+		snd.play("crash")
+		_on_dead(k))
+	sim.caught.connect(func() -> void:
+		snd.play("hamm")
+		_on_dead(""))
+	sim.jumped.connect(snd.play.bind("jump"))
+	sim.slid.connect(snd.play.bind("slide"))
+	sim.shield_used.connect(snd.play.bind("shield"))
 	sim.power_taken.connect(_on_power)
 	sim.nar_taken.connect(_on_nar)
 	sim.shield_used.connect(_banner.bind("Uçan xalça səni qorudu!"))
@@ -276,6 +292,12 @@ func _physics_process(dt: float) -> void:
 	var boosts_before := sim.boosts
 	sim.step(dt, input)
 	input.clear()
+	if sim.grounded and not _was_grounded and sim.dead == "":
+		snd.play("land")
+	if sim.lane != _was_lane:
+		snd.play("lane")
+	_was_grounded = sim.grounded
+	_was_lane = sim.lane
 	if sim.carpets < carpets_before and sim.free_carpets == free_before: # a bought carpet was used
 		save.set_value("carpets", maxi(0, int(save.get_value("carpets")) - 1))
 	if sim.boosts < boosts_before:
@@ -307,6 +329,11 @@ func _process(dt: float) -> void:
 	count_label.visible = count_t > 0.0 and started
 	_sync()
 	_update_hud()
+	if not started or (sim.dead != "" and over_panel.visible) or story != null:
+		snd.music("menu")
+	else:
+		snd.music("fly" if sim.is_flying() else "run")
+		snd.set_speed_ratio(1.0 + (sim.speed - tune.speed_start) * tune.music_bpm_gain / tune.music_bpm)
 
 
 ## Places every drawing where the run says it is, between the last two steps so the view never judders.
@@ -465,6 +492,7 @@ func _on_play() -> void:
 ## Shows the story over everything; then starts a run (then_play) or returns to the menu.
 func _show_story(then_play: bool) -> void:
 	story = Story.new(prog.look())
+	story.sfx.connect(snd.play)
 	hud_layer.add_child(story)
 	story.finished.connect(func() -> void:
 		story.queue_free()
@@ -527,6 +555,7 @@ func _on_dead(_kind: String) -> void:
 
 
 func _on_power(kind: String) -> void:
+	snd.play("power")
 	if kind != "fly" and kind != "carpet":
 		prog.mission("powers", 1)
 	if kind == "simurq":
@@ -538,11 +567,13 @@ func _on_power(kind: String) -> void:
 func _on_item(kind: String) -> void:
 	match kind:
 		"letter":
+			snd.play("nar", 1.2)
 			var r := prog.take_letter()
 			_show_word(r["word"], r["got"])
 			if not (r["gifts"] as Array).is_empty():
 				_banner("%s! Hədiyyə: %s" % [r["word"], ", ".join(r["gifts"])], 3.0)
 		"buta":
+			snd.play("bread", 0.8)
 			var msg := prog.take_buta()
 			var h := prog.hunt()
 			_show_count("buta %d/%d" % [mini(h["got"], h["need"]), h["need"]], Color("#7fe0dc"))
@@ -550,6 +581,7 @@ func _on_item(kind: String) -> void:
 				_banner(msg, 3.5)
 				gen.hunt_open = false
 		"stone":
+			snd.play("power", 1.3)
 			var msg := prog.take_stone()
 			_show_count("sehrli daş %d" % prog.get_int("stones"), Color("#d9b8ff"))
 			if msg != "":
@@ -576,6 +608,7 @@ func _show_count(t: String, c: Color) -> void:
 
 
 func _on_nar() -> void:
+	snd.play("nar")
 	save.set_value("nar", int(save.get_value("nar")) + 1)
 	_banner("Nar!")
 
@@ -704,6 +737,8 @@ func _build_hud() -> void:
 	menu.play.connect(_on_play)
 	menu.look_changed.connect(_apply_look)
 	menu.story.connect(_show_story.bind(false))
+	menu.sfx.connect(snd.play)
+	menu.settings_changed.connect(snd.settings_changed)
 	hud_layer = layer
 
 

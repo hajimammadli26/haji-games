@@ -9,13 +9,15 @@ extends Control
 
 ## The last picture was closed or Keç was tapped.
 signal finished
+## A voice for a picture (hi_hi, yene_sensen).
+signal sfx(name: String)
 
 const PAGES := [
 	{"cap": "Çox-çox qədimlərdə, Xəzərin sahilində, qala divarları ilə əhatə olunmuş köhnə Bakıda Cırtdan adlı balaca bir oğlan yaşayırdı. O, boyca balaca idi, amma ağılda hamıdan böyük idi.", "night": false, "stage": "home"},
 	{"cap": "Nənəsi hər səhər təndirdə isti, ətirli yağ çörəkləri bişirir, Cırtdan da onları məhəllənin uşaqlarına paylayırdı.", "night": false, "stage": "bake"},
 	{"cap": "Bir gecə dağlarda yaşayan nəhəng və acgöz Div çörəklərin ətrini hiss etdi. Gizlicə şəhərə enib bütün çörəkləri oğurladı, üstəlik nənənin sehrli təndirini də apardı!", "night": true, "stage": "steal"},
-	{"cap": "Cırtdan qorxmadı. Gecə yarısı Divin mağarasına girdi və Div xoruldayıb yatanda çörəklərlə dolu torbanı götürdü... Amma ayağı Divin nəhəng çarığına ilişdi!", "night": true, "stage": "cave"},
-	{"cap": "— Ay Cırtdan! Yenə sənsən?! Dayan, səni tutub yeyəcəm! Qaç, Cırtdan! Torba yırtıldı, çörəklər Bakının küçələrinə səpələndi. Divdən qaç və nənənin çörəklərini yığ!", "night": true, "stage": "chase"},
+	{"voice": "hi_hi", "cap": "Cırtdan qorxmadı. Gecə yarısı Divin mağarasına girdi və Div xoruldayıb yatanda çörəklərlə dolu torbanı götürdü... Amma ayağı Divin nəhəng çarığına ilişdi!", "night": true, "stage": "cave"},
+	{"voice": "yene_sensen", "cap": "— Ay Cırtdan! Yenə sənsən?! Dayan, səni tutub yeyəcəm! Qaç, Cırtdan! Torba yırtıldı, çörəklər Bakının küçələrinə səpələndi. Divdən qaç və nənənin çörəklərini yığ!", "night": true, "stage": "chase"},
 ]
 
 var page := 0
@@ -88,6 +90,8 @@ func _show(i: int) -> void:
 	var p: Dictionary = PAGES[i]
 	_cap.text = p["cap"]
 	_next.text = "Qaç!" if i == PAGES.size() - 1 else "Növbəti →"
+	if p.has("voice"):
+		sfx.emit(p["voice"])
 	if _stage != null:
 		_stage.queue_free()
 	_stage = Node3D.new()
