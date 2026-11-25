@@ -17,6 +17,7 @@ var _slide := 0.0
 var _air := 0.0
 var _prev_x := 0.0
 var _tongue_t := 0.0
+var _blink_t := 2.0 ## seconds to the next blink
 
 
 ## Poses a runner (Characters.runner) from st: t, dt, speed, x, grounded, vy, sliding, flying, stumbling,
@@ -101,6 +102,38 @@ func runner(fig: Node3D, st: Dictionary) -> void:
 		head_x = -0.3
 	p["leg_l"].rotation.x = leg_l
 	p["leg_r"].rotation.x = leg_r
+	# knees fold as each leg swings back, tuck in a jump, straighten in a slide; elbows bent while running
+	var knee_l := -(0.15 + maxf(0.0, -sin(ph + 0.7)) * 1.3)
+	var knee_r := -(0.15 + maxf(0.0, -sin(ph + 0.7 + PI)) * 1.3)
+	var elbow := 1.0 + bounce * 0.15
+	if idle:
+		knee_l = -0.1 - maxf(0.0, run) * 0.5
+		knee_r = -0.1 - maxf(0.0, -run) * 0.5
+		elbow = 0.4
+	knee_l = lerpf(knee_l, -1.5 if up > 0.0 else -0.5, _air)
+	knee_r = lerpf(knee_r, -1.2 if up > 0.0 else -0.3, _air)
+	elbow = lerpf(elbow, 0.35, _air)
+	knee_l = lerpf(knee_l, -0.15, _slide)
+	knee_r = lerpf(knee_r, -0.25, _slide)
+	if flying:
+		knee_l = -0.6 + sin(t * 3.0) * 0.2
+		knee_r = -0.4 + sin(t * 3.0 + 1.0) * 0.2
+		elbow = 0.2
+	(p["knee_l"] as Node3D).rotation.x = knee_l
+	(p["knee_r"] as Node3D).rotation.x = knee_r
+	(p["elbow_l"] as Node3D).rotation.x = -elbow
+	(p["elbow_r"] as Node3D).rotation.x = -elbow
+	# the face: a blink now and then, an "O" in a jump or a fright, a smile otherwise
+	_blink_t -= dt
+	var shut := _blink_t < 0.0
+	if _blink_t < -0.12:
+		_blink_t = 2.0 + fmod(t * 7.13, 2.5)
+	for e in ["eye_l", "eye_r"]:
+		(p[e] as Node3D).scale.y = 0.12 if shut else 1.0
+	var scared: bool = st.get("stumbling", false) or dead != ""
+	var gasp := scared or (_air > 0.5 and up > 0.3)
+	(p["gasp"] as Node3D).visible = gasp
+	(p["smile"] as Node3D).visible = not gasp
 	p["arm_l"].rotation.x = arm_l
 	p["arm_r"].rotation.x = arm_r
 	p["arm_l"].rotation.z = -0.15 - _air * 0.3
@@ -156,6 +189,9 @@ func div(fig: Node3D, t: float, speed: float, near: bool, caught: bool) -> void:
 		p["arm_r"].rotation.x = run * 0.5 - 1.2
 		(p["mouth"] as Node3D).scale.y = 1.0
 	p["head"].rotation.y = sin(t * 1.3) * 0.15
+	var blink := fmod(t + 1.3, 3.7) < 0.14 # he blinks too, a little out of step with Cırtdan
+	for e in ["eye_l", "eye_r"]:
+		(p[e] as Node3D).scale.y = 0.15 if blink else 1.0
 	var angry := 0.15 if near else 0.0
 	(p["brow_l"] as Node3D).rotation.z = -0.3 - angry
 	(p["brow_r"] as Node3D).rotation.z = 0.3 + angry

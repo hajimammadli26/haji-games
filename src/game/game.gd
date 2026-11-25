@@ -779,11 +779,31 @@ func _dump_untranslated(n: Node) -> void:
 			print("UNTR ", s.replace("\n", "\\n"))
 
 
+func _count_meshes(n: Node) -> int:
+	var c := 1 if n is MeshInstance3D and (n as MeshInstance3D).is_visible_in_tree() else 0
+	for k in n.get_children():
+		c += _count_meshes(k)
+	return c
+
+
 func _shoot() -> void:
+	if args.has("meshcount"): # developer flag: where the drawn meshes come from
+		var by := {"runner": _count_meshes(runner), "div": _count_meshes(div_fig), "obstacles": 0, "pickups": 0}
+		for o in sim.obstacles:
+			by["obstacles"] += _count_meshes(o.node) if o.node else 0
+		for p in sim.pickups:
+			by["pickups"] += _count_meshes(p.node) if p.node else 0
+		by["world_total"] = _count_meshes(world)
+		by["houses"] = 0
+		for h in world._houses:
+			by["houses"] += _count_meshes(h[0])
+		print("MESHES ", by, " pickups=", sim.pickups.size(), " obstacles=", sim.obstacles.size())
 	if args.has("untranslated"):
 		_dump_untranslated(self)
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png(args["shot"])
-	print("SHOT %s time=%.1f s=%.0f bread=%d dead=%s save_bread=%d nar=%d" % [args["shot"], sim.time, sim.s, sim.bread,
-		sim.dead, int(save.get_value("bread")), int(save.get_value("nar"))])
+	print("SHOT %s time=%.1f s=%.0f bread=%d dead=%s save_bread=%d nar=%d draws=%d objects=%d prims=%d" % [args["shot"], sim.time, sim.s, sim.bread,
+		sim.dead, int(save.get_value("bread")), int(save.get_value("nar")),
+		Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME),
+		Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)])
 	get_tree().quit()

@@ -85,6 +85,7 @@ static func _baku(side: int, rng: RandomNumberGenerator) -> Array:
 			_c(g, "#c46a2c", 0.16, 0.22, Vector3(-side * 0.35, 2.5, dz + 1.0), Vector3.ZERO, 0.2)
 	if rng.randf() < 0.18:
 		_e(g, "#c7a06c", 1.6, 1.3, 1.6, Vector3(side * d / 2.0, h + 0.3, 0))
+	_details(g, side, w, rng)
 	return [g, w]
 
 
@@ -107,6 +108,7 @@ static func _sheki(side: int, rng: RandomNumberGenerator) -> Array:
 	while z <= w * 0.42:
 		_c(g, "#5e3618", 0.06, 2.6, Vector3(bx * 2.0, h - 2.0, z))
 		z += 1.1
+	_details(g, side, w, rng)
 	return [g, w]
 
 
@@ -125,7 +127,33 @@ static func _nax(side: int, rng: RandomNumberGenerator) -> Array:
 		_c(g, "#1f9e9a", 0.5, 0.6, Vector3(-side * 0.03, y + 1.05, z), Vector3(0, 0, 0), 0.0).scale = Vector3(1, 1, 0.1)
 	if rng.randf() < 0.25:
 		_e(g, "#1f9e9a", 1.4, 1.1, 1.4, Vector3(side * 2.5, h + 0.3, 0))
+	_details(g, side, w, rng)
 	return [g, w]
+
+
+## Life by the doors: a copper lantern on a bracket (glowing), clay pots of flowers, now and then a cat.
+static func _details(g: Node3D, side: int, w: float, rng: RandomNumberGenerator) -> void:
+	if rng.randf() < 0.55:
+		var z := (rng.randf() - 0.5) * (w - 1.5)
+		_b(g, "#3b2414", 0.5, 0.05, 0.05, Vector3(-side * 0.25, 3.2, z))
+		_c(g, "#3b2414", 0.01, 0.25, Vector3(-side * 0.48, 3.06, z))
+		_c(g, "#c46a2c", 0.14, 0.32, Vector3(-side * 0.48, 2.8, z), Vector3.ZERO, 0.08)
+		_e(g, Kit.mat("#ffcf6a", true), 0.09, 0.12, 0.09, Vector3(-side * 0.48, 2.78, z))
+		_c(g, "#c46a2c", 0.0, 0.14, Vector3(-side * 0.48, 3.0, z), Vector3.ZERO, 0.12)
+	for i in rng.randi_range(0, 3):
+		var z := (rng.randf() - 0.5) * (w - 1.0)
+		var px := -side * (0.35 + rng.randf() * 0.2)
+		_c(g, "#b65a2b", 0.18, 0.32, Vector3(px, 0.16, z), Vector3.ZERO, 0.22)
+		_e(g, "#3f8a3a", 0.24, 0.2, 0.24, Vector3(px, 0.42, z), Vector3.ZERO, 8)
+		var bloom: String = ["#e2452f", "#f2b632", "#f2a6c8", "#ffffff"][rng.randi() % 4]
+		for k in 3:
+			_e(g, bloom, 0.05, 0.05, 0.05, Vector3(px + cos(k * 2.1) * 0.13, 0.55, z + sin(k * 2.1) * 0.13))
+	if rng.randf() < 0.08: # a cat asleep on the step
+		var cz := (rng.randf() - 0.5) * (w - 1.0)
+		_e(g, "#d98a3a", 0.22, 0.13, 0.15, Vector3(-side * 0.4, 0.12, cz))
+		_e(g, "#d98a3a", 0.1, 0.09, 0.09, Vector3(-side * 0.4, 0.2, cz + 0.2))
+		for e in [-0.05, 0.05]:
+			_c(g, "#d98a3a", 0.03, 0.06, Vector3(-side * 0.4 + e, 0.3, cz + 0.2), Vector3.ZERO, 0.0)
 
 
 static func _pine(sc: float) -> Node3D:
@@ -276,13 +304,20 @@ static func backdrop(city: String) -> Node3D:
 	return g
 
 
+static var _fogless := {} ## material -> its copy without fog (shared, so far things still merge)
+
+
+## Turns fog off for everything under n (far scenery stays clear through the haze).
 static func _no_fog(n: Node) -> void:
 	for c in n.get_children():
 		_no_fog(c)
 	if n is MeshInstance3D and n.material_override is StandardMaterial3D:
-		var m: StandardMaterial3D = (n.material_override as StandardMaterial3D).duplicate()
-		m.disable_fog = true
-		n.material_override = m
+		var src: StandardMaterial3D = n.material_override
+		if not _fogless.has(src):
+			var m: StandardMaterial3D = src.duplicate()
+			m.disable_fog = true
+			_fogless[src] = m
+		n.material_override = _fogless[src]
 
 
 ## Qız Qalası: the Maiden Tower with its buttress.

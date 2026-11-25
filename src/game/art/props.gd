@@ -278,6 +278,7 @@ static func mud_volcano() -> Node3D:
 	_c(g, "#4a4640", 0.22, 0.05, Vector3(0, 0.74, 0))
 	var bub := _e(g, "#4a4640", 0.14, 0.14, 0.14, Vector3(0.05, 0.8, 0))
 	bub.set_meta("bubble", true)
+	bub.set_meta("keep", true)
 	_c(g, "#5a5650", 0.9, 0.05, Vector3(0, 0.03, 0))
 	g.set_meta("parts", {"bubble": bub})
 	Kit.ink(g)
@@ -371,9 +372,9 @@ static func pickup(kind: String, text: String = "", city: String = "baku") -> No
 
 
 static func _bread(g: Node3D, s: float) -> void: # a puffed golden round with a scored top, standing up
-	_c(g, "#c27a22", 0.33 * s, 0.1 * s, Vector3.ZERO, Vector3(PI / 2, 0, 0))
-	_e(g, Kit.tex("bread"), 0.32 * s, 0.32 * s, 0.1 * s, Vector3(0, 0, 0.04 * s), Vector3(0, 0, 0))
-	Kit.part(g, Kit.ring(0.31 * s, 0.04 * s), Kit.mat("#d48a2a"), Vector3.ZERO, Vector3(PI / 2, 0, 0))
+	# two pieces, no outline: a street can hold forty of them at once, so each must be cheap to draw
+	_c(g, "#c27a22", 0.33 * s, 0.1 * s, Vector3.ZERO, Vector3(PI / 2, 0, 0)).set_meta("no_ink", true)
+	_e(g, Kit.tex("bread"), 0.32 * s, 0.32 * s, 0.1 * s, Vector3(0, 0, 0.04 * s), Vector3(0, 0, 0)).set_meta("no_ink", true)
 
 
 static func _treat(g: Node3D, kind: String) -> void:

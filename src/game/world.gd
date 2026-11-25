@@ -21,7 +21,10 @@ var sun: DirectionalLight3D
 var street: MeshInstance3D
 var _follow: Array[Node3D] = [] ## pieces that move with the runner (street, kerbs, grooves)
 var _back: Node3D
-var _houses: Array = [] ## [node, far end s]
+var _houses: Array = [] ## [chunk node, far end s]: houses are grouped in chunks, merged once full
+var _chunk: Node3D ## the chunk being filled
+var _chunk_n := 0
+const CHUNK_HOUSES := 8
 var _house_next := {-1: -20.0, 1: -20.0}
 var _gates: Array = [] ## [node, s]
 var _gate_next := 300.0
@@ -29,6 +32,8 @@ var _rng := RandomNumberGenerator.new()
 var _obj_rng := RandomNumberGenerator.new()
 var _street_mat: StandardMaterial3D
 var _rain: CPUParticles3D
+var _sky: Node3D ## clouds and birds, far off, travelling with the runner
+var _birds: Array[Node3D] = []
 var letter_text: Callable ## returns the next letter of the day's word (for a letter tile's face)
 
 
@@ -100,7 +105,33 @@ func _ready() -> void:
 	_rain.mesh = drop
 	_rain.local_coords = false
 	add_child(_rain)
+	_build_sky()
 	set_city(city)
+
+
+func _build_sky() -> void:
+	_sky = Node3D.new()
+	add_child(_sky)
+	var white := Kit.mat("#ffffff")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	for i in 10: # puffy clouds: a few balls each
+		var c := Kit.joint(_sky, Vector3(0, 55.0 + rng.randf() * 25.0, -120.0 - rng.randf() * 160.0))
+		c.set_meta("drift", 0.8 + rng.randf() * 1.2)
+		c.set_meta("x0", -160.0 + i * 34.0)
+		for k in 4 + rng.randi() % 3:
+			var m := Kit.part(c, Kit.ball(4.0 + rng.randf() * 4.0, -1.0, 10), white, Vector3(k * 5.0 - 10.0, rng.randf() * 2.5, rng.randf() * 3.0))
+			m.scale.y = 0.6
+	Scenery._no_fog(_sky)
+	for c in _sky.get_children():
+		if c.has_meta("drift"):
+			Kit.merge(c) # one cloud, one draw
+	for i in 4: # birds: two flapping wings
+		var b := Kit.joint(_sky)
+		for sd in [-1.0, 1.0]:
+			var wing := Kit.joint(b)
+			Kit.part(wing, Kit.box(0.9, 0.05, 0.3), Kit.mat("#3a2a24"), Vector3(sd * 0.45, 0, 0))
+		_birds.append(b)
 
 
 ## Changes the street, the horizon, the haze and the houses to a city's look.
@@ -122,6 +153,7 @@ func set_city(id: String) -> void:
 	if _back != null:
 		_back.queue_free()
 	_back = Scenery.backdrop(id)
+	Kit.merge(_back)
 	add_child(_back)
 	_rain.emitting = id == "lenkeran" # Lənkəran's rain
 	_rain.visible = _rain.emitting
@@ -133,6 +165,8 @@ func reset(seed_value: int) -> void:
 	for h in _houses:
 		h[0].queue_free()
 	_houses.clear()
+	_chunk = null
+	_chunk_n = 0
 	for g in _gates:
 		g[0].queue_free()
 	_gates.clear()
@@ -153,9 +187,25 @@ func update(sim: RunSim, s: float, t: float) -> void:
 			if c.has_meta("scroll"):
 				((c as MeshInstance3D).material_override as StandardMaterial3D).uv1_offset.y = -t * 0.8
 	_rain.position = Vector3(0, 12, -s - 8.0)
+	_sky.position = Vector3(0, 0, -s)
+	for c in _sky.get_children():
+		if c.has_meta("drift"):
+			c.position.x = fposmod(float(c.get_meta("x0")) + t * float(c.get_meta("drift")) + 160.0, 320.0) - 160.0
+	for i in _birds.size(): # birds circling high over the street
+		var b := _birds[i]
+		var a := t * (0.35 + i * 0.05) + i * 2.0
+		b.position = Vector3(cos(a) * (14.0 + i * 3.0), 26.0 + sin(t * 0.7 + i) * 2.0, -60.0 - i * 15.0 + sin(a) * 10.0)
+		b.rotation.y = -a
+		var flap := sin(t * 9.0 + i) * 0.6
+		b.get_child(0).rotation.z = flap
+		b.get_child(1).rotation.z = -flap
 	for o in sim.obstacles:
 		if o.node == null:
 			o.node = Props.obstacle(o.kind, o.length, city, _obj_rng)
+			if o.node.has_meta("parts"): # moving things (camels, a phaeton): each joint's pieces as one
+				Kit.merge_joints(o.node)
+			else: # still things draw as one mesh per material
+				Kit.merge(o.node)
 			add_child(o.node)
 		o.node.visible = not o.cleared
 		o.node.position = Vector3(sim.lane_x(o.lane), 0, -(o.s0 + o.length * 0.5))
@@ -216,6 +266,7 @@ func _stream(s: float) -> void:
 		while _gate_next < ahead + 10.0:
 			var g := Scenery.gate()
 			g.position = Vector3(0, 0, -_gate_next)
+			Kit.merge(g)
 			add_child(g)
 			_gates.append([g, _gate_next])
 			_gate_next += 380.0 + _rng.randf() * 200.0
@@ -232,11 +283,21 @@ func _stream(s: float) -> void:
 			var node: Node3D = made[0]
 			var w: float = made[1]
 			node.position = Vector3(side * 4.3, 0, -(_house_next[side] + w * 0.5))
-			add_child(node)
-			_houses.append([node, _house_next[side] + w])
+			Kit.merge(node)
+			if _chunk == null:
+				_chunk = Node3D.new()
+				add_child(_chunk)
+				_houses.append([_chunk, 0.0])
+				_chunk_n = 0
+			_chunk.add_child(node)
+			_houses[-1][1] = maxf(_houses[-1][1], _house_next[side] + w)
+			_chunk_n += 1
+			if _chunk_n >= CHUNK_HOUSES: # a full chunk becomes one mesh per material
+				Kit.merge(_chunk)
+				_chunk = null
 			_house_next[side] += w + (2.5 if _rng.randf() < 0.15 else 0.05)
 	for i in range(_houses.size() - 1, -1, -1):
-		if _houses[i][1] < s - BEHIND:
+		if _houses[i][1] < s - BEHIND and _houses[i][0] != _chunk:
 			_houses[i][0].queue_free()
 			_houses.remove_at(i)
 	for i in range(_gates.size() - 1, -1, -1):

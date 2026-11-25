@@ -41,12 +41,17 @@ static func runner(look: Dictionary = {}) -> Node3D:
 	var rig := Kit.joint(g)
 	var hip := Kit.joint(rig, Vector3(0, 0.52, 0))
 	var legs := []
-	for sx in [-0.12, 0.12]:
+	var knees := []
+	for sx in [-0.12, 0.12]: # two-bone legs: thigh, knee, shin, a çarıq with a turned-up toe
 		var leg := Kit.joint(hip, Vector3(sx, 0, 0))
-		_cyl(leg, pants, 0.085, 0.38, Vector3(0, -0.19, 0), Vector3.ZERO, 0.075)
-		_egg(leg, "#7a3b16", 0.1, 0.07, 0.16, Vector3(0, -0.42, -0.04)) # çarıq, toe forward
-		_cyl(leg, "#c0302a", 0.07, 0.03, Vector3(0, -0.37, 0)) # the çarıq's red tie
+		Kit.part(leg, Kit.capsule(0.085, 0.24), Kit.mat(pants), Vector3(0, -0.1, 0))
+		var knee := Kit.joint(leg, Vector3(0, -0.2, 0))
+		Kit.part(knee, Kit.capsule(0.075, 0.24), Kit.mat(pants), Vector3(0, -0.1, 0))
+		_egg(knee, "#7a3b16", 0.1, 0.07, 0.16, Vector3(0, -0.22, -0.04)) # çarıq, toe forward
+		_cyl(knee, "#7a3b16", 0.03, 0.08, Vector3(0, -0.2, -0.2), Vector3(-1.0, 0, 0), 0.0) # the turned-up toe
+		_cyl(knee, "#c0302a", 0.075, 0.03, Vector3(0, -0.17, 0)) # the çarıq's red tie
 		legs.append(leg)
+		knees.append(knee)
 	var torso := Kit.joint(rig, Vector3(0, 0.52, 0))
 	_cyl(torso, shirt, 0.2, 0.42, Vector3(0, 0.21, 0), Vector3.ZERO, 0.17)
 	var vm := Kit.tex("vest_%s_%s" % [vest.trim_prefix("#"), trim.trim_prefix("#")])
@@ -59,20 +64,30 @@ static func runner(look: Dictionary = {}) -> Node3D:
 	_cyl(sack, "#8a6a44", 0.04, 0.06, Vector3(0, 0.27, 0)) # the knot
 	_box(torso, "#8a6a44", 0.04, 0.5, 0.03, Vector3(0.14, 0.22, -0.16), Vector3(0, 0, 0.55)) # the strap across the chest
 	var arms := []
-	for sx in [-0.25, 0.25]:
+	var elbows := []
+	for sx in [-0.25, 0.25]: # two-bone arms: puffed sleeve, elbow, forearm, a hand with a thumb
 		var arm := Kit.joint(torso, Vector3(sx, 0.38, 0))
-		_cyl(arm, shirt, 0.06, 0.3, Vector3(0, -0.15, 0), Vector3.ZERO, 0.065)
-		_egg(arm, SKIN, 0.07, 0.07, 0.07, Vector3(0, -0.32, 0))
+		Kit.part(arm, Kit.capsule(0.07, 0.2), Kit.mat(shirt), Vector3(0, -0.07, 0))
+		var elbow := Kit.joint(arm, Vector3(0, -0.15, 0))
+		Kit.part(elbow, Kit.capsule(0.058, 0.18), Kit.mat(shirt), Vector3(0, -0.07, 0))
+		_egg(elbow, SKIN, 0.07, 0.07, 0.07, Vector3(0, -0.18, 0))
+		_egg(elbow, SKIN, 0.03, 0.03, 0.03, Vector3(-signf(sx) * 0.05, -0.16, -0.03))
 		arms.append(arm)
+		elbows.append(elbow)
 	var head := Kit.joint(torso, Vector3(0, 0.62, 0))
 	_egg(head, SKIN, 0.3, 0.29, 0.28, Vector3(0, 0.18, 0), Vector3.ZERO, 24)
 	for sx in [-0.29, 0.29]:
 		_egg(head, SKIN, 0.05, 0.08, 0.05, Vector3(sx, 0.17, 0))
-	for sx in [-0.11, 0.11]: # big eyes, facing where he runs (-z)
-		_egg(head, "#ffffff", 0.085, 0.1, 0.06, Vector3(sx, 0.2, -0.24))
-		_egg(head, "#2a1a10", 0.045, 0.055, 0.03, Vector3(sx, 0.2, -0.29))
-		_egg(head, "#ffffff", 0.014, 0.014, 0.01, Vector3(sx + 0.015, 0.22, -0.315)) # a glint
+	var eyes := []
+	for sx in [-0.11, 0.11]: # big eyes, facing where he runs (-z); each in a joint that squashes to blink
+		var eye := Kit.joint(head, Vector3(sx, 0.2, -0.24))
+		_egg(eye, "#ffffff", 0.085, 0.1, 0.06, Vector3.ZERO)
+		_egg(eye, "#2a1a10", 0.045, 0.055, 0.03, Vector3(0, 0, -0.05))
+		_egg(eye, "#ffffff", 0.014, 0.014, 0.01, Vector3(0.015, 0.02, -0.075)) # a glint
 		_egg(head, "#f08a8a", 0.05, 0.03, 0.02, Vector3(sx * 1.6, 0.08, -0.24)) # rosy cheeks
+		eyes.append(eye)
+	for sx in [-0.2, 0.2]: # tufts of hair at the temples
+		_egg(head, "#3b2414", 0.06, 0.08, 0.06, Vector3(sx, 0.26, -0.12))
 	var brows := []
 	for sx in [-0.11, 0.11]:
 		brows.append(_box(head, "#3b2414", 0.1, 0.022, 0.02, Vector3(sx, 0.32, -0.27), Vector3(0, 0, -signf(sx) * 0.15)))
@@ -80,14 +95,24 @@ static func runner(look: Dictionary = {}) -> Node3D:
 	var smile := _egg(head, "#8a2a1c", 0.07, 0.025, 0.02, Vector3(0, 0.03, -0.265))
 	if hat == "bald":
 		smile.scale.x = 1.4 # Keçəl's cheeky grin
+	var gasp := _egg(head, "#5a1410", 0.04, 0.05, 0.02, Vector3(0, 0.03, -0.27)) # an "O" for jumps and frights
+	gasp.visible = false
 	var tongue := _box(head, "#e05a6a", 0.08, 0.03, 0.12, Vector3(0, 0.02, -0.32))
 	tongue.visible = false
+	for k in brows + [smile, gasp, tongue]: # the animator moves these: they stay separate pieces
+		k.set_meta("keep", true)
 	var hatn := Kit.joint(head)
 	_hat(hatn, head, torso, hat, hat_c, look)
+	for c in torso.get_children(): # Pəri's wings flutter on their own
+		if c.has_meta("wing"):
+			c.set_meta("keep", true)
 	g.set_meta("parts", {"rig": rig, "hip": hip, "torso": torso, "head": head, "leg_l": legs[0], "leg_r": legs[1],
-		"arm_l": arms[0], "arm_r": arms[1], "sack": sack, "hat": hatn, "tongue": tongue, "brow_l": brows[0], "brow_r": brows[1]})
+		"arm_l": arms[0], "arm_r": arms[1], "sack": sack, "hat": hatn, "tongue": tongue, "brow_l": brows[0], "brow_r": brows[1],
+		"knee_l": knees[0], "knee_r": knees[1], "elbow_l": elbows[0], "elbow_r": elbows[1], "eye_l": eyes[0], "eye_r": eyes[1],
+		"smile": smile, "gasp": gasp})
 	Kit.ink(g)
 	Kit.shadow(g, 0.34)
+	Kit.merge_joints(g)
 	return g
 
 
@@ -180,15 +205,26 @@ static func div() -> Node3D:
 		_cyl(head, "#f1e6c8", 0.13, 0.5, Vector3(sd * 0.38, 0.62, 0), Vector3(0, 0, -sd * 0.5), 0.0)
 		_egg(head, fur_d, 0.14, 0.2, 0.08, Vector3(sd * 0.6, 0.2, 0), Vector3(0, 0, -sd * 0.4)) # ears
 	var brows := []
-	for x in [-0.2, 0.2]: # big goofy eyes, different sizes
+	var div_eyes := []
+	for i in 7: # shaggy tufts on his head and shoulders
+		var a := -0.9 + i * 0.3
+		_cyl(head, fur_d, 0.09, 0.28, Vector3(sin(a) * 0.45, 0.55 - absf(a) * 0.15, -0.1 + cos(a) * 0.05), Vector3(0, 0, -a * 0.9), 0.0)
+	for x in [-0.2, 0.2]: # big goofy eyes, different sizes; each in a joint that squashes to blink
 		var s := 0.17 if x < 0 else 0.13
-		_egg(head, "#ffffff", s, s * 1.1, 0.08, Vector3(x, 0.22, 0.52))
-		_egg(head, "#2a1a10", s * 0.45, s * 0.5, 0.05, Vector3(x + 0.02, 0.2, 0.6))
+		var eye := Kit.joint(head, Vector3(x, 0.22, 0.52))
+		_egg(eye, "#ffffff", s, s * 1.1, 0.08, Vector3.ZERO)
+		_egg(eye, "#2a1a10", s * 0.45, s * 0.5, 0.05, Vector3(0.02, -0.02, 0.08))
+		_egg(eye, "#ffffff", s * 0.12, s * 0.12, 0.02, Vector3(0.04, 0.02, 0.12))
+		div_eyes.append(eye)
 		brows.append(_box(head, "#3b4a1a", 0.26, 0.07, 0.06, Vector3(x, 0.42, 0.55), Vector3(0, 0, signf(x) * 0.3)))
 	_egg(head, "#c96b4a", 0.16, 0.13, 0.13, Vector3(0, 0.02, 0.6))
 	var mouth := _egg(head, "#5a1410", 0.28, 0.1, 0.06, Vector3(0, -0.22, 0.52))
+	mouth.set_meta("keep", true)
 	for x in [-0.1, 0.12]:
 		_box(head, "#fff6dc", 0.07, 0.08, 0.03, Vector3(x, -0.17, 0.56))
+	_egg(head, "#e05a6a", 0.12, 0.04, 0.04, Vector3(0.05, -0.25, 0.54)) # his tongue
+	for i in 3: # a lumpy chin with bristles
+		_egg(head, fur_d, 0.08, 0.08, 0.06, Vector3(-0.12 + i * 0.12, -0.36, 0.42))
 	var arms := []
 	for sx in [-0.95, 0.95]:
 		var arm := Kit.joint(body, Vector3(sx, 1.35, 0))
@@ -201,9 +237,13 @@ static func div() -> Node3D:
 	for i in 4: # knots on the club
 		_egg(club, "#5a3416", 0.05, 0.05, 0.05, Vector3(cos(i * 1.6) * 0.2, 0.75 + sin(i * 2.1) * 0.2, 0.42 + sin(i * 1.6) * 0.2))
 	g.set_meta("parts", {"rig": rig, "body": body, "head": head, "leg_l": legs[0], "leg_r": legs[1],
-		"arm_l": arms[0], "arm_r": arms[1], "mouth": mouth, "club": club, "brow_l": brows[0], "brow_r": brows[1]})
+		"arm_l": arms[0], "arm_r": arms[1], "mouth": mouth, "club": club, "brow_l": brows[0], "brow_r": brows[1],
+		"eye_l": div_eyes[0], "eye_r": div_eyes[1]})
+	for b in brows:
+		b.set_meta("keep", true)
 	Kit.ink(g)
 	Kit.shadow(g, 1.0)
+	Kit.merge_joints(g)
 	return g
 
 

@@ -146,6 +146,17 @@ static func cyl(r_top: float, r_bot: float, h: float, segs := 16) -> Mesh:
 		return m)
 
 
+## A capsule (a rounded limb) of radius r and total height h, along y and centred.
+static func capsule(r: float, h: float) -> Mesh:
+	return _mesh("k%.3f,%.3f" % [r, h], func() -> Mesh:
+		var m := CapsuleMesh.new()
+		m.radius = r
+		m.height = maxf(h, r * 2.0)
+		m.radial_segments = 14
+		m.rings = 6
+		return m)
+
+
 ## A sphere of radius r (h: its height, for eggs and discs); segs around (low counts look faceted).
 static func ball(r: float, h := -1.0, segs := 18) -> Mesh:
 	return _mesh("s%.3f,%.3f,%d" % [r, h, segs], func() -> Mesh:
@@ -232,6 +243,73 @@ static func extrude(points: PackedVector2Array, depth: float, key: String) -> Me
 				st.add_vertex(Vector3(v[0].x, v[0].y, v[1]))
 		st.generate_normals()
 		return st.commit())
+
+
+## Merges every still mesh under node into one mesh per material (and ink), so a house of forty pieces
+## draws in a handful of calls instead of forty. Pieces marked "keep" (animated) and non-mesh nodes stay.
+## Call on things that never move inside: houses, gates, the horizon, still obstacles.
+static func merge(node: Node3D, deep := true) -> void:
+	var groups := {} ## [material, inked] -> SurfaceTool
+	var mats := {}
+	var gone: Array[Node] = []
+	_collect(node, node, Transform3D.IDENTITY, groups, mats, gone, deep)
+	if gone.size() < 2:
+		return
+	for n in gone:
+		n.get_parent().remove_child(n)
+		n.queue_free()
+	for key in groups:
+		var st: SurfaceTool = groups[key]
+		st.index()
+		var mi := MeshInstance3D.new()
+		mi.mesh = st.commit()
+		mi.material_override = mats[key][0]
+		if mats[key][1]:
+			mi.material_overlay = ink_mat()
+		mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		mi.set_meta("no_ink", true)
+		node.add_child(mi)
+
+
+static func _collect(root: Node3D, n: Node, xf: Transform3D, groups: Dictionary, mats: Dictionary, gone: Array[Node], deep := true) -> void:
+	for c in n.get_children():
+		if not c is Node3D or c.has_meta("keep") or c.has_meta("parts") or c.has_meta("sway") or c.has_meta("scroll") \
+				or c.has_meta("drift") or c is Label3D or c is CPUParticles3D:
+			continue
+		var cxf: Transform3D = xf * (c as Node3D).transform
+		if not deep and not c is MeshInstance3D:
+			continue # a joint: it moves on its own, so it keeps its own pieces
+		if c is MeshInstance3D and (c as MeshInstance3D).mesh != null and (c as MeshInstance3D).material_override != null:
+			var mi := c as MeshInstance3D
+			var inked := mi.material_overlay != null
+			var key := "%d|%s" % [mi.material_override.get_instance_id(), inked]
+			if not groups.has(key):
+				var st := SurfaceTool.new()
+				st.begin(Mesh.PRIMITIVE_TRIANGLES)
+				groups[key] = st
+				mats[key] = [mi.material_override, inked]
+			for s in mi.mesh.get_surface_count():
+				(groups[key] as SurfaceTool).append_from(mi.mesh, s, cxf)
+			if c.get_child_count() == 0:
+				gone.append(c)
+				continue
+		_collect(root, c, cxf, groups, mats, gone)
+		if c.get_child_count() == 0 and not c in gone and not c is MeshInstance3D:
+			gone.append(c)
+
+
+## Merges a jointed figure without stopping it moving: each joint's own still pieces become one mesh per
+## material; joints, and pieces marked "keep" (eyes, brows, mouths the animator moves), stay as they are.
+static func merge_joints(fig: Node3D) -> void:
+	var joints: Array[Node3D] = [fig]
+	var i := 0
+	while i < joints.size():
+		for c in joints[i].get_children():
+			if c is Node3D and not c is MeshInstance3D:
+				joints.append(c)
+		i += 1
+	for j in joints:
+		merge(j, false)
 
 
 ## A blob shadow under a figure (a dark soft disc).
