@@ -22,6 +22,7 @@ extends Node3D
 
 const TUNING_PATH := "res://src/data/tuning.tres"
 const GLB_CIRTDAN := false ## pilot: draw Cırtdan (no costume) from assets/models/char_cirtdan.glb; dev flag --glb
+const GLB_DIV := false ## pilot: draw the Div from assets/models/char_div.glb (the owner's Tripo3D model); dev flag --glb
 const POWER_NAMES := {"magnet": "Nənənin sinisi", "shoe": "Sehrli çarıq", "double": "Qoşa təndir: x2",
 	"pole": "Kəndirbaz çubuğu", "simurq": "Simurq quşu", "fly": "Xalça ilə uçuş", "carpet": "Uçan xalça"}
 
@@ -44,6 +45,7 @@ var world: World
 var fx: Fx
 var anim := Animator.new()
 var glb: GlbRunner ## the Blender-built Cırtdan when it is drawn (pilot), else null
+var glb_div: GlbDiv ## the Tripo3D Div when it is drawn (pilot), else null
 var last_bread := 0 ## the run's bread at the last pickup (a treat adds several at once)
 var pole_fig: Node3D ## the kəndirbaz pole in Cırtdan's hands while the power lasts
 var shake := 0.0 ## seconds of camera shake left (a stumble, a crash)
@@ -165,7 +167,12 @@ func _build_world() -> void:
 	fly_carpet = Characters.flying_carpet()
 	fly_carpet.position.y = 0.08
 	fly_carpet.visible = false
-	div_fig = Characters.div()
+	glb_div = null
+	if (GLB_DIV or args.has("glb")) and GlbDiv.available():
+		glb_div = GlbDiv.new()
+		div_fig = glb_div.build()
+	else:
+		div_fig = Characters.div()
 	div_fig.scale = Vector3.ONE * 0.85
 	div_fig.rotation.y = PI # runs toward -z, his back to the camera
 	add_child(div_fig)
@@ -368,7 +375,10 @@ func _sync(dt: float) -> void:
 		gap = 30.0 # behind the menu he is out of sight
 	div_fig.position = Vector3(x * 0.6 - (1.9 if sim.intro_t > 0.0 else 0.9), 0, -(s - gap))
 	div_fig.visible = gap < tune.div_far_gap - 1.0
-	anim.div(div_fig, anim_t, sim.speed, sim.div_t > 0.0, sim.dead == "caught")
+	if glb_div != null:
+		glb_div.drive(anim_t, sim.speed, sim.div_t > 0.0, sim.dead == "caught")
+	else:
+		anim.div(div_fig, anim_t, sim.speed, sim.div_t > 0.0, sim.dead == "caught")
 	world.update(sim, s, anim_t)
 	fx.follow(runner.position, false, started and flying) # no running dust: on the grey road it looked like smoke
 	var tall := get_viewport().get_visible_rect().size.aspect() < 1.0 # a phone held upright: closer, lower
