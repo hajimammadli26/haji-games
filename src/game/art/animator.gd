@@ -17,6 +17,7 @@ var _slide := 0.0
 var _air := 0.0
 var _prev_x := 0.0
 var _tongue_t := 0.0
+var _lie := 0.0 ## 0 standing, 1 lying flat on the shield carpet
 var _blink_t := 2.0 ## seconds to the next blink
 
 
@@ -146,6 +147,10 @@ func runner(fig: Node3D, st: Dictionary) -> void:
 	var sq := sin(_squash * PI) * 0.25
 	rig.scale = Vector3(1.0 + sq * 0.6, 1.0 - sq, 1.0 + sq * 0.6)
 	rig.rotation.z = _lean * 0.4
+	_lie = lerpf(_lie, 1.0 if st.get("lying", false) else 0.0, minf(1.0, dt * 8.0))
+	rig.rotation.x = -PI / 2.0 * _lie # face down along the carpet, head forward
+	rig.position.y += 0.2 * _lie
+	rig.position.z = 0.75 * _lie
 	# secondary motion: the sack swings behind, the hat lags
 	(p["sack"] as Node3D).rotation.x = -bounce * 0.25 - _air * 0.4 * up
 	(p["hat"] as Node3D).rotation.x = -bounce * 0.06 + _air * 0.12 * up

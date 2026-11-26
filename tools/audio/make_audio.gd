@@ -120,7 +120,14 @@ func _init() -> void:
 	quit()
 
 
+## Voices recorded elsewhere (ElevenLabs, voice "Grav", 2026-11-26; sources in tools/audio/recorded/): the tool
+## leaves their WAVs alone instead of synthesising them.
+const RECORDED := ["ay_cirtdan"]
+
+
 func _sfx(name: String, secs: float, recipe: Callable) -> void:
+	if name in RECORDED:
+		return
 	var s := Synth.new(RATE, secs)
 	recipe.call(s)
 	s.finish(PEAK_DB[name])

@@ -49,7 +49,7 @@ The tune is in the Şur mode on D (D Eb F G A Bb C), 6/8, 8 bars.
 | Slide (`sim.slid`) | `slide` | swelling band-passed noise |
 | Landing (grounded again) | `land` | soft low thud |
 | Lane change | `lane` | short soft whoosh |
-| Stumble (`sim.stumbled`) | `stumble` + voice `ay_cirtdan` | low "boing" thud, the Div shouts "Ay Cırtdan!" |
+| Stumble (`sim.stumbled`) | `stumble` + voice `ay_cirtdan` | low "boing" thud, the Div shouts "Ay Cırtdan!" (recorded: ElevenLabs voice "Grav", eleven_v4; take 1 of 2 in tools/audio/recorded/) |
 | **Div gives up** (`sim.escaped`) | `escape` (new) | whoosh away and a happy two-note tar "da-dum" |
 | Crash (`sim.crashed`) | `crash` | nağara dum, noise burst, falling low tone |
 | Caught by the Div (`sim.caught`) | voice `hamm` | "Hamm!" |

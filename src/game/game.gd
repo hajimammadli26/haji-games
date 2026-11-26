@@ -8,6 +8,8 @@
 ##   --autopilot      a simple bot dodges, for unattended checks
 ##   --fresh          a throwaway save (user://check_save.json), started empty
 ##   --boosts=N       that throwaway save starts with N start boosts (the autopilot uses one)
+##   --carpet_at=SEC  with --autopilot: ride the shield carpet from SEC (and skip the start boost)
+##   --with_panel     with a game-over shot: wait for the game-over panel (default: shoot the Div standing over him)
 ##   --auto_continue  after the first game over, spend nar on the continue at once
 ##   --shot=PATH      save a screenshot to PATH ...
 ##   --shot_at=SEC    ... after SEC seconds of running, then quit (or a second after a game over)
@@ -22,6 +24,10 @@ extends Node3D
 
 const TUNING_PATH := "res://src/data/tuning.tres"
 const GLB_CIRTDAN := true ## owner approved 2026-11-26: draw Cırtdan (no costume) from assets/models/char_cirtdan.glb; dev flag --glb
+const DIV_OVER_WALK := 1.4 ## s the Div takes to walk round to Cırtdan's head after a game over
+const DIV_OVER_SIDE := 1.5 ## m beside Cırtdan where the Div stands over him after a game over, facing the camera
+const DIV_OVER_BACK := 0.3 ## m toward the camera from Cırtdan's spot
+const OVER_PANEL_DELAY := 1.9 ## s before the game-over panel shows, so the Div's arrival is seen first
 const GLB_DIV := true ## owner approved 2026-11-26: draw the Div from assets/models/char_div.glb (the owner's Tripo3D model); dev flag --glb
 const POWER_NAMES := {"magnet": "Nənənin sinisi", "shoe": "Sehrli çarıq", "double": "Qoşa təndir: x2",
 	"pole": "Kəndirbaz çubuğu", "simurq": "Simurq quşu", "fly": "Xalça ilə uçuş", "carpet": "Uçan xalça"}
@@ -60,6 +66,7 @@ var touch_done := true
 var args := {}
 var shooting := false
 var dead_t := 0.0
+var div_over_t := 0.0 ## seconds since the run ended: the Div walks up to stand over Cırtdan, facing the camera
 # HUD
 var hud_root: Control
 var hud_layer: CanvasLayer
@@ -281,7 +288,7 @@ func _physics_process(dt: float) -> void:
 			return
 		if started and args.has("shot") and sim.dead != "" and not shooting: # a check that ends in a game over
 			dead_t += dt
-			if dead_t > 1.0:
+			if dead_t > (OVER_PANEL_DELAY + 0.3 if args.has("with_panel") else DIV_OVER_WALK + 0.3): # after the Div has come round
 				shooting = true
 				_shoot()
 		return
@@ -351,7 +358,8 @@ func _sync(dt: float) -> void:
 	var flying := sim.is_flying() or sim.carpet_t > 0.0
 	var pose := {"t": anim_t, "dt": dt, "speed": sim.speed, "x": x, "grounded": sim.grounded or not started,
 		"vy": sim.vy, "sliding": sim.is_sliding(), "flying": sim.is_flying(), "stumbling": sim.stumble_t > 0.0,
-		"dead": sim.dead, "idle": not started, "escaped": escaped_now}
+		"dead": sim.dead, "idle": not started, "escaped": escaped_now,
+		"lying": sim.carpet_t > 0.0 and not sim.is_flying() and sim.dead == ""}
 	if glb != null:
 		glb.drive(pose)
 	else:
@@ -373,12 +381,26 @@ func _sync(dt: float) -> void:
 		gap = maxf(gap, 4.5) # the opening chase: further back and to the side
 	if not started:
 		gap = 30.0 # behind the menu he is out of sight
-	div_fig.position = Vector3(x * 0.6 - (1.9 if sim.intro_t > 0.0 else 0.9), 0, -(s - gap))
-	div_fig.visible = gap < tune.div_far_gap - 1.0
-	if glb_div != null:
-		glb_div.drive(anim_t, sim.speed, sim.div_t > 0.0, sim.dead == "caught")
+	var chase_at := Vector3(x * 0.6 - (1.9 if sim.intro_t > 0.0 else 0.9), 0, -(s - gap))
+	var div_speed := sim.speed
+	if sim.dead != "": # game over: the Div comes round to stand at Cırtdan's head and looks at us (owner, 2026-11-26)
+		div_over_t += dt
+		var k := smoothstep(0.0, DIV_OVER_WALK, div_over_t)
+		chase_at = Vector3(x * 0.6 - 0.9, 0, -(s - maxf(gap, 2.4)))
+		var side := DIV_OVER_SIDE if x <= 0.0 else -DIV_OVER_SIDE # beside his head, on the open side of the street
+		div_fig.position = chase_at.lerp(Vector3(x + side, 0, -s + DIV_OVER_BACK), k)
+		div_fig.rotation.y = lerp_angle(PI, 0.0, smoothstep(0.55, 1.0, k))
+		div_fig.visible = true
+		div_speed = 6.0 if k < 1.0 else 0.0
 	else:
-		anim.div(div_fig, anim_t, sim.speed, sim.div_t > 0.0, sim.dead == "caught")
+		div_over_t = 0.0
+		div_fig.position = chase_at
+		div_fig.rotation.y = PI
+		div_fig.visible = gap < tune.div_far_gap - 1.0
+	if glb_div != null:
+		glb_div.drive(anim_t, div_speed, sim.div_t > 0.0, sim.dead == "caught" and div_over_t < 0.6)
+	else:
+		anim.div(div_fig, anim_t, div_speed, sim.div_t > 0.0, sim.dead == "caught" and div_over_t < 0.6)
 	world.update(sim, s, anim_t)
 	fx.follow(runner.position, false, started and flying) # no running dust: on the grey road it looked like smoke
 	var tall := get_viewport().get_visible_rect().size.aspect() < 1.0 # a phone held upright: closer, lower
@@ -528,7 +550,9 @@ func _on_dead(_kind: String) -> void:
 	over_text.text = "\n".join(lines)
 	continue_btn.text = "Nar ilə davam et (%d)" % cost if have >= cost else tr("Nar çatmır: %d lazımdır, səndə %d" % [cost, have])
 	continue_btn.disabled = have < cost
-	over_panel.visible = true
+	get_tree().create_timer(OVER_PANEL_DELAY).timeout.connect(func() -> void:
+		if sim.dead != "":
+			over_panel.visible = true)
 
 
 func _on_power(kind: String) -> void:
@@ -817,8 +841,10 @@ func _update_hud() -> void:
 # --- unattended checks (developer flags only) --------------------------------------------------
 
 func _autopilot() -> void: # dodges what is right ahead in its lane: enough to reach later rows in a check
-	if sim.boost_open() and sim.time > 1.0:
+	if sim.boost_open() and sim.time > 1.0 and not args.has("carpet_at"):
 		input.boost = true
+	if args.has("carpet_at") and sim.carpet_t <= 0.0 and sim.time >= float(args["carpet_at"]) and sim.time < float(args["carpet_at"]) + 0.1:
+		input.carpet = true
 	for o in sim.obstacles:
 		if o.lane != sim.lane or o.ramp or o.hit or o.cleared:
 			continue

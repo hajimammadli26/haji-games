@@ -14,6 +14,8 @@ extends RefCounted
 const PATH := "res://assets/models/char_cirtdan.glb"
 const LOOPS := ["run", "idle", "fly", "stumble"]
 const FALLBACK := {"fall": "stumble", "stumble": "run", "fly": "idle", "slide": "run", "jump": "run", "idle": "run"} ## a clip the model lacks plays this one
+const LIE_LIFT := 0.22 ## m above the carpet when lying on it
+const LIE_BACK := 0.85 ## m the lying body shifts back so it centres on the carpet
 const BLEND := 0.12 ## seconds to cross-fade between clips
 const RUN_FREQ_MAX := 18.0 ## rad/s, the same stride cap as Animator.runner()
 
@@ -31,6 +33,7 @@ var _prev_x := 0.0
 var _squash := 0.0
 var _was_grounded := true
 var _blink_t := 2.0
+var _lie := 0.0 ## 0 standing, 1 lying flat on the shield carpet
 
 
 ## jump_speed: the take-off speed of a normal jump (m/s); the jump clip runs from it to minus it.
@@ -91,8 +94,8 @@ func drive(st: Dictionary) -> void:
 		clip = "fall" # plays once and holds: he stays down
 	elif st.get("stumbling", false):
 		clip = "stumble"
-	elif flying:
-		clip = "fly"
+	elif flying or st.get("lying", false):
+		clip = "fly" # arms out, legs trailing: also his pose lying on the carpet
 	elif not grounded:
 		clip = "jump"
 	elif st.get("sliding", false):
@@ -120,6 +123,9 @@ func drive(st: Dictionary) -> void:
 	_was_grounded = grounded
 	_squash = maxf(0.0, _squash - dt * 5.0)
 	_model.rotation.z = 0.0 if clip == "idle" else _lean * 0.6
+	_lie = lerpf(_lie, 1.0 if st.get("lying", false) else 0.0, minf(1.0, dt * 8.0))
+	_model.rotation.x = -PI / 2.0 * _lie # face down, head forward, along the carpet
+	_model.position = Vector3(0, LIE_LIFT * _lie, LIE_BACK * _lie)
 	_model.scale = Vector3(1.0 + _squash * 0.12, 1.0 - _squash * 0.18, 1.0 + _squash * 0.12)
 	# a blink now and then (on top of whatever the clip did with the eyes), on rigs with eye bones
 	if _eyes.is_empty():

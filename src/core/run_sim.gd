@@ -257,6 +257,11 @@ func is_sliding() -> bool:
 	return slide_t > 0.0
 
 
+## Cırtdan's height for hits and pickups: low while sliding or lying on the shield carpet (owner, 2026-11-26).
+func body_height() -> float:
+	return PSLIDE if slide_t > 0.0 or carpet_t > 0.0 else PSTAND
+
+
 ## Puts an obstacle on the street and returns it. opts may hold "len".
 func add_obstacle(kind: String, l: int, s0: float, opts: Dictionary = {}) -> Obstacle:
 	var k: Dictionary = KINDS[kind]
@@ -436,7 +441,7 @@ func _overlaps(o: Obstacle, ox_s0: float, px: float, py: float, h: float, ps: fl
 
 
 func _collide() -> void:
-	var h := PSLIDE if slide_t > 0.0 else PSTAND
+	var h := body_height()
 	for o in obstacles:
 		if o.hit or o.ramp or o.cleared:
 			continue
@@ -506,7 +511,7 @@ func _shield(o: Obstacle) -> bool: # the flying carpet takes one hit and the thi
 
 
 func _take_pickups() -> void:
-	var h := PSLIDE if slide_t > 0.0 else PSTAND
+	var h := body_height()
 	var flying := is_flying()
 	for p in pickups:
 		if p.taken:

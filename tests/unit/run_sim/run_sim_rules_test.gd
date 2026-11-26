@@ -152,3 +152,18 @@ func test_speed_keeps_rising_after_the_children_phase() -> void:
 
 func test_speed_never_passes_the_late_cap() -> void:
 	assert_float(sim.speed_at(100000.0)).is_equal_approx(tune.speed_late_max, 0.001)
+
+
+# On the shield carpet he lies flat, so hanging things pass over him without a slide (owner, 2026-11-26).
+func test_lying_on_the_carpet_passes_under_hanging_things() -> void:
+	sim.carpets = 1
+	input.carpet = true
+	sim.step(DT, input)
+	input.clear()
+	sim.add_obstacle("carpet", sim.lane, sim.s + 20.0)
+	var hits := []
+	sim.stumbled.connect(func() -> void: hits.append("stumble"))
+	sim.shield_used.connect(func() -> void: hits.append("shield"))
+	_run(3.0)
+	assert_array(hits).is_empty()
+	assert_float(sim.body_height()).is_equal_approx(RunSim.PSLIDE, 0.001)
