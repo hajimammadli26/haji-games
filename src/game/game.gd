@@ -9,6 +9,7 @@
 ##   --fresh          a throwaway save (user://check_save.json), started empty
 ##   --boosts=N       that throwaway save starts with N start boosts (the autopilot uses one)
 ##   --carpet_at=SEC  with --autopilot: ride the shield carpet from SEC (and skip the start boost)
+##   --power=KIND     with --autopilot: give that power-up (simurq, fly, magnet ...) at 1 s
 ##   --with_panel     with a game-over shot: wait for the game-over panel (default: shoot the Div standing over him)
 ##   --auto_continue  after the first game over, spend nar on the continue at once
 ##   --shot=PATH      save a screenshot to PATH ...
@@ -24,6 +25,8 @@ extends Node3D
 
 const TUNING_PATH := "res://src/data/tuning.tres"
 const GLB_CIRTDAN := true ## owner approved 2026-11-26: draw Cırtdan (no costume) from assets/models/char_cirtdan.glb; dev flag --glb
+const SIMURQ_SCALE := 0.6 ## the Simurq drawn smaller than built (owner, 2026-11-26)
+const SIMURQ_HANG := 2.0 ## m above Cırtdan's feet where the Simurq flies, holding him
 const DIV_OVER_WALK := 1.4 ## s the Div takes to walk round to Cırtdan's head after a game over
 const DIV_OVER_SIDE := 1.5 ## m beside Cırtdan where the Div stands over him after a game over, facing the camera
 const DIV_OVER_BACK := 0.3 ## m toward the camera from Cırtdan's spot
@@ -184,6 +187,7 @@ func _build_world() -> void:
 	div_fig.rotation.y = PI # runs toward -z, his back to the camera
 	add_child(div_fig)
 	bird = Characters.simurq()
+	bird.scale = Vector3.ONE * SIMURQ_SCALE
 	bird.visible = false
 	add_child(bird)
 	camera = Camera3D.new()
@@ -355,7 +359,6 @@ func _sync(dt: float) -> void:
 	var y := lerpf(sim.prev_y, sim.y, a)
 	runner.position = Vector3(x, y, -s)
 	runner.visible = sim.invuln <= 0.0 or int(anim_t * 12.0) % 2 == 0
-	var flying := sim.is_flying() or sim.carpet_t > 0.0
 	var pose := {"t": anim_t, "dt": dt, "speed": sim.speed, "x": x, "grounded": sim.grounded or not started,
 		"vy": sim.vy, "sliding": sim.is_sliding(), "flying": sim.is_flying(), "stumbling": sim.stumble_t > 0.0,
 		"dead": sim.dead, "idle": not started, "escaped": escaped_now,
@@ -374,7 +377,7 @@ func _sync(dt: float) -> void:
 		fly_carpet.rotation.x = sin(anim_t * 1.6) * 0.04
 	bird.visible = sim.power["simurq"] > 0.0 and sim.dead == ""
 	if bird.visible: # Cırtdan hangs from its talons
-		bird.position = Vector3(x, y + 1.6, -s)
+		bird.position = Vector3(x, y + SIMURQ_HANG, -s)
 		Animator.simurq(bird, anim_t)
 	var gap := sim.div_gap
 	if sim.intro_t > 0.0 and sim.div_t <= 0.0:
@@ -402,7 +405,7 @@ func _sync(dt: float) -> void:
 	else:
 		anim.div(div_fig, anim_t, div_speed, sim.div_t > 0.0, sim.dead == "caught" and div_over_t < 0.6)
 	world.update(sim, s, anim_t)
-	fx.follow(runner.position, false, started and flying) # no running dust: on the grey road it looked like smoke
+	fx.follow(runner.position, false, false) # no dust and no flying trail: both read as smoke (owner, 2026-11-26)
 	var tall := get_viewport().get_visible_rect().size.aspect() < 1.0 # a phone held upright: closer, lower
 	var follow := 0.85 if tall else 0.55
 	var boost_kick := 6.0 if sim.power["fly"] > 0.0 else 0.0
@@ -843,6 +846,8 @@ func _update_hud() -> void:
 func _autopilot() -> void: # dodges what is right ahead in its lane: enough to reach later rows in a check
 	if sim.boost_open() and sim.time > 1.0 and not args.has("carpet_at"):
 		input.boost = true
+	if args.has("power") and sim.time >= 1.0 and sim.time < 1.05:
+		sim.power[String(args["power"])] = 8.0
 	if args.has("carpet_at") and sim.carpet_t <= 0.0 and sim.time >= float(args["carpet_at"]) and sim.time < float(args["carpet_at"]) + 0.1:
 		input.carpet = true
 	for o in sim.obstacles:
