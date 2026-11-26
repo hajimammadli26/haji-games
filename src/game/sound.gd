@@ -18,6 +18,7 @@ const MUSIC := ["menu", "run", "fly"]
 const POOL := 8
 const MUSIC_DB := -8.0 ## the loops are mastered at -16 dBFS RMS: about 8 dB under the effects
 const FADE := 0.6 ## seconds of a music crossfade
+const RECORDED_SPEEDUP_MAX := 1.06 ## recorded run music plays at most this much faster (and higher)
 
 var save: SaveData
 var _streams := {}
@@ -41,12 +42,8 @@ func _ready() -> void:
 		add_child(p)
 		_pool.append(p)
 	for m in MUSIC:
-		var w: AudioStreamWAV = load(DIR + "music_" + m + ".wav")
-		w.loop_mode = AudioStreamWAV.LOOP_FORWARD # the loop is cut to whole bars by the tool
-		w.loop_begin = 0
-		w.loop_end = int(w.get_length() * w.mix_rate)
 		var p := AudioStreamPlayer.new()
-		p.stream = w
+		p.stream = _music_stream(m)
 		p.volume_db = -80.0
 		add_child(p)
 		_music[m] = p
@@ -79,12 +76,29 @@ func music(mode: String) -> void:
 			tw.tween_callback(p.stop)
 
 
-## The run music speeds up with the run (1.0 at the start speed).
+## The run music speeds up with the run (1.0 at the start speed). Recorded music (OGG) only a little, since
+## speeding it up raises its pitch too.
 func set_speed_ratio(r: float) -> void:
 	if absf(r - _rate) < 0.01:
 		return
 	_rate = r
-	(_music["run"] as AudioStreamPlayer).pitch_scale = r
+	var p := _music["run"] as AudioStreamPlayer
+	p.pitch_scale = minf(RECORDED_SPEEDUP_MAX, 1.0 + (r - 1.0) * 0.25) if p.stream is AudioStreamOggVorbis else r
+
+
+## The loop for a music mode: a recorded music_<mode>.ogg (ElevenLabs Music, owner 2026-11-26) when one exists,
+## else the synthesised music_<mode>.wav. The fly mode reuses the run recording when it has none of its own.
+func _music_stream(m: String) -> AudioStream:
+	for name in [m, "run" if m == "fly" else m]:
+		if ResourceLoader.exists(DIR + "music_" + name + ".ogg"):
+			var o: AudioStreamOggVorbis = load(DIR + "music_" + name + ".ogg")
+			o.loop = true
+			return o
+	var w: AudioStreamWAV = load(DIR + "music_" + m + ".wav")
+	w.loop_mode = AudioStreamWAV.LOOP_FORWARD # the loop is cut to whole bars by the tool
+	w.loop_begin = 0
+	w.loop_end = int(w.get_length() * w.mix_rate)
+	return w
 
 
 ## Re-reads the settings after the player turned music or sound on or off.

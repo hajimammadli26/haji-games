@@ -463,5 +463,10 @@
   "tr": "Lakap, puan, mesafe ve şehir gönderilir, isim değil",
   "en": "Nickname, score, distance and city are sent, never a name",
   "ru": "Отправляются прозвище, очки, дистанция и город, без имени"
+ },
+ "Günün sözü": {
+  "tr": "Günün kelimesi",
+  "en": "Word of the day",
+  "ru": "Слово дня"
  }
 }

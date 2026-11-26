@@ -26,7 +26,8 @@ extends Node3D
 const TUNING_PATH := "res://src/data/tuning.tres"
 const GLB_CIRTDAN := true ## owner approved 2026-11-26: draw Cırtdan (no costume) from assets/models/char_cirtdan.glb; dev flag --glb
 const SIMURQ_SCALE := 0.6 ## the Simurq drawn smaller than built (owner, 2026-11-26)
-const SIMURQ_HANG := 2.0 ## m above Cırtdan's feet where the Simurq flies, holding him
+const SIMURQ_HANG := 1.75 ## m above Cırtdan's feet where the Simurq flies; its talons hold him at the waist
+const SIMURQ_AHEAD := 0.42 ## m in front of him, so its legs reach back to his waist (owner, 2026-11-26)
 const DIV_OVER_WALK := 1.4 ## s the Div takes to walk round to Cırtdan's head after a game over
 const DIV_OVER_SIDE := 1.5 ## m beside Cırtdan where the Div stands over him after a game over, facing the camera
 const DIV_OVER_BACK := 0.3 ## m toward the camera from Cırtdan's spot
@@ -70,6 +71,9 @@ var args := {}
 var shooting := false
 var dead_t := 0.0
 var div_over_t := 0.0 ## seconds since the run ended: the Div walks up to stand over Cırtdan, facing the camera
+var menu_t := 0.0 ## seconds the menu has been up (its camera glides in; the Div peeks now and then)
+var poke_t := 0.0 ## seconds left of Cırtdan's hop after a tap on him in the menu
+const POKE_TIME := 0.7
 # HUD
 var hud_root: Control
 var hud_layer: CanvasLayer
@@ -148,7 +152,7 @@ func _ready() -> void:
 	elif args.has("menu") and args.has("shot"):
 		menu._board = String(args.get("board", "mine"))
 		menu.open(args["menu"])
-		await get_tree().create_timer(2.5).timeout
+		await get_tree().create_timer(float(args.get("shot_at", "2.5"))).timeout
 		_shoot()
 	elif args.has("shot"): # an unattended check starts at once
 		_start()
@@ -377,7 +381,7 @@ func _sync(dt: float) -> void:
 		fly_carpet.rotation.x = sin(anim_t * 1.6) * 0.04
 	bird.visible = sim.power["simurq"] > 0.0 and sim.dead == ""
 	if bird.visible: # Cırtdan hangs from its talons
-		bird.position = Vector3(x, y + SIMURQ_HANG, -s)
+		bird.position = Vector3(x, y + SIMURQ_HANG, -s - SIMURQ_AHEAD)
 		Animator.simurq(bird, anim_t)
 	var gap := sim.div_gap
 	if sim.intro_t > 0.0 and sim.div_t <= 0.0:
@@ -385,7 +389,7 @@ func _sync(dt: float) -> void:
 	if not started:
 		gap = 30.0 # behind the menu he is out of sight
 	var chase_at := Vector3(x * 0.6 - (1.9 if sim.intro_t > 0.0 else 0.9), 0, -(s - gap))
-	var div_speed := sim.speed
+	var div_speed := sim.speed if started else 0.0 # behind the menu he only stands (and peeks)
 	if sim.dead != "": # game over: the Div comes round to stand at Cırtdan's head and looks at us (owner, 2026-11-26)
 		div_over_t += dt
 		var k := smoothstep(0.0, DIV_OVER_WALK, div_over_t)
@@ -412,13 +416,46 @@ func _sync(dt: float) -> void:
 	camera.fov = lerpf(camera.fov, (75.0 if tall else 60.0) + boost_kick + (sim.speed - tune.speed_start) * 0.4, minf(1.0, dt * 3.0))
 	shake = maxf(0.0, shake - dt)
 	var jolt := Vector3(sin(anim_t * 60.0), cos(anim_t * 47.0), 0) * shake * 0.25
-	if not started: # the menu: a slow turn around Cırtdan dancing
-		var a2 := sin(anim_t * 0.3) * 0.5
-		camera.position = Vector3(x + sin(a2) * 3.5, 1.9, -s - cos(a2) * 3.8) # in front: he faces -z
-		camera.look_at(Vector3(x, 1.75, -s)) # he stands low in the picture, under the menu
+	if not started: # the menu: the camera glides in to Cırtdan, then turns slowly around him
+		_menu_scene(dt, x, y, s)
 		return
+	menu_t = 0.0
 	camera.position = Vector3(x * follow, (4.3 if tall else 3.7) + y * 0.6, -s + (4.9 if tall else 6.2)) + jolt
 	camera.look_at(Vector3(x * (0.75 if tall else 0.3), (0.9 if tall else 1.0) + y * 0.55, -s - (8.0 if tall else 7.0)))
+
+
+## The street behind the menu: the camera eases in from further back (2.5 s) and then sways slowly round
+## Cırtdan; every 16 s the Div peeks out from a side far down the street for a few seconds; a tap on
+## Cırtdan (Menu.poke) makes him hop and spin once with a few gold sparks.
+func _menu_scene(dt: float, x: float, y: float, s: float) -> void:
+	menu_t += dt
+	var k := 1.0 - pow(1.0 - minf(menu_t / 2.5, 1.0), 3.0)
+	var a2 := sin(anim_t * 0.25) * 0.45
+	var dist := lerpf(7.5, 3.8, k)
+	camera.position = Vector3(x + sin(a2) * dist * 0.92, lerpf(3.0, 1.9, k), -s - cos(a2) * dist) # in front: he faces -z
+	camera.look_at(Vector3(x, 1.75, -s)) # he stands low in the picture, under the menu
+	var ph := fmod(menu_t - 5.0, 16.0) if menu_t > 5.0 else -1.0
+	var peek := smoothstep(0.0, 1.2, ph) * (1.0 - smoothstep(3.4, 4.6, ph)) if ph >= 0.0 else 0.0
+	if peek > 0.0:
+		var side := 1.0 if int((menu_t - 5.0) / 16.0) % 2 == 0 else -1.0
+		var right := camera.global_transform.basis.x * Vector3(1, 0, 1) # slides in sideways as seen from the camera
+		div_fig.position = Vector3(x, 0, -s + 9.0) + right.normalized() * side * lerpf(4.5, 1.6, peek)
+		div_fig.rotation.y = PI # toward the camera
+		div_fig.visible = true
+	runner.rotation.y = 0.0
+	if poke_t > 0.0:
+		poke_t = maxf(0.0, poke_t - dt)
+		var u := 1.0 - poke_t / POKE_TIME
+		runner.position.y = y + sin(u * PI) * 0.55
+		runner.rotation.y = TAU * smoothstep(0.0, 1.0, u)
+
+
+func _poke() -> void:
+	if poke_t > 0.0 or started:
+		return
+	poke_t = POKE_TIME
+	snd.play("lane", 1.2)
+	fx.burst(runner.position + Vector3(0, 1.2, -0.3), Color("#ffd34a"), 10)
 
 
 # --- input: keys for development, swipes and taps on the phone ------------------------------------
@@ -789,6 +826,7 @@ func _build_hud() -> void:
 	menu.look_changed.connect(_apply_look)
 	menu.story.connect(_show_story.bind(false))
 	menu.sfx.connect(snd.play)
+	menu.poke.connect(_poke)
 	menu.settings_changed.connect(snd.settings_changed)
 	hud_layer = layer
 

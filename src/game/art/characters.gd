@@ -539,8 +539,10 @@ static func simurq() -> Node3D:
 	for i in 5:
 		_box(tail, [teal, red, gold, red, teal][i], 0.18, 0.04, 1.9, Vector3((i - 2) * 0.2, 0.05, 1.6), Vector3(0.15, (i - 2) * 0.12, 0))
 		_egg(tail, "#2c4fa0", 0.11, 0.03, 0.14, Vector3((i - 2) * 0.32, 0.12, 2.45))
-	for x in [-0.2, 0.2]:
-		_cyl(g, "#e07b22", 0.04, 0.5, Vector3(x, -0.6, 0.1))
+	for x in [-0.34, 0.34]: # long legs reaching down and back: the talons hold Cırtdan round the waist
+		_cyl(g, "#e07b22", 0.06, 1.08, Vector3(x, -0.8, 0.4), Vector3(-0.59, 0, 0))
+		for k in [-1.0, 0.0, 1.0]:
+			_cyl(g, "#5a3a22", 0.04, 0.26, Vector3(x - signf(x) * 0.08, -1.3 + k * 0.07, 0.72), Vector3(0, 0, signf(x) * (PI / 2 + 0.3)), 0.0) # hooked in round his waist
 	g.set_meta("parts", {"wings": wings, "tail": tail})
 	Kit.ink(g)
 	return g

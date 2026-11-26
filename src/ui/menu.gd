@@ -21,6 +21,8 @@ signal story
 signal settings_changed
 ## A sound to play for a tap: tap, buy or no.
 signal sfx(name: String)
+## Cırtdan (the 3D figure between the home buttons) was tapped: the game makes him hop.
+signal poke
 
 const SCREENS := {
 	"shop": "Nənənin dükanı", "costumes": "Geyim dükanı", "chars": "Personajlar", "cities": "Şəhərlər",
@@ -56,9 +58,24 @@ var _scroll: ScrollContainer
 var _wallet: Control
 var _wallet_n: Array = [] ## the bread and nar numbers
 var _toast: Label
-var _home_info: Label
 var _hint: Label
 var _shade: ColorRect ## dims the street behind the list screens; lighter on home so Cırtdan shows
+var _record: Label ## home chips: the best run and league, the city
+var _city: Label
+var _word_tiles: HBoxContainer ## the day's word, one tile per letter (the letters found are gold)
+var _badge: Label ## missions done, on the Tapşırıqlar button
+var _plate: Control ## the home pieces that come in one after another (see _enter_home)
+var _logo: Control
+var _title_fx: ShaderMaterial ## the shine that runs over the title now and then
+var _side_btns: Array = [] ## [button, from which side: -1 left, 1 right]
+var _go: Button
+var _hint_plate: Control
+var _settings_btn: Button
+var _motes: CPUParticles2D ## slow gold motes over the street on home
+var _enter: Tween
+var _pulse: Tween
+var _entered := false ## the home entrance has played once
+var _loops: Array = [] ## the always-running tweens (shine, logo), made once
 
 
 func _init(progress: Progress) -> void:
@@ -72,6 +89,10 @@ func _ready() -> void:
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(shade)
 	_shade = shade
+	_motes = _make_motes()
+	add_child(_motes)
+	resized.connect(_place_motes)
+	_place_motes.call_deferred()
 	_build_home()
 	_build_list()
 	_wallet = MarginContainer.new()
@@ -113,7 +134,12 @@ func open(which: String) -> void:
 	_confirm_key = ""
 	if _home == null:
 		return
+	var was_home := _home.visible
 	_home.visible = which == "home"
+	_motes.visible = _home.visible
+	if _home.visible and (not was_home or not _entered):
+		_entered = true
+		_enter_home.call_deferred()
 	_shade.color.a = 0.15 if which == "home" else 0.35
 	_list.visible = which != "home"
 	_scroll.scroll_vertical = 0
@@ -149,6 +175,7 @@ func _build_home() -> void:
 	plate.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	plate.custom_minimum_size = Vector2(600, 0)
 	_home.add_child(plate)
+	_plate = plate
 	var tv := VBoxContainer.new()
 	tv.add_theme_constant_override("separation", 0)
 	plate.add_child(tv)
@@ -162,8 +189,13 @@ func _build_home() -> void:
 	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	logo.custom_minimum_size = Vector2(76, 76)
 	head.add_child(logo)
+	_logo = logo
 	var t := UiKit.label(head, 80, GOLD)
 	t.text = "Cırtdan"
+	_title_fx = ShaderMaterial.new()
+	_title_fx.shader = _shine_shader()
+	t.material = _title_fx
+	t.resized.connect(func() -> void: _title_fx.set_shader_parameter("width", t.size.x))
 	var t2 := UiKit.label(tv, 34, CREAM)
 	t2.text = "Köhnə Bakıda Qaçış"
 	t2.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -171,9 +203,28 @@ func _build_home() -> void:
 	rule.color = Color(GOLD_BTN, 0.7)
 	rule.custom_minimum_size = Vector2(0, 3)
 	tv.add_child(rule)
-	_home_info = UiKit.label(tv, 26, CREAM)
-	_home_info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_home_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	# the player's numbers as chips: the record and league, the city; under them the day's word
+	var chips := HFlowContainer.new()
+	chips.alignment = FlowContainer.ALIGNMENT_CENTER
+	chips.add_theme_constant_override("h_separation", 10)
+	chips.add_theme_constant_override("v_separation", 4)
+	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tv.add_child(_spacer(6))
+	tv.add_child(chips)
+	_record = _chip(chips, "cup")
+	_city = _chip(chips, "tower")
+	var wr := HBoxContainer.new()
+	wr.alignment = BoxContainer.ALIGNMENT_CENTER
+	wr.add_theme_constant_override("separation", 8)
+	wr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tv.add_child(_spacer(4))
+	tv.add_child(wr)
+	var wl := UiKit.label(wr, 22, CREAM)
+	wl.text = "Günün sözü"
+	_word_tiles = HBoxContainer.new()
+	_word_tiles.add_theme_constant_override("separation", 3)
+	_word_tiles.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wr.add_child(_word_tiles)
 	# the shop buttons, left and right of Cırtdan
 	var mid := HBoxContainer.new()
 	mid.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -193,12 +244,18 @@ func _build_home() -> void:
 			b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			b.add_theme_constant_override("icon_max_width", 60)
 			b.add_theme_constant_override("h_separation", 2)
-			b.custom_minimum_size = Vector2(204, 188)
+			b.custom_minimum_size = Vector2(204, 180)
 			b.pressed.connect(open.bind(k))
+			_side_btns.append([b, -1 if side == 0 else 1])
+			if k == "missions":
+				_badge = _make_badge(b)
 		if side == 0:
-			var gap := Control.new() # Cırtdan stands here
+			var gap := Control.new() # Cırtdan stands here; a tap on him makes him hop
 			gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			gap.mouse_filter = Control.MOUSE_FILTER_STOP
+			gap.gui_input.connect(func(e: InputEvent) -> void:
+				if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+					poke.emit())
 			mid.add_child(gap)
 	# Oyna: the one primary action (Turquoise with an Antique Gold rim, art bible §4)
 	var go := UiKit.button(_home, "Oyna!", TURQUOISE, 64)
@@ -219,6 +276,7 @@ func _build_home() -> void:
 	go.custom_minimum_size = Vector2(460, 136)
 	go.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	go.pressed.connect(func() -> void: play.emit())
+	_go = go
 	# the controls hint, on a dark plate so it reads over the street
 	var hp := PanelContainer.new()
 	var hsb := UiKit.box(Color(INK, 0.78), 18, 12)
@@ -228,6 +286,7 @@ func _build_home() -> void:
 	hp.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_home.add_child(hp)
+	_hint_plate = hp
 	var hint := UiKit.label(hp, 26, CREAM)
 	hint.set_meta("lines", ["Sürüşdür: ← → zolaq, ↑ tullan, ↓ sürüş", "İki dəfə toxun: uçan xalça"])
 	_hint = hint
@@ -241,8 +300,11 @@ func _build_home() -> void:
 	st.autowrap_mode = TextServer.AUTOWRAP_OFF # one line; the button grows for long names
 	st.custom_minimum_size = Vector2(200, 96)
 	st.position = Vector2(24, 16)
+	_settings_btn = st
 	_home.visibility_changed.connect(func() -> void: st.visible = _home.visible)
 	st.pressed.connect(open.bind("settings"))
+	for c: Control in [plate, logo, go, st]:
+		c.resized.connect(func() -> void: c.pivot_offset = c.size / 2.0)
 
 
 ## A secondary button: a plain Madder plate with a thin Antique Gold line (art bible §7), cream text,
@@ -255,6 +317,186 @@ func _home_btn(parent: Control, t: String, size: int, icon := "") -> Button:
 		b.icon = Kit.texture("icon_" + icon)
 		b.expand_icon = false
 	return b
+
+
+## An empty strip h px tall (breathing room in a box).
+func _spacer(h: int) -> Control:
+	var c := Control.new()
+	c.custom_minimum_size = Vector2(0, h)
+	c.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return c
+
+
+## A small dark pill with a picture and a text (the home numbers); returns its label.
+func _chip(parent: Control, icon: String) -> Label:
+	var p := PanelContainer.new()
+	var sb := UiKit.box(Color(INK, 0.62), 16, 4)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 14
+	sb.border_color = Color(GOLD_BTN, 0.5)
+	sb.set_border_width_all(1)
+	p.add_theme_stylebox_override("panel", sb)
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(p)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 6)
+	p.add_child(h)
+	UiKit.icon(h, icon, 30)
+	return UiKit.label(h, 22, CREAM)
+
+
+## The round count on the Tapşırıqlar button's corner (Turquoise; Antique Gold when all three are done).
+func _make_badge(b: Button) -> Label:
+	var p := PanelContainer.new()
+	var sb := UiKit.box(Color.WHITE, 16, 2)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
+	sb.border_color = INK
+	sb.set_border_width_all(2)
+	p.add_theme_stylebox_override("panel", sb)
+	p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(p)
+	p.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT, Control.PRESET_MODE_MINSIZE, 6)
+	p.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	var l := UiKit.label(p, 20, Color.WHITE)
+	l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+	return l
+
+
+## The day's word as letter tiles: the letters already found are gold, the rest are empty plates.
+func _fill_word() -> void:
+	var w := prog.day_word()
+	var word: String = w["word"]
+	if _word_tiles.get_meta("shown", "") == "%s%d" % [word, w["got"]]:
+		return
+	_word_tiles.set_meta("shown", "%s%d" % [word, w["got"]])
+	for c in _word_tiles.get_children():
+		c.queue_free()
+	for i in word.length():
+		var got: bool = i < int(w["got"])
+		var p := PanelContainer.new()
+		var sb := UiKit.box(Color(GOLD_BTN, 0.95) if got else Color(INK, 0.55), 6, 0)
+		sb.border_color = Color(GOLD_BTN, 0.8)
+		sb.set_border_width_all(2)
+		p.add_theme_stylebox_override("panel", sb)
+		p.custom_minimum_size = Vector2(30, 36)
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_word_tiles.add_child(p)
+		var l := UiKit.label(p, 22, Color.WHITE if got else Color(CREAM, 0.75))
+		l.text = word[i]
+		l.auto_translate_mode = Node.AUTO_TRANSLATE_MODE_DISABLED
+		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+
+
+## The title's shine: a soft light band that crosses the bright letters (not their dark outline).
+## sweep runs 0..1 across the label; outside that the shader draws the label as it is.
+func _shine_shader() -> Shader:
+	var sh := Shader.new()
+	sh.code = """shader_type canvas_item;
+uniform float sweep = -1.0;
+uniform float width = 300.0;
+varying vec2 lp;
+void vertex() { lp = VERTEX; }
+void fragment() {
+	float p = mix(-120.0, width + 120.0, sweep);
+	float band = 1.0 - smoothstep(0.0, 34.0, abs(lp.x + lp.y * 0.45 - p));
+	float bright = smoothstep(0.3, 0.5, dot(COLOR.rgb, vec3(0.3, 0.59, 0.11)));
+	COLOR.rgb = mix(COLOR.rgb, vec3(1.0), band * bright);
+}
+"""
+	return sh
+
+
+## Gold motes rising slowly over the street (home only; a few, soft, never over the buttons' text).
+func _make_motes() -> CPUParticles2D:
+	var m := CPUParticles2D.new()
+	var tex := GradientTexture2D.new()
+	tex.width = 32
+	tex.height = 32
+	tex.fill = GradientTexture2D.FILL_RADIAL
+	tex.fill_from = Vector2(0.5, 0.5)
+	tex.fill_to = Vector2(0.5, 0.0)
+	var g := Gradient.new()
+	g.set_color(0, Color(1, 1, 1, 1))
+	g.set_color(1, Color(1, 1, 1, 0))
+	tex.gradient = g
+	m.texture = tex
+	m.amount = 24
+	m.lifetime = 10.0
+	m.preprocess = 10.0
+	m.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	m.direction = Vector2(0, -1)
+	m.spread = 25.0
+	m.gravity = Vector2.ZERO
+	m.initial_velocity_min = 12.0
+	m.initial_velocity_max = 28.0
+	m.angular_velocity_min = -20.0
+	m.angular_velocity_max = 20.0
+	m.scale_amount_min = 0.4
+	m.scale_amount_max = 0.9
+	var ramp := Gradient.new()
+	ramp.set_color(0, Color(GOLD, 0.0))
+	ramp.set_color(1, Color(GOLD, 0.0))
+	ramp.add_point(0.2, Color(GOLD, 0.75))
+	ramp.add_point(0.8, Color(CREAM, 0.6))
+	m.color_ramp = ramp
+	m.material = CanvasItemMaterial.new()
+	(m.material as CanvasItemMaterial).blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	return m
+
+
+func _place_motes() -> void:
+	_motes.position = size / 2.0
+	_motes.emission_rect_extents = size / 2.0
+
+
+## Home comes in piece by piece (about 0.8 s, easing out, nothing bigger than a short slide): the
+## title plate pops, the shop buttons slide in from their sides, Oyna pops last and then breathes gently.
+func _enter_home() -> void:
+	if _enter != null:
+		_enter.kill()
+	if _pulse != null:
+		_pulse.kill()
+	var all: Array = [_plate, _go, _hint_plate, _settings_btn]
+	for p in _side_btns:
+		all.append(p[0])
+	for c: Control in all:
+		c.modulate.a = 0.0
+	await get_tree().process_frame # the containers place everything first; the slides start from there
+	if not is_inside_tree():
+		return
+	_enter = create_tween().set_parallel().set_ease(Tween.EASE_OUT)
+	_enter.tween_property(_plate, "modulate:a", 1.0, 0.3)
+	_enter.tween_property(_plate, "scale", Vector2.ONE, 0.45).from(Vector2(0.92, 0.92)).set_trans(Tween.TRANS_BACK)
+	_enter.tween_property(_settings_btn, "modulate:a", 1.0, 0.3).set_delay(0.1)
+	for n in _side_btns.size():
+		var p: Array = _side_btns[n]
+		var b: Control = p[0]
+		var d := 0.12 + 0.08 * (n % 3) # top to bottom, both columns together
+		_enter.tween_property(b, "modulate:a", 1.0, 0.25).set_delay(d)
+		_enter.tween_property(b, "position:x", b.position.x, 0.4).from(b.position.x + 70.0 * p[1]) \
+			.set_delay(d).set_trans(Tween.TRANS_CUBIC)
+	_enter.tween_property(_go, "modulate:a", 1.0, 0.2).set_delay(0.4)
+	_enter.tween_property(_go, "scale", Vector2.ONE, 0.45).from(Vector2(0.7, 0.7)).set_delay(0.4).set_trans(Tween.TRANS_BACK)
+	_enter.tween_property(_hint_plate, "modulate:a", 1.0, 0.4).set_delay(0.6)
+	_enter.chain().tween_callback(_breathe)
+	if _loops.is_empty(): # the slow loops run for ever (cheap: two properties)
+		var sh := create_tween().set_loops()
+		sh.tween_interval(3.5)
+		sh.tween_method(func(v: float) -> void: _title_fx.set_shader_parameter("sweep", v), 0.0, 1.0, 1.1) \
+			.set_trans(Tween.TRANS_SINE)
+		var lg := create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		lg.tween_property(_logo, "rotation_degrees", 6.0, 1.6)
+		lg.tween_property(_logo, "rotation_degrees", -6.0, 1.6)
+		_loops = [sh, lg]
+
+
+## Oyna breathes: a slow, small swell, so the eye finds the one primary action.
+func _breathe() -> void:
+	_pulse = create_tween().set_loops().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_pulse.tween_property(_go, "scale", Vector2(1.04, 1.04), 1.1)
+	_pulse.tween_property(_go, "scale", Vector2.ONE, 1.1)
 
 
 ## Dresses a button in one of the menu's looks (art bible §4, §7):
@@ -425,8 +667,16 @@ func _refresh() -> void:
 	for m in prog.missions():
 		if m["done"]:
 			md += 1
-	_home_info.text = tr("Rekord: %d · %s" % [int(prog.save.get_value("best")), prog.league(int(prog.save.get_value("best")))]) \
-		+ "\n" + tr("Tapşırıqlar: %d/3 bitib · vurğu x%d" % [md, int(prog.save.get_value("mmult"))])
+	var best := int(prog.save.get_value("best"))
+	_record.text = "Rekord: %d · %s" % [best, prog.league(best)]
+	var city := String(prog.save.get_value("city"))
+	for c in Catalog.CITIES:
+		if c["id"] == city:
+			_city.text = c["name"]
+	var mult := int(prog.save.get_value("mmult"))
+	_badge.text = "%d/3" % md + (" · x%d" % mult if mult > 1 else "")
+	_badge.get_parent().self_modulate = Color(GOLD_BTN) if md >= 3 else Color(TURQUOISE)
+	_fill_word()
 	_hint.text = "\n".join((_hint.get_meta("lines") as Array).map(func(x): return tr(x)))
 	if screen == "home":
 		return
