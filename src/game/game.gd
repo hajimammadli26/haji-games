@@ -21,8 +21,8 @@
 extends Node3D
 
 const TUNING_PATH := "res://src/data/tuning.tres"
-const GLB_CIRTDAN := false ## pilot: draw Cırtdan (no costume) from assets/models/char_cirtdan.glb; dev flag --glb
-const GLB_DIV := false ## pilot: draw the Div from assets/models/char_div.glb (the owner's Tripo3D model); dev flag --glb
+const GLB_CIRTDAN := true ## owner approved 2026-11-26: draw Cırtdan (no costume) from assets/models/char_cirtdan.glb; dev flag --glb
+const GLB_DIV := true ## owner approved 2026-11-26: draw the Div from assets/models/char_div.glb (the owner's Tripo3D model); dev flag --glb
 const POWER_NAMES := {"magnet": "Nənənin sinisi", "shoe": "Sehrli çarıq", "double": "Qoşa təndir: x2",
 	"pole": "Kəndirbaz çubuğu", "simurq": "Simurq quşu", "fly": "Xalça ilə uçuş", "carpet": "Uçan xalça"}
 

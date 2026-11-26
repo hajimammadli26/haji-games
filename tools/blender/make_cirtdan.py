@@ -1,7 +1,7 @@
 """Builds the hero Cirtdan as a rigged, animated glTF (.glb) in Blender, headless and deterministic.
 
 Usage (Blender as a Python module, `pip install bpy`):
-    python tools/blender/make_cirtdan.py --out assets/models/char_cirtdan.glb [--preview DIR]
+    python tools/blender/make_cirtdan.py --out assets/models/char_cirtdan_blender.glb [--preview DIR]
 
 Spec: design/art/art-bible.md section 5 (Character Design Direction) and section 8 (Asset Standards), and the
 procedural figure in src/game/art/characters.gd runner() (proportions and colours are copied from it).
@@ -571,7 +571,7 @@ def render_previews(out_dir, arm, made):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="assets/models/char_cirtdan.glb")
+    ap.add_argument("--out", default="assets/models/char_cirtdan_blender.glb")  # the game draws the Tripo one
     ap.add_argument("--preview", default="")
     a = ap.parse_args(sys.argv[1:])
     bpy.ops.wm.read_factory_settings(use_empty=True)
