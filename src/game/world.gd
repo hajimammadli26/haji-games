@@ -35,6 +35,8 @@ const FAR := {"baku": "#d9a95f", "sheki": "#e9dfcc", "naxcivan": "#b5653a", "qeb
 	"lenkeran": "#4f8a44", "quba": "#5a8a46", "qobustan": "#8a7560"}
 ## The roof band on top of a far block (cities with roofs you see from afar).
 const FAR_ROOF := {"baku": "#b88a4a", "sheki": "#a8432c", "naxcivan": "#8a4e32"}
+## The windows' dark slots on a far block's street face (cities of houses).
+const FAR_WINDOW := {"baku": "#6a4a2a", "sheki": "#5a4a3a", "naxcivan": "#5a3a2a"}
 var _house_next := {-1: -20.0, 1: -20.0}
 var _gates: Array = [] ## [node, s]
 var _gate_next := 300.0
@@ -47,6 +49,21 @@ var _clouds: Array[Node3D] = [] ## the cloud band and its copy, 320 m apart
 var _cloud_mat: StandardMaterial3D ## the clouds' own fogless material, tinted per city
 var _birds: Array[Node3D] = []
 var letter_text: Callable ## returns the next letter of the day's word (for a letter tile's face)
+## Pickups sit on the street, not in the air: every bread draws through one MultiMesh, every pickup's soft blob
+## shadow through another, and power-ups get a turquoise glow ring on the ground (one more): three draws for
+## however many there are (art bible §8: bread draws as one batch).
+const MM_MAX := 160
+const BREAD_HOP := 0.09 ## m a bread rises at the top of its little hop
+const ITEM_HOP := 0.14 ## m any other pickup rises
+const HOP_RATE := 3.4 ## hops' speed (rad/s of the sine)
+const SQUASH := 0.12 ## how much a pickup flattens at the bottom of its hop
+const SHADOW_FADE := 4.5 ## m above its ground at which a pickup's shadow has faded out
+const SHADOW_ALPHA := 0.85
+const TURQ := Color("#19b3a6")
+var _bread_mm: MultiMeshInstance3D
+var _shadow_mm: MultiMeshInstance3D
+var _glow_mm: MultiMeshInstance3D
+var _contact: MeshInstance3D ## soft contact shade along both kerbs, where the walls meet the street
 
 
 func _init(tuning: Tuning) -> void:
@@ -118,7 +135,127 @@ func _ready() -> void:
 	_rain.local_coords = false
 	add_child(_rain)
 	_build_sky()
+	_build_pickup_batches()
+	_contact = MeshInstance3D.new()
+	_contact.mesh = _contact_mesh()
+	_contact.material_override = _shade_mat(false)
+	_contact.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(_contact)
+	_follow.append(_contact)
 	set_city(city)
+
+
+## The kerbs' contact shade: a dark band on each kerb's top darkest at the wall, and a fainter one on the road
+## beside the kerb (vertex alpha fades out away from the wall): one mesh, one draw.
+func _contact_mesh() -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for sd in [-1.0, 1.0]:
+		for band in [[4.3, 3.9, 0.205, 0.6, 0.18], [3.9, 3.3, 0.016, 0.4, 0.0]]: # [x wall side, x far, y, alpha in, out]
+			var x0: float = band[0] * sd
+			var x1: float = band[1] * sd
+			var y: float = band[2]
+			var c0 := Color(1, 1, 1, band[3])
+			var c1 := Color(1, 1, 1, band[4])
+			var q := [[x0, -200.0, c0], [x1, -200.0, c1], [x1, 200.0, c1], [x0, -200.0, c0], [x1, 200.0, c1], [x0, 200.0, c0]]
+			if sd < 0.0:
+				q = [q[0], q[2], q[1], q[3], q[5], q[4]]
+			for v in q:
+				st.set_color(v[2])
+				st.set_normal(Vector3.UP)
+				st.add_vertex(Vector3(v[0], y, v[1]))
+	return st.commit()
+
+
+## An unshaded see-through shade, its colour and alpha from the vertices (or the MultiMesh instances).
+func _shade_mat(textured: bool) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.vertex_color_use_as_albedo = true
+	m.albedo_color = Color(0.23, 0.14, 0.06) # warm Ink-brown shade, never black (art bible §4)
+	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	m.disable_receive_shadows = true
+	if textured:
+		m.albedo_texture = _radial([0.0, 1.0], [Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
+	return m
+
+
+func _radial(offs: Array, cols: Array) -> GradientTexture2D:
+	var gr := Gradient.new()
+	gr.offsets = PackedFloat32Array(offs)
+	gr.colors = PackedColorArray(cols)
+	var g := GradientTexture2D.new()
+	g.fill = GradientTexture2D.FILL_RADIAL
+	g.fill_from = Vector2(0.5, 0.5)
+	g.fill_to = Vector2(1.0, 0.5)
+	g.gradient = gr
+	g.width = 64
+	g.height = 64
+	return g
+
+
+func _mm(mesh: Mesh, material: Material, colors: bool) -> MultiMeshInstance3D:
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.use_colors = colors
+	mm.mesh = mesh
+	mm.instance_count = MM_MAX
+	mm.visible_instance_count = 0
+	var mi := MultiMeshInstance3D.new()
+	mi.multimesh = mm
+	mi.material_override = material
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	mi.custom_aabb = AABB(Vector3(-60, -5, -100000), Vector3(120, 80, 200000)) # it travels with the street
+	add_child(mi)
+	return mi
+
+
+func _build_pickup_batches() -> void:
+	var quad := QuadMesh.new()
+	quad.size = Vector2(2, 2)
+	quad.orientation = PlaneMesh.FACE_Y
+	_shadow_mm = _mm(quad, _shade_mat(true), true)
+	var gm := StandardMaterial3D.new()
+	gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	gm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+	gm.vertex_color_use_as_albedo = true
+	gm.cull_mode = BaseMaterial3D.CULL_DISABLED
+	gm.albedo_texture = _radial([0.0, 0.5, 0.74, 0.86, 1.0], [Color(1, 1, 1, 0), Color(1, 1, 1, 0.12), Color(1, 1, 1, 1),
+		Color(1, 1, 1, 0.35), Color(1, 1, 1, 0)]) # a ring of light round a faint centre
+	_glow_mm = _mm(quad, gm, true)
+
+
+## A bread's drawing joins the bread MultiMesh: its node stays (position, scale and visibility live there, and the
+## game frees it as before) but its mesh is drawn by the batch.
+func _adopt_bread(node: Node3D) -> void:
+	for c in node.get_children():
+		if c is MeshInstance3D:
+			if _bread_mm == null:
+				_bread_mm = _mm((c as MeshInstance3D).mesh, (c as MeshInstance3D).material_override, false)
+			node.remove_child(c)
+			c.queue_free()
+
+
+## Where a pickup's shadow falls: the street (0), a cart roof or ramp under it, or -1 for none (a bread line
+## over a barrier would otherwise throw its shadow on the road far below).
+func _ground_under(sim: RunSim, p: RunSim.Pickup) -> float:
+	var g := 0.0
+	for o in sim.obstacles:
+		if o.cleared or absf(p.x - sim.lane_x(o.lane)) > o.half + 0.2:
+			continue
+		if p.s < o.s0 - 0.3 or p.s > o.s1() + 0.3:
+			continue
+		var top := o.top
+		if o.ramp:
+			top = clampf((p.s - o.s0) / o.length, 0.0, 1.0) * o.top
+		if top > p.y + 0.2:
+			continue # it hangs over the pickup (a carpet): the shadow stays on the road
+		if not (o.ramp or o.roof):
+			return -1.0
+		g = maxf(g, top)
+	return g
 
 
 func _build_sky() -> void:
@@ -227,6 +364,10 @@ func update(sim: RunSim, s: float, t: float) -> void:
 		o.node.visible = not o.cleared
 		o.node.position = Vector3(sim.lane_x(o.lane), 0, -(o.s0 + o.length * 0.5))
 		_animate_obstacle(o, t)
+	var cam := get_viewport().get_camera_3d()
+	var nb := 0
+	var ns := 0
+	var ng := 0
 	for p in sim.pickups:
 		if p.node == null:
 			var text := ""
@@ -235,17 +376,54 @@ func update(sim: RunSim, s: float, t: float) -> void:
 			p.node = Props.pickup(p.kind, text, city)
 			_ranges(p.node, 0.0, PICKUP_RANGE)
 			p.node.set_meta("base", p.node.scale)
+			if p.kind == "bread":
+				_adopt_bread(p.node)
 			add_child(p.node)
 		if p.taken:
 			p.node.scale = p.node.scale * 0.8
 			p.node.position.y += 0.1
 			p.node.visible = p.node.scale.x > 0.05
-		else:
-			var bob := 0.0 if p.kind == "bread" else sin(t * 3.0 + p.s) * 0.12
-			p.node.position = Vector3(p.x, p.y + bob, -p.s)
+		else: # a little hop, the line rippling along, flattening a touch where it lands
+			var hop := absf(sin(t * HOP_RATE + p.s * 0.45))
+			var squash := pow(1.0 - hop, 6.0)
+			p.node.position = Vector3(p.x, p.y + hop * (BREAD_HOP if p.kind == "bread" else ITEM_HOP), -p.s)
 			p.node.rotation.y = t * 3.0 + p.s
+			var sc: Vector3 = p.node.get_meta("base")
 			if p.kind in POWER_KINDS: # power-ups breathe so they read as magic
-				p.node.scale = p.node.get_meta("base") * (1.0 + sin(t * 5.0 + p.s) * POWER_PULSE)
+				sc *= 1.0 + sin(t * 5.0 + p.s) * POWER_PULSE
+			p.node.scale = sc * Vector3(1.0 + squash * SQUASH * 0.6, 1.0 - squash * SQUASH, 1.0 + squash * SQUASH * 0.6)
+		var near := p.node.visible and cam != null and cam.global_position.distance_to(p.node.global_position) < PICKUP_RANGE
+		if not near:
+			continue
+		if p.kind == "bread" and _bread_mm != null and nb < MM_MAX:
+			_bread_mm.multimesh.set_instance_transform(nb, p.node.transform)
+			nb += 1
+		if p.taken or ns >= MM_MAX:
+			continue
+		var gy := _ground_under(sim, p)
+		var hgt := p.node.position.y - gy
+		if gy < 0.0 or hgt > SHADOW_FADE:
+			continue
+		var k := 1.0 - hgt / SHADOW_FADE # nearer the ground: a tighter, darker shadow
+		var land := pow(1.0 - absf(sin(t * HOP_RATE + p.s * 0.45)), 3.0)
+		var power: bool = p.kind in POWER_KINDS
+		var r := (0.55 if power else 0.4) * (1.15 - 0.3 * k) * (1.0 + land * 0.1)
+		var at := Vector3(p.x, gy + 0.03, -p.s)
+		_shadow_mm.multimesh.set_instance_transform(ns, Transform3D(Basis.from_scale(Vector3(r, 1, r)), at))
+		_shadow_mm.multimesh.set_instance_color(ns, Color(1, 1, 1, SHADOW_ALPHA * k * (0.85 + land * 0.15)))
+		ns += 1
+		if power and ng < MM_MAX: # the power-up's glow ring, breathing with it
+			var gr := 0.95 * (1.0 + sin(t * 5.0 + p.s) * 0.08)
+			_glow_mm.multimesh.set_instance_transform(ng, Transform3D(Basis.from_scale(Vector3(gr, 1, gr)), at + Vector3(0, 0.01, 0)))
+			_glow_mm.multimesh.set_instance_color(ng, Color(TURQ, 0.55 + sin(t * 5.0 + p.s) * 0.2))
+			ng += 1
+	if _bread_mm != null:
+		_bread_mm.multimesh.visible_instance_count = nb
+		_bread_mm.visible = nb > 0
+	_shadow_mm.multimesh.visible_instance_count = ns
+	_shadow_mm.visible = ns > 0
+	_glow_mm.multimesh.visible_instance_count = ng
+	_glow_mm.visible = ng > 0
 
 
 func _animate_obstacle(o: RunSim.Obstacle, t: float) -> void:
@@ -290,7 +468,9 @@ func _ranges(n: Node, begin: float, end: float) -> void:
 		(n as GeometryInstance3D).visibility_range_end = end
 
 
-## One simple block standing in for a house far away: its size, one flat city colour.
+## One simple block standing in for a house far away: its size and flat city colour, with the near houses'
+## silhouette kept (Baku's merlons, Şəki's pitched red roof, Naxçıvan's turquoise band) and their windows as dark
+## slots on the street face. All plain colours: merged per chunk they stay one draw.
 func _far_block(house: Node3D, far_node: Node3D) -> void:
 	var box := AABB()
 	var first := true
@@ -303,15 +483,39 @@ func _far_block(house: Node3D, far_node: Node3D) -> void:
 		return
 	var size := box.size
 	size.y = minf(size.y, 10.0)
-	var mi := Kit.part(far_node, Kit.box(size.x, size.y, size.z), Kit.mat(FAR.get(city, "#d9a95f")),
+	var side := -1.0 if house.position.x < 0.0 else 1.0
+	var mi := _far_part(far_node, Kit.box(size.x, size.y, size.z), FAR.get(city, "#d9a95f"),
 		house.position + box.position + Vector3(box.size.x, size.y, box.size.z) * 0.5)
+	var c := mi.position
+	var top := c.y + size.y * 0.5
+	var face := c.x - side * size.x * 0.5 # the street-facing side
+	if FAR_WINDOW.has(city):
+		var n := maxi(1, int(size.z / 2.4))
+		for f in int((size.y - 0.8) / 3.0):
+			for i in n:
+				var z := c.z - size.z * 0.5 + (i + 0.5) * size.z / n
+				_far_part(far_node, Kit.box(0.08, 1.5, 1.0), FAR_WINDOW[city], Vector3(face - side * 0.03, 1.9 + f * 3.0, z))
+	match city:
+		"baku":
+			_far_part(far_node, Kit.box(size.x + 0.3, 0.45, size.z + 0.2), FAR_ROOF[city], Vector3(c.x, top + 0.22, c.z))
+			var m := 0.5
+			while m < size.z: # the parapet's merlons along the street edge
+				_far_part(far_node, Kit.box(0.5, 0.6, 0.55), FAR_ROOF[city], Vector3(face + side * 0.3, top + 0.7, c.z - size.z * 0.5 + m))
+				m += 1.1
+		"sheki":
+			_far_part(far_node, Kit.prism(size.x + 1.0, 2.0, size.z + 0.8), FAR_ROOF[city], Vector3(c.x, top + 1.0, c.z))
+		_:
+			if FAR_ROOF.has(city):
+				_far_part(far_node, Kit.box(size.x + 0.3, 0.7, size.z + 0.3), FAR_ROOF[city], Vector3(c.x, top + 0.35, c.z))
+			if city == "naxcivan":
+				_far_part(far_node, Kit.box(0.1, 0.45, size.z), "#4f9a94", Vector3(face - side * 0.05, top - 0.5, c.z))
+
+
+func _far_part(far_node: Node3D, mesh: Mesh, col: String, pos: Vector3) -> MeshInstance3D:
+	var mi := Kit.part(far_node, mesh, Kit.mat(col), pos)
 	mi.set_meta("no_ink", true)
 	_ranges(mi, NEAR - 4.0, 0.0)
-	if FAR_ROOF.has(city):
-		var top := Kit.part(far_node, Kit.box(size.x + 0.3, 0.7, size.z + 0.3), Kit.mat(FAR_ROOF[city]),
-			mi.position + Vector3(0, size.y * 0.5 + 0.35, 0))
-		top.set_meta("no_ink", true)
-		_ranges(top, NEAR - 4.0, 0.0)
+	return mi
 
 
 func _stream(s: float) -> void:

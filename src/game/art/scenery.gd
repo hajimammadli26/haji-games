@@ -64,41 +64,132 @@ static func _baku(side: int, rng: RandomNumberGenerator) -> Array:
 	var h := 5.0 + rng.randf() * 5.0
 	var w := 5.0 + rng.randf() * 3.0
 	var d := 5.0
+	var sx := -side # toward the street
+	var stone: String = ["#e6c48a", "#dcb77a", "#ecd09a"][rng.randi() % 3] # trim stone, a little different per house
 	_b(g, Kit.tex("wall", Vector2(d / 4.0, h / 4.0) * 1.0), d, h, w, Vector3(side * d / 2.0, h / 2.0, 0))
+	# the cornice: a pale moulding with dentils under a projecting slab, then the parapet's merlons
+	_b(g, stone, 0.3, 0.18, w + 0.1, Vector3(sx * 0.1, h - 0.12, 0))
+	var k := -w / 2.0 + 0.3
+	while k < w / 2.0 - 0.2:
+		_b(g, stone, 0.16, 0.14, 0.16, Vector3(sx * 0.07, h - 0.3, k))
+		k += 0.55
 	_b(g, "#c4934f", d + 0.3, 0.4, w + 0.2, Vector3(side * d / 2.0, h + 0.2, 0))
 	var m := 0.5 # a flat roof edged with little merlons, like İçərişəhər's parapets
 	while m < w:
 		_b(g, "#c99a58", 0.45, 0.55, 0.5, Vector3(-side * 0.05, h + 0.65, -w / 2.0 + m))
 		m += 1.1
-	_b(g, "#b07a3a", 0.3, 0.25, w + 0.2, Vector3(-side * 0.1, 0.12, 0)) # a stone plinth
+	for zc in [-1.0, 1.0]: # quoins: pale corner stones, long and short in turn
+		var y := 0.55
+		var i := 0
+		while y < h - 0.4:
+			var qw := 0.7 if i % 2 == 0 else 0.42
+			_b(g, stone, 0.06, 0.46, qw, Vector3(sx * 0.03, y, zc * (w / 2.0 - qw / 2.0)))
+			y += 0.55
+			i += 1
+	_b(g, "#9a6a34", 0.3, 0.3, w + 0.2, Vector3(-side * 0.1, 0.15, 0)) # a stone plinth, darker: the wall's foot in shade
+	_b(g, "#7e5428", 0.32, 0.06, w + 0.2, Vector3(-side * 0.1, 0.02, 0))
 	var face := -side * 0.02
 	var floors := maxi(1, int(h / 3.0))
+	var door_i := -1
+	var n0 := maxi(1, int(w / 2.4))
+	if rng.randf() < 0.75:
+		door_i = rng.randi() % n0
 	for f in floors:
 		var y := 1.6 + f * 3.0
+		if f >= 1: # a string course between the floors
+			_b(g, stone, 0.12, 0.16, w, Vector3(sx * 0.06, y - 1.5, 0))
 		var n := maxi(1, int(w / 2.4))
 		for i in n:
 			var z := -w / 2.0 + (i + 0.5) * (w / n)
+			if f == 0 and i == door_i:
+				_door(g, side, z, rng)
+				continue
 			_face(g, side, Kit.tex("shebeke"), 1.2, 1.8, Vector3(face, y + 0.3, z))
-			_b(g, "#8a5a2b", 0.12, 0.1, 1.4, Vector3(-side * 0.06, y - 0.65, z)) # sill
-		if f >= 1 and rng.randf() < 0.6: # a wooden eyvan, sometimes with a carpet over its rail
-			var bx := -side * 0.7
-			_b(g, Kit.tex("wood"), 1.4, 0.15, w * 0.8, Vector3(bx, y - 0.9, 0))
-			_b(g, "#5e3618", 0.1, 0.7, w * 0.8, Vector3(bx * 2.0, y - 0.5, 0))
-			for k in 3: # brackets under it
-				_b(g, "#5e3618", 1.2, 0.12, 0.12, Vector3(bx, y - 1.1, -w * 0.3 + k * w * 0.3), Vector3(0, 0, side * 0.5))
-			if rng.randf() < 0.6:
-				var c := _face(g, side, Kit.tex(Props.CARPETS[rng.randi() % 3], Vector2.ONE, Color.WHITE, true), 1.6, 2.2, Vector3(bx * 2.0 - side * 0.06, y - 1.4, 0))
-				c.set_meta("no_ink", true)
-	if rng.randf() < 0.5: # a shop door with an arch on the ground floor
-		var dz := (rng.randf() - 0.5) * (w - 2.0)
-		_face(g, side, Kit.mat("#4a2a14"), 1.4, 2.2, Vector3(face - side * 0.01, 1.1, dz))
-		_c(g, "#4a2a14", 0.7, 0.02, Vector3(face - side * 0.01, 2.2, dz), Vector3(0, 0, PI / 2))
-		if rng.randf() < 0.5: # a copper pot hanging by the door
-			_c(g, "#c46a2c", 0.16, 0.22, Vector3(-side * 0.35, 2.5, dz + 1.0), Vector3.ZERO, 0.2)
+			for e in [-1.0, 1.0]: # the stone frame
+				_b(g, stone, 0.1, 2.0, 0.14, Vector3(sx * 0.05, y + 0.3, z + e * 0.67))
+			_b(g, stone, 0.16, 0.24, 1.6, Vector3(sx * 0.08, y + 1.32, z)) # the lintel and its keystone
+			_b(g, "#d8b06a", 0.2, 0.34, 0.24, Vector3(sx * 0.1, y + 1.36, z))
+			_b(g, stone, 0.2, 0.1, 1.5, Vector3(sx * 0.1, y - 0.66, z)) # the sill
+		if f >= 1 and rng.randf() < 0.65:
+			if rng.randf() < 0.55:
+				_closed_eyvan(g, side, y, w, rng)
+			else: # an open wooden eyvan, sometimes with a carpet over its rail
+				var bx := -side * 0.7
+				_b(g, Kit.tex("wood"), 1.4, 0.15, w * 0.8, Vector3(bx, y - 0.9, 0))
+				_b(g, "#5e3618", 0.1, 0.7, w * 0.8, Vector3(bx * 2.0, y - 0.5, 0))
+				_b(g, "#5e3618", 0.12, 0.08, w * 0.8, Vector3(bx * 2.0, y - 0.12, 0)) # the handrail
+				for q in 3: # brackets under it
+					_b(g, "#5e3618", 1.2, 0.12, 0.12, Vector3(bx, y - 1.1, -w * 0.3 + q * w * 0.3), Vector3(0, 0, side * 0.5))
+				if rng.randf() < 0.6:
+					var c := _face(g, side, Kit.tex(Props.CARPETS[rng.randi() % 3], Vector2.ONE, Color.WHITE, true), 1.6, 2.2, Vector3(bx * 2.0 - side * 0.06, y - 1.4, 0))
+					c.set_meta("no_ink", true)
+	if rng.randf() < 0.3 and floors >= 2: # washing on a line between two brackets
+		var ly := 1.6 + 3.0 + 1.6
+		_b(g, "#3b2414", 0.02, 0.02, w * 0.7, Vector3(sx * 0.45, ly, 0))
+		for q in 4:
+			var cl: String = ["#e9e2cf", "#7fa6c8", "#d8b46a", "#b86a5a"][(q + rng.randi()) % 4]
+			_b(g, cl, 0.03, 0.5 + rng.randf() * 0.3, 0.45, Vector3(sx * 0.45, ly - 0.35, -w * 0.3 + q * w * 0.2))
 	if rng.randf() < 0.18:
 		_e(g, "#c7a06c", 1.6, 1.3, 1.6, Vector3(side * d / 2.0, h + 0.3, 0))
+	elif rng.randf() < 0.35: # a little room on the roof, set back
+		_b(g, "#d2a462", 2.2, 1.8, 2.4, Vector3(side * 3.2, h + 0.9, (rng.randf() - 0.5) * (w - 3.0)))
 	_details(g, side, w, rng)
+	_baku_props(g, side, w, rng)
 	return [g, w]
+
+
+## A door on the ground floor at z: a stone arch round two wooden leaves, a step, sometimes a pot by it.
+static func _door(g: Node3D, side: int, z: float, rng: RandomNumberGenerator) -> void:
+	var sx := -side
+	var wood: String = ["#4a2a14", "#5e3418", "#3e3a30"][rng.randi() % 3]
+	_face(g, side, Kit.mat(wood), 1.3, 2.2, Vector3(sx * 0.03, 1.1, z))
+	_c(g, wood, 0.65, 0.02, Vector3(sx * 0.03, 2.2, z), Vector3(0, 0, PI / 2))
+	_b(g, "#2a1a0e", 0.05, 2.2, 0.05, Vector3(sx * 0.05, 1.1, z)) # the leaves' meeting line
+	for e in [-1.0, 1.0]:
+		_b(g, "#e6c48a", 0.14, 2.3, 0.2, Vector3(sx * 0.07, 1.15, z + e * 0.75))
+		_e(g, "#c89b45", 0.04, 0.04, 0.04, Vector3(sx * 0.07, 1.15, z + e * 0.18)) # knockers
+	_c(g, "#e6c48a", 0.86, 0.02, Vector3(sx * 0.015, 2.2, z), Vector3(0, 0, PI / 2)) # the arch's stone ring, behind the door
+	_b(g, "#b89a6a", 0.6, 0.16, 1.8, Vector3(sx * 0.3, 0.08, z)) # the step
+	if rng.randf() < 0.5: # a copper pot hanging by the door
+		_c(g, "#c46a2c", 0.16, 0.22, Vector3(sx * 0.35, 2.5, z + 1.0), Vector3.ZERO, 0.2)
+
+
+## Baku's closed wooden balcony (şüşəbənd): a wooden box on brackets, şəbəkə glazing along its front.
+static func _closed_eyvan(g: Node3D, side: int, y: float, w: float, rng: RandomNumberGenerator) -> void:
+	var sx := -side
+	var bw := minf(w * 0.7, 3.6)
+	var bz := (rng.randf() - 0.5) * (w - bw - 0.6)
+	_b(g, Kit.tex("wood"), 0.9, 2.2, bw, Vector3(sx * 0.45, y + 0.1, bz))
+	_face(g, side, Kit.tex("shebeke"), bw - 0.25, 1.15, Vector3(sx * 0.915, y + 0.45, bz))
+	var mz := -bw / 2.0 + 0.12
+	while mz <= bw / 2.0 - 0.1: # the mullions
+		_b(g, "#4a2a14", 0.06, 1.3, 0.08, Vector3(sx * 0.93, y + 0.45, bz + mz))
+		mz += (bw - 0.24) / 3.0
+	_b(g, "#5e3618", 0.08, 0.1, bw, Vector3(sx * 0.93, y - 0.18, bz)) # rails at the glazing's foot
+	_b(g, "#8a5a2b", 1.15, 0.14, bw + 0.25, Vector3(sx * 0.55, y + 1.25, bz)) # its little roof
+	_b(g, "#6b4220", 1.05, 0.14, bw + 0.15, Vector3(sx * 0.5, y - 1.0, bz)) # and floor
+	for q in [-1.0, 1.0]: # carved brackets under it
+		_b(g, "#5e3618", 1.0, 0.12, 0.12, Vector3(sx * 0.42, y - 1.3, bz + q * (bw / 2.0 - 0.25)), Vector3(0, 0, side * 0.55))
+
+
+## Baku's doorstep life: a wooden bench, a copper jug, a tea table with its samovar now and then.
+static func _baku_props(g: Node3D, side: int, w: float, rng: RandomNumberGenerator) -> void:
+	var sx := -side
+	if rng.randf() < 0.3:
+		var z := (rng.randf() - 0.5) * (w - 2.0)
+		_b(g, "#6b4220", 0.4, 0.06, 1.4, Vector3(sx * 0.35, 0.45, z))
+		for e in [-0.6, 0.6]:
+			_b(g, "#4a2a14", 0.36, 0.45, 0.06, Vector3(sx * 0.35, 0.22, z + e))
+	if rng.randf() < 0.3:
+		var z := (rng.randf() - 0.5) * (w - 1.0)
+		_c(g, "#b8642a", 0.16, 0.36, Vector3(sx * 0.3, 0.18, z), Vector3.ZERO, 0.1)
+		_c(g, "#b8642a", 0.06, 0.14, Vector3(sx * 0.3, 0.43, z), Vector3.ZERO, 0.08)
+	if rng.randf() < 0.12: # a samovar on a low table
+		var z := (rng.randf() - 0.5) * (w - 1.5)
+		_c(g, "#6b4220", 0.4, 0.06, Vector3(sx * 0.55, 0.42, z))
+		_c(g, "#4a2a14", 0.05, 0.4, Vector3(sx * 0.55, 0.2, z))
+		_c(g, "#c88a3a", 0.13, 0.3, Vector3(sx * 0.55, 0.6, z), Vector3.ZERO, 0.16)
+		_c(g, "#8a5a2b", 0.05, 0.1, Vector3(sx * 0.55, 0.8, z))
 
 
 static func _sheki(side: int, rng: RandomNumberGenerator) -> Array:
@@ -455,9 +546,9 @@ static func backdrop(city: String) -> Node3D:
 			_c(g, "#b88a4a", 2.6, 1.2, mn + Vector3(12, 28, 4))
 			_c(g, "#c99a58", 1.4, 4, mn + Vector3(12, 36, 4), Vector3.ZERO, 0.0)
 			var t := tower()
-			t.position = Vector3(-3, 0, 12) # right at the street's end, rising over the roofs
-			t.rotation.y = PI * 0.65 # the buttress shows at the side
-			t.scale = Vector3.ONE * 1.7
+			t.position = Vector3(-4, 0, 18) # right at the street's end, behind the qala wall, rising over the roofs
+			t.rotation.y = PI * 0.65 # the windows and door face the street; the buttress shows at the side
+			t.scale = Vector3.ONE * 1.9
 			g.add_child(t)
 	Kit.merge(g) # plain pieces become one vertex-coloured mesh (the waterfall keeps its own, it scrolls)
 	_no_fog(g) # far away: no fog, so the skyline shows through the haze
@@ -480,14 +571,134 @@ static func _no_fog(n: Node) -> void:
 		n.material_override = _fogless[src]
 
 
-## Qız Qalası: the Maiden Tower with its buttress.
+const TOWER_UV := 0.07 ## masonry texture repeats per unit: one 16-course repeat every ~14 units
+const TOWER_H := 30.0 ## the tower's height (the texture's v counts down from here, so courses line up)
+
+
+static func _qq_r(y: float) -> float: # the tower's radius at a height: it tapers a little
+	return 8.0 - y * 0.02
+
+
+## Qız Qalası: the Maiden Tower. A slightly tapering round tower of grey-gold limestone courses (texture), three
+## projecting stone belts, its long buttress with a rounded nose, small slit windows with pale lintels and sills,
+## the arched door, a corbelled parapet with merlons, on a stepped rock plinth. The runner faces −Z; the side
+## with the windows and the door faces local angle ~3.3 rad (backdrop() turns it toward the street).
+## Textured parts share one material, the rest are plain colours: merged, the tower is two draws.
 static func tower() -> Node3D:
 	var g := Node3D.new()
-	var t := Kit.tex("tower", Vector2(3, 1))
-	_c(g, t, 8, 30, Vector3(0, 15, 0), Vector3.ZERO, 7.0)
-	_b(g, Kit.tex("tower", Vector2(1, 1)), 7, 28, 9, Vector3(0, 14, -7.5))
-	_c(g, "#a98351", 7.2, 1.4, Vector3(0, 30.6, 0))
+	var stone := Kit.tex("tower", Vector2.ONE, Color("#e2d6c4")) # toned toward the real limestone's grey
+	var pts := PackedVector2Array([Vector2(_qq_r(0.0), 0.0)])
+	for yb in [7.0, 14.0, 21.0]: # the belts: a course stepping out
+		pts.append_array([Vector2(_qq_r(yb), yb), Vector2(_qq_r(yb) + 0.22, yb + 0.12),
+			Vector2(_qq_r(yb) + 0.22, yb + 0.62), Vector2(_qq_r(yb + 0.75), yb + 0.75)])
+	var rt := _qq_r(28.0)
+	pts.append_array([Vector2(rt, 28.0), Vector2(rt + 0.5, 28.5), Vector2(rt + 0.5, 29.8), # the corbelled parapet
+		Vector2(rt - 0.4, 29.8), Vector2(rt - 0.4, 29.0), Vector2(0.0, 29.0)]) # its inside and the roof
+	Kit.part(g, _lathe_uv(pts, 28, "qq_body"), stone)
+	var nose := PackedVector2Array([Vector2(-3.2, -4.0), Vector2(3.2, -4.0), Vector2(3.2, -10.0)])
+	for i in range(1, 12): # the buttress: a long wall ending in a half round, towards local −z
+		var a := i * PI / 12.0
+		nose.append(Vector2(cos(a) * 3.2, -10.0 - sin(a) * 3.2))
+	nose.append(Vector2(-3.2, -10.0))
+	Kit.part(g, _prism_up(nose, 26.5, "qq_buttress"), stone)
+	for k in 7: # the buttress's own low parapet
+		var a := k * PI / 6.0
+		_b(g, "#c4a271", 0.9, 0.9, 0.6, Vector3(cos(a) * 2.9, 26.9, -10.0 - sin(a) * 2.9), Vector3(0, atan2(cos(a), -sin(a)), 0))
+	_c(g, "#9c8058", 9.4, 1.4, Vector3(0, 0.7, 0)) # the rock plinth, stepped
+	_c(g, "#ab8d62", 8.7, 0.7, Vector3(0, 1.75, 0))
+	_b(g, "#9c8058", 7.6, 1.4, 11.0, Vector3(0, 0.7, -7.5))
+	var wins := [[4.5, 2.7], [8.5, 3.5], [10.5, 2.5], [12.0, 4.0], [16.5, 3.0], [18.5, 3.9], [23.5, 2.6], [25.0, 3.6],
+		[16.0, 1.2], [24.0, 0.4], [10.0, 5.6], [19.0, 6.1]]
+	for wv in wins: # small slit windows, a pale lintel over each and a sill under it
+		var y: float = wv[0]
+		var a: float = wv[1]
+		var dir := Vector3(cos(a), 0, sin(a))
+		var rot := Vector3(0, atan2(dir.x, dir.z), 0)
+		var rr := _qq_r(y)
+		_b(g, "#2e231c", 0.8, 1.6, 0.5, dir * (rr - 0.15) + Vector3(0, y, 0), rot)
+		_b(g, "#dcc596", 1.3, 0.32, 0.5, dir * (rr - 0.1) + Vector3(0, y + 0.96, 0), rot)
+		_b(g, "#b89a6a", 1.1, 0.16, 0.45, dir * (rr - 0.08) + Vector3(0, y - 0.86, 0), rot)
+	for wv in [[6.0, 0.0], [14.5, 0.0], [21.0, -1.6]]: # and on the buttress's nose and side
+		var y: float = wv[0]
+		if wv[1] == 0.0:
+			_b(g, "#2e231c", 0.8, 1.5, 0.4, Vector3(0, y, -13.05))
+			_b(g, "#dcc596", 1.3, 0.3, 0.4, Vector3(0, y + 0.92, -13.02))
+		else:
+			_b(g, "#2e231c", 0.4, 1.5, 0.8, Vector3(-3.15, y, -7.0))
+	var da := 3.3 # the arched door at the foot, on the street side
+	var dd := Vector3(cos(da), 0, sin(da))
+	var drot := Vector3(0, atan2(dd.x, dd.z), 0)
+	_b(g, "#d2b886", 3.0, 4.6, 0.6, dd * (_qq_r(2.0) - 0.2) + Vector3(0, 4.1, 0), drot) # its stone surround
+	_b(g, "#2a1e18", 2.0, 2.8, 0.6, dd * (_qq_r(2.0) - 0.1) + Vector3(0, 3.5, 0), drot)
+	var arch := _c(g, "#2a1e18", 1.0, 0.6, dd * (_qq_r(2.0) - 0.1) + Vector3(0, 4.9, 0), drot + Vector3(PI / 2, 0, 0))
+	for k in 22: # merlons round the parapet
+		var a := k * TAU / 22.0
+		var dir := Vector3(cos(a), 0, sin(a))
+		_b(g, "#c4a271", 1.25, 1.1, 0.7, dir * (rt + 0.2) + Vector3(0, 30.35, 0), Vector3(0, atan2(dir.x, dir.z), 0))
 	return g
+
+
+## A turned surface with world-scaled uvs (u round the circumference, v down from TOWER_H) and smooth normals
+## round it, flat along the profile: the belts and parapet keep their crisp steps.
+static func _lathe_uv(pts: PackedVector2Array, segs: int, key: String) -> Mesh:
+	return Kit.cached(key, func() -> Mesh:
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var reps := maxf(1.0, roundf(TAU * pts[0].x * TOWER_UV))
+		for i in segs:
+			var a0 := i * TAU / segs
+			var a1 := (i + 1) * TAU / segs
+			var u0 := float(i) / segs * reps
+			var u1 := float(i + 1) / segs * reps
+			for j in pts.size() - 1:
+				var p := pts[j]
+				var q := pts[j + 1]
+				var d := q - p
+				var n := Vector2(d.y, -d.x).normalized()
+				var n0 := Vector3(cos(a0) * n.x, n.y, sin(a0) * n.x)
+				var n1 := Vector3(cos(a1) * n.x, n.y, sin(a1) * n.x)
+				var vp := (TOWER_H - p.y) * TOWER_UV
+				var vq := (TOWER_H - q.y) * TOWER_UV
+				Kit._quad(st, [Vector3(cos(a0) * p.x, p.y, sin(a0) * p.x), Vector3(cos(a1) * p.x, p.y, sin(a1) * p.x),
+					Vector3(cos(a1) * q.x, q.y, sin(a1) * q.x), Vector3(cos(a0) * q.x, q.y, sin(a0) * q.x)],
+					[n0, n1, n1, n0], [Vector2(u0, vp), Vector2(u1, vp), Vector2(u1, vq), Vector2(u0, vq)])
+		return st.commit())
+
+
+## A plan outline (x, z) raised h upward, walls and a flat top, uvs scaled like the tower's so courses line up.
+static func _prism_up(poly: PackedVector2Array, h: float, key: String) -> Mesh:
+	return Kit.cached(key, func() -> Mesh:
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var mid := Vector2.ZERO
+		for p in poly:
+			mid += p / poly.size()
+		var u := 0.0
+		var vb := TOWER_H * TOWER_UV
+		var vt := (TOWER_H - h) * TOWER_UV
+		for i in poly.size():
+			var a := poly[i]
+			var b := poly[(i + 1) % poly.size()]
+			var e := b - a
+			var n := Vector3(e.y, 0, -e.x).normalized()
+			var c := (a + b) * 0.5 - mid
+			if n.dot(Vector3(c.x, 0, c.y)) < 0.0:
+				n = -n
+			var u1 := u + e.length() * TOWER_UV
+			Kit._quad(st, [Vector3(a.x, 0, a.y), Vector3(b.x, 0, b.y), Vector3(b.x, h, b.y), Vector3(a.x, h, a.y)],
+				[n, n, n, n], [Vector2(u, vb), Vector2(u1, vb), Vector2(u1, vt), Vector2(u, vt)])
+			u = u1
+		var tri := Geometry2D.triangulate_polygon(poly)
+		for i in range(0, tri.size(), 3):
+			var p0 := Vector3(poly[tri[i]].x, h, poly[tri[i]].y)
+			var p1 := Vector3(poly[tri[i + 1]].x, h, poly[tri[i + 1]].y)
+			var p2 := Vector3(poly[tri[i + 2]].x, h, poly[tri[i + 2]].y)
+			var order := [p0, p1, p2] if (p2 - p0).cross(p1 - p0).dot(Vector3.UP) > 0.0 else [p0, p2, p1]
+			for p in order:
+				st.set_normal(Vector3.UP)
+				st.set_uv(Vector2(p.x, p.z) * TOWER_UV)
+				st.add_vertex(p)
+		return st.commit())
 
 
 ## The qala darvazası: one stone wall with a round-topped passage over all three lanes (and their kerbs).

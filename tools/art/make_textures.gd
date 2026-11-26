@@ -293,11 +293,27 @@ func _bread(g: Node2D) -> void:
 		g.draw_circle(c + Vector2(cos(a), sin(a)) * r, 2, Color("#4a2a0c"))
 
 
-func _tower(g: Node2D) -> void:
-	for y in range(0, 256, 12):
-		g.draw_rect(Rect2(0, y, 128, 12), Color("#bb9058") if (y / 12) % 2 else Color("#d4ad75"))
-	for i in 6:
-		g.draw_rect(Rect2(20 + (i % 3) * 36, 40 + i * 34, 6, 14), Color("#3a2a1e"))
+func _tower(g: Node2D) -> void: # Qız Qalası's grey-gold limestone: 16 courses of hand-cut blocks, tiling
+	_seed = 11
+	g.draw_rect(Rect2(0, 0, 128, 256), Color("#8a7454")) # the mortar
+	for row in 16:
+		var y := row * 16
+		var tall := 14 if row % 3 else 12 # a thinner course now and then, as the real tower has
+		var x := -int(_r() * 30.0)
+		while x < 128:
+			var bw := 16 + int(_r() * 22.0)
+			var v := (_r() * 26.0 - 13.0) / 255.0
+			var warm := _r() * 0.05
+			var c := Color(0.77 + v + warm, 0.66 + v + warm * 0.5, 0.48 + v) # pale gold to grey
+			for wrap in [0, 128, -128]: # blocks crossing the edge wrap round, so the texture tiles
+				var r := Rect2(x + wrap + 1, y + 1, bw - 2, tall)
+				g.draw_rect(r, c)
+				g.draw_rect(Rect2(r.position.x, r.position.y, r.size.x, 2), c.lightened(0.12)) # sunlit top edge
+				g.draw_rect(Rect2(r.position.x, r.end.y - 3, r.size.x, 3), c.darkened(0.12)) # weathered underside
+			x += bw
+	for i in 5: # rain streaks down the stone
+		var sx := 10.0 + _r() * 108.0
+		g.draw_rect(Rect2(sx, 0, 3, 256), Color(0.25, 0.2, 0.14, 0.07))
 
 
 func _sheki_wall(g: Node2D) -> void:
